@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>73 万字，怎么读进一个知识库 · El Taller Cuaderno</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+
+.ahead{margin:38px 0 18px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 12px}
+.ahead .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ahead .meta .date{font-size:12.5px;color:var(--g-dim);margin-right:6px}
+.ahead .tag{font-size:12px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:var(--g-dim)}
+
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article h3{font-size:16px;font-weight:600;margin:24px 0 10px;color:var(--g-accent-soft)}
+.article p{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul,.article ol{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:4px 0}
+.article blockquote{border-left:3px solid color-mix(in srgb,var(--g-accent) 50%,transparent);background:color-mix(in srgb,var(--g-tint) 6%,transparent);padding:14px 20px;border-radius:14px;margin:16px 0}
+.article blockquote p{color:var(--g-dim);font-size:13.5px;margin:2px 0}
+.article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;min-width:0}
+.article table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+.article th{background:color-mix(in srgb,var(--g-accent) 14%,transparent);color:var(--g-accent-soft);font-weight:600;text-align:left}
+.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:9px 13px;vertical-align:top;line-height:1.7}
+.article td{color:color-mix(in srgb,var(--g-text) 80%,transparent)}
+.article pre{background:rgba(20,10,4,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px 18px;overflow-x:auto;font-size:12.5px;line-height:1.75;margin:14px 0;font-family:ui-monospace,"SF Mono",Consolas,monospace;color:color-mix(in srgb,var(--g-text) 85%,transparent)}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.article pre code{background:none;padding:0}
+.article hr{border:0;border-top:1px dashed rgba(255,255,255,.18);margin:28px 0}
+.tl{position:relative;margin:20px 0 6px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 55%,transparent),color-mix(in srgb,var(--g-accent) 10%,transparent))}
+.tl .ti{position:relative;padding:0 0 20px}
+.tl .ti:last-child{padding-bottom:4px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--g-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--g-accent) 16%,transparent)}
+.tl .ti.fix::before{background:#39d98a;box-shadow:0 0 0 4px rgba(57,217,138,.16)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 75%,transparent)}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:color-mix(in srgb,var(--g-text) 40%,transparent)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} }
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+  --g-blob1:rgba(80,170,255,.30); --g-blob2:rgba(120,220,255,.18);
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+  --g-blob1:rgba(90,215,140,.26); --g-blob2:rgba(230,200,90,.14);
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+  --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass,.g-card,.enlace{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
+.g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller · Cuaderno</b></div>
+      </div>
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <a class="btn-ghost" href="../index.html">← 回工坊</a>
+    </header>
+
+    <div class="ahead">
+      <span class="eyebrow">Cuaderno · 工坊日志</span>
+      <h1>73 万字，怎么读进一个知识库</h1>
+      <div class="meta">
+        <span class="date">2026-09-25</span>
+        <span class="tag">知识工程</span><span class="tag">复盘</span><span class="tag">AI 应用</span>
+      </div>
+    </div>
+
+    <article class="article g-glass">
+      <p>我给自己建了一个 AI 领域的个人知识库（La Biblioteca）。它的源头是一份 73.3 万字符的课程全文——大约相当于一本 500 页的技术书。这篇日志复盘整个工程：踩过的最大的坑、为此长出来的入库机制、以及「一源多形态」的交付思路。它也是我这个站里「AI 应用工程师」方向最能说明我做事方式的一篇。</p>
+
+      <h2>一、最大的坑：第一版只读了前 1/7</h2>
+      <p>第一版手册做完时自我感觉良好。直到做了一次<b>覆盖度核查</b>：对原文做全文重扫——12,238 行，而首次抓取只拿到 1,093 行。也就是说，<b>手册只基于原文前约 1/7 编写</b>，剩下六分之五的内容根本没进过脑子。</p>
+      <p>深段重扫的结果印证了担忧：新发现 <b>7 块此前完全缺失的知识</b>——Token 经济学与缓存策略、Vibe Coding 方法论、AGENTS.md 实证研究（自动生成的 context file 使成功率 -3%、成本 +20%）、Agent 场景设计题的固定骨架方法论、LLM-as-a-Judge 的 Rubric 锚点法、记忆/压缩/权限架构细节、Agent Teams 的「协调税」选型。其中 6 块是通用知识，全部补入了手册。</p>
+      <blockquote><p>教训：AI 读长文档时，「感觉读完了」和「读完了」是两回事。体量探测必须是第一步，覆盖率必须可量化。</p></blockquote>
+
+      <h2>二、机制：五阶段入库流水线</h2>
+      <p>吃一堑之后，我把知识入库固化成一条有硬闸门的流水线：</p>
+      <div class="tw"><table>
+        <tr><th style="width:24%">阶段</th><th>关键规则</th></tr>
+        <tr><td>① 接收登记</td><td>每份材料一个 intake 目录，登记来源、体量初测，状态「阅读中」</td></tr>
+        <tr><td>② 完整阅读</td><td><b>硬闸门</b>：先测体量，分片全文遍历，章节覆盖率 100% 才算读完；判定不读的部分也要显式列出理由</td></tr>
+        <tr><td>③ 知识点抽取</td><td>每条知识一张卡片，标注证据强度：实测数据 &gt; 多方一致实践 &gt; 单一案例 &gt; 个人观点</td></tr>
+        <tr><td>④ 对照裁决</td><td>每张卡片与存量判定五类之一：一致 / 进化 / 冲突 / 新增 / 失效（见下表）</td></tr>
+        <tr><td>⑤ 写入门禁</td><td>顺序固定：先改知识源，再同步各阅读器，重建 HTML，过六项校验清单</td></tr>
+      </table></div>
+      <p>三条设计原则：<b>宁慢勿漏</b>（阅读完整性优先于产出速度）、<b>冲突不静默</b>（矛盾必须显式裁决）、<b>唯一知识源</b>（手册正文是唯一权威，HTML 只是渲染产物）。</p>
+
+      <h3>五类判定表</h3>
+      <div class="tw"><table>
+        <tr><th>判定</th><th>动作</th></tr>
+        <tr><td><b>一致</b></td><td>不改正文，台账记「旁证 +1」提升置信度</td></tr>
+        <tr><td><b>进化</b></td><td>补充进现有小节，旧表述不留双版本</td></tr>
+        <tr><td><b>冲突</b></td><td>走裁决流程，禁止静默二选一</td></tr>
+        <tr><td><b>新增</b></td><td>新增小节；够不成体系的攒到同域 ≥3 条再立章</td></tr>
+        <tr><td><b>失效</b></td><td>正文剔除；有历史价值的移入附录并注明原因</td></tr>
+      </table></div>
+      <p>冲突裁决按四步走：先比证据强度（实测数据压经验），再比时效（新口径取代旧口径但注明适用条件），各有适用场景就改写成条件分支，实在判不了就挂起进「待证区」——<b>绝不带病入正文</b>。</p>
+
+      <h2>三、工程细节：让机制真正跑起来</h2>
+      <ul>
+        <li><b>锚点断言</b>：批量写入必须逐处断言。首次实战就拦下 5 处锚点变体（同一措辞在不同文件里有微小差异）；文本锚点要避开引号——弯引号和直引号字形不一致会导致匹配失败。</li>
+        <li><b>出处残留检查</b>：重建后自动扫描「原文 / 原素材 / 快照」等字样，必须为 0——知识库里的表述必须消化成自己的话。</li>
+        <li><b>断点续读</b>：大体量材料允许跨会话，但 intake 目录里必须留「读到哪里」的断点，重开会话先续读后动作。</li>
+        <li><b>渲染抽查</b>：HTML 重建后浏览器实际打开抽查变更点，自动化断言 + 人工目检双保险。</li>
+      </ul>
+      <p>第一次全流程实战是一份 3.1 万字符的 Commerce Agent 指南：抽取 19 张知识卡片，判定分布为一致 1 / 进化 9 / 冲突 1（裁决：门禁评测看快照、轨迹评测降级为调试手段）/ 新增 4 / 失效 0，最终 13 处关键词断言全过、渲染抽查 7/7 通过。</p>
+
+      <h2>四、一源多形态：同一套知识的六种打开方式</h2>
+      <div class="tw"><table>
+        <tr><th>形态</th><th>给谁用</th></tr>
+        <tr><td>知识手册（13 章）</td><td>知识本体，唯一权威源</td></tr>
+        <tr><td>面试题库（含三档评分）</td><td>求职演练，题库与手册双向引用</td></tr>
+        <tr><td>桌面版（深色阅读）</td><td>日常自习的主界面</td></tr>
+        <tr><td>便携版（base64 单文件）</td><td>发微信、存手机，离线 whole-book</td></tr>
+        <tr><td>白话版</td><td>给非技术伙伴——管家/烹饪比喻逐章重讲同一套知识，附黑话对照表</td></tr>
+        <tr><td>短视频脚本（12 集 × 60 秒）</td><td>白话版的视频化改编，旁白可直接投 TTS</td></tr>
+      </table></div>
+      <p>「一源多形态」是这套工程最划算的部分：知识本体只维护一份，所有衍生品都是它的渲染产物。改一处，全链路同步——前提是第⑤阶段的门禁真的在卡。</p>
+
+      <h2>开发时间轴</h2>
+      <div class="tl">
+        <div class="ti fix"><span class="td">首版 · 重大事故</span><b>手册只基于原文前 1/7</b><p>首次抓取仅拿到 1,093 / 12,238 行，深段知识全部漏网——这个发现成为整个工程机制诞生的转折点。</p></div>
+        <div class="ti"><span class="td">2026-09-08</span><b>覆盖度核查</b><p>全文重扫 + 164 条目录骨架逐节对账：新发现 7 块深段缺失知识，6 块为通用知识全部补入手册。</p></div>
+        <div class="ti"><span class="td">2026-09-09</span><b>维护机制上线 + 首跑</b><p>五阶段入库机制（完整阅读硬闸门 / 五类裁决 / 写入门禁）发布；材料 001 首跑：19 张知识卡片、冲突显式裁决、锚点断言拦下 5 处变体、13/13 关键词断言全过。</p></div>
+        <div class="ti"><span class="td">2026-09-09</span><b>一源多形态兑现</b><p>同日产出 05.1 白话版（管家比喻逐章重讲）与 07 短视频脚本两个交付变体。</p></div>
+        <div class="ti"><span class="td">2026-09-16</span><b>第二份材料进料</b><p>GB/T 48000《标准数字化》按裁决以独立知识库建库（不强行并入），手册新增「知识形态的第三阶」章节、题库增补一题。</p></div>
+      </div>
+
+      <h2>六、回头看</h2>
+      <p>这套机制的本质，是把「读过」从一种感觉变成一种<b>可审计的状态</b>：覆盖率可量化、每条知识有证据强度、每次变更留台账、每篇成品过门禁。AI 时代的知识管理，瓶颈从来不是「获取内容」，而是「消化内容的纪律」。</p>
+      <p>手册本体放在本站的 La Biblioteca（登录可见）。如果你也在建自己的知识库，欢迎从 GitHub 找到我聊聊。</p>
+    </article>
+
+    <div class="endnote"><a href="../index.html#cuaderno">← 回工坊日志</a> · El Taller de Andres</div>
+  </div>
+</div>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>

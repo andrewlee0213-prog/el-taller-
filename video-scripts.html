@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>白话短视频脚本 · 12 集 × 60 秒 · El Taller de Andres</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.ahead{margin:38px 0 18px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 12px}
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article h3{font-size:16px;font-weight:600;margin:26px 0 10px;color:var(--g-accent-soft)}
+.article p{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul,.article ol{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:4px 0}
+.article .narr{border-left:3px solid color-mix(in srgb,var(--g-accent) 50%,transparent);background:color-mix(in srgb,var(--g-tint) 6%,transparent);padding:14px 20px;border-radius:14px;margin:12px 0 16px}
+.article .narr p{color:color-mix(in srgb,var(--g-text) 78%,transparent);font-size:14px;margin:0}
+.article .narr .lab{display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);margin-bottom:6px}
+.article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0 8px;min-width:0}
+.article table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:520px}
+.article th{background:color-mix(in srgb,var(--g-accent) 14%,transparent);color:var(--g-accent-soft);font-weight:600;text-align:left}
+.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:8px 12px;vertical-align:top;line-height:1.7}
+.article td{color:color-mix(in srgb,var(--g-text) 80%,transparent)}
+.article hr{border:0;border-top:1px dashed rgba(255,255,255,.18);margin:28px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.tl{position:relative;margin:20px 0 6px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 55%,transparent),color-mix(in srgb,var(--g-accent) 10%,transparent))}
+.tl .ti{position:relative;padding:0 0 20px}
+.tl .ti:last-child{padding-bottom:4px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--g-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--g-accent) 16%,transparent)}
+.tl .ti.fix::before{background:#39d98a;box-shadow:0 0 0 4px rgba(57,217,138,.16)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 75%,transparent)}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:color-mix(in srgb,var(--g-text) 40%,transparent)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} }
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+  --g-blob1:rgba(80,170,255,.30); --g-blob2:rgba(120,220,255,.18);
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+  --g-blob1:rgba(90,215,140,.26); --g-blob2:rgba(230,200,90,.14);
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+  --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass,.g-card,.enlace{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
+.g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller de Andres</b></div>
+      </div>
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <a class="btn-ghost" href="index.html">← 回工坊</a>
+    </header>
+
+    <div class="ahead">
+      <span class="eyebrow">Guion de vídeos · 打磨中</span>
+      <h1>白话短视频脚本 · 12 集 × 60 秒</h1>
+    </div>
+
+    <article class="article g-glass">
+      <p>把《AI Agent 构建知识手册》的白话版改编成系列短视频的完整脚本：每集 = 一段可直接投 TTS 的旁白（约 210–240 字）+ 一张逐镜画面提示词表（Seedance 与 MiniMax 海螺通用，复制即用）。这里收录全部十二集与幕后产线说明——<b>成片还在打磨，脚本先亮相</b>。</p>
+
+      <h2>开拍前必读的四件事</h2>
+      <ol>
+        <li><b>成片结构</b>：每集 6–7 镜 × 5–10 秒 ≈ 60 秒；统一「5 秒钩子 → 4–5 个 10 秒知识镜头 → 5 秒金句收尾」。旁白全文投 TTS（语速 1.0），生成后按镜头切点对位剪断。</li>
+        <li><b>角色一致性（最重要）</b>：全部镜头共用主角「小七」——圆润亲和的年轻管家，深蓝马甲、白手套、胸口黄铜"7"号徽章。先用文生图出<b>定妆照</b>，之后每镜用<b>图生视频</b>（首帧 = 定妆照），提示词只写动作 + 运镜。</li>
+        <li><b>两平台写法差异</b>：Seedance 直接粘中文整段，一句话里可写「镜头切换到…」；海螺用导演指令（<code>[Push in]</code> 推近 / <code>[Pull out]</code> 拉远 / <code>[Pan]</code> 横移 / <code>[Tracking shot]</code> 跟拍）。</li>
+        <li><b>硬规则</b>：画面永远不要出现文字（AI 写中文字必乱），文字全走后期字幕；同集镜头一次抽卡到满意再进下一镜，防风格漂移。</li>
+      </ol>
+
+      <h2>通用资产（每条提示词都要带）</h2>
+      <ul>
+        <li><b>画风锚</b>：温暖治愈的厚涂插画风，圆润造型，主色调深蓝+暖金，柔和金色光线，16:9 横屏，画面干净，无文字无水印。</li>
+        <li><b>角色锚</b>：主角是管家「小七」：二十五六岁，圆润亲和，深蓝色马甲，白手套，胸口别一枚黄铜"7"号徽章，短发整齐，笑容温和。</li>
+        <li><b>片尾收尾</b>：小七对镜头温和微笑并微微鞠躬，身后一扇门缓缓合上，门上有一枚发光的"7"号徽章图标，镜头缓慢拉远，余光温暖。</li>
+      </ul>
+
+      <hr>
+
+      <h2>EP1 ｜ 全景：AI 管家的十件套</h2>
+      <div class="narr"><span class="lab">旁白 · 约 215 字</span><p>如果公司请了一位 AI 管家，怎么判断它靠不靠谱？记住十样东西。一个聪明的脑子，这是它听懂话的本钱；你把活交代清楚，配一本好用的记事本；再给它能打电话跑腿的手脚，和一间随问随查的资料室。它还得有记性，记住你不吃香菜；会排行程，跟团稳、自由行活；懂规矩，钥匙给到哪一级、花钱要你点头；然后是考核、账本，和一段真正的实习期。脑子聪明只是一环——交代、手脚、规矩，才把「表演型」和「上岗型」分开。这一套，就是我们整个系列要讲的事。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>公司大堂门口，小七提着皮质公文包站立，头顶悬浮一个巨大的发光问号，[Push in] 缓缓推近，晨光</td><td>AI 管家靠不靠谱，看十样东西</td></tr>
+        <tr><td>2(10s)</td><td>小七站在客厅中央，头顶悬浮一颗发光的蓝金色水晶大脑缓缓旋转，四周漂浮问号气泡，镜头环绕四分之一圈</td><td>脑子：听得懂复杂的事</td></tr>
+        <tr><td>3(10s)</td><td>主人书桌前，小七接过一张手写任务清单，翻开皮质记事本认真记录，[俯拍45度]，桌面暖灯</td><td>交代清楚 + 记事本</td></tr>
+        <tr><td>4(10s)</td><td>小七一手用老式黄铜电话通话，一手从顶天立地的资料柜抽出一张金色卡片，[Tracking shot] 侧面跟拍，动作利落</td><td>手脚 + 资料室</td></tr>
+        <tr><td>5(10s)</td><td>记事本特写：一页画着香菜图案盖红叉；转场到墙上一排行程卡：小团旗与自由行地图并排，[Pan right] 缓慢横移</td><td>记性 + 行程</td></tr>
+        <tr><td>6(10s)</td><td>小七双手递上单据，主人伸手扫码确认；背景墙上一排账本翻页，一台小记录仪闪着红灯</td><td>规矩 + 考核 + 账本</td></tr>
+        <tr><td>7(5s)</td><td>小七站中央，十枚发光图标（大脑、清单、电话、书柜、记事本、地图、钥匙、奖杯、账本、学士帽）环绕缓旋，[Pull out] 拉远定格</td><td>脑子聪明只是一环</td></tr>
+      </table></div>
+
+      <h2>EP2 ｜ 脑子：请多聪明的、请谁家的</h2>
+      <div class="narr"><span class="lab">旁白 · 约 215 字</span><p>先说管家的脑子。第一道选择题：云端专家还是驻家顾问？云端热线随叫随到、本事大，但你的话要出门；请到家里的顾问，话不出门、随时在，本事小一点。看四样：隐私、速度、花费、断网。第二个旋钮叫温度：要它稳定报菜名，就拧到最小；要它想创意菜名，再拧大。第三，别拿「问一句多少钱」算账——便宜的脑子绕五圈才办成一件事，比贵的脑子一圈办成更贵。最后，它可以送出去做专项培训，把一件反复做不好的事练到稳定，但培训材料宁可少而干净——喂了脏数据，就是教它做脏活。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>面试桌前，一大一小两颗发光水晶大脑并排摆着，小七托腮认真对比，[Push in]</td><td>云端 vs 驻家，怎么选？</td></tr>
+        <tr><td>2(10s)</td><td>画面左右对分：左侧云端城堡与小七的热气球，右侧温暖小屋与小七系围裙烧水，小七站在中间天平上，天平微微摆动</td><td>四个字：隐私·速度·花费·断网</td></tr>
+        <tr><td>3(10s)</td><td>特写：戴白手套的手把一个巨大旋钮从冰蓝区拧到暖橙区，旋钮两侧分别是整齐的餐盘与抽象的彩色颜料，[Static]</td><td>温度：稳定拧小，创意拧大</td></tr>
+        <tr><td>4(10s)</td><td>对比：小沙漏一次通过闸门 vs 大沙漏在迷宫里绕圈五次，旁边的钱袋一次比一次瘪，小七在旁摇头</td><td>按办成一件事算总账</td></tr>
+        <tr><td>5(10s)</td><td>教室里，小七给学徒大厨递上干净整洁的菜谱卡，学徒开心接过；画面角落一筐烂菜叶被倒掉</td><td>培训材料：宁少勿脏</td></tr>
+        <tr><td>6(5s)</td><td>小七对镜头竖起一根手指微笑，身后四枚小图标（盾牌、秒表、钱袋、断开的信号）依次点亮</td><td>隐私·速度·花费·断网</td></tr>
+      </table></div>
+
+      <h2>EP3 ｜ 交代：点菜的学问和记事本</h2>
+      <div class="narr"><span class="lab">旁白 · 约 230 字</span><p>脑子再好，交代不清也白搭。第一，学点菜：别说「随便来点好吃的」，要说「不吃辣、两位、上菜快」；给例子比讲道理管用。第二，管好它的记事本：管家办砸事，多半不是笨，是信息没给到，或者给乱了——该放的放、只放相关的、旧的写成摘要、不同的事分本子记。第三，工作守则要有版本号：改一条，记录哪天改的、为什么改。第四，说明书千万别写厚——有人实测，AI 自动生成的厚说明反而把事情办得更差、更贵；只写它猜不到的事。最后，跟 AI 搭伙干活的五个习惯：想清楚再说、给它指方向、随时存档、让它先自己修、背景资料给足。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>餐厅后厨：客人头顶气泡写着抽象乱线（表达「随便」），厨师装扮的小七一脸问号，锅冒着黑烟，快节奏 [Push in]</td><td>「随便」是最难的订单</td></tr>
+        <tr><td>2(10s)</td><td>特写菜单卡：三个图形勾依次亮起（辣椒划叉、双人餐具、时钟），小七在旁会心点头，暖光</td><td>不吃辣·两位·上菜快</td></tr>
+        <tr><td>3(10s)</td><td>四格动画感：散乱纸片飞进对应分类文件夹，旧纸摞被压缩成一张发光摘要卡，[Pan right]</td><td>该放的放、旧的变摘要</td></tr>
+        <tr><td>4(10s)</td><td>守则本封面被盖上一枚圆形徽记图章，旁边日历「啪」地翻过一页，小七在旁登记，[Static]</td><td>守则有版本号</td></tr>
+        <tr><td>5(10s)</td><td>对比：一摞高塔般的厚说明书压塌小桌，管家只剩白手套露在外面；另一侧小七轻松拿起薄薄三页纸微笑</td><td>说明书越厚，越差越贵</td></tr>
+        <tr><td>6(10s)</td><td>五枚小图标（思考的头、指南针、存档箱、扳手、礼盒）环绕小七依次点亮，[Pull out] 缓拉定格</td><td>想·指·存·修·给</td></tr>
+      </table></div>
+
+      <h2>EP4 ｜ 手脚：替你打电话、统一插座、岗位手册</h2>
+      <div class="narr"><span class="lab">旁白 · 约 235 字</span><p>光会说话不会办事的管家没有用。第一样本事叫「替你打电话」：你说订今晚七点四位，它拨号、报信息、把确认结果带回来。第二样叫「统一插座」：过去每家酒店一种插头，出国要背一把转换器；现在全行业统一插座，管家插上就能订任何一家。第三样叫「岗位手册」：把接待考察团的流程装订成册，遇到这类活翻开照做，平时不占脑子。还有一条铁律：电话打不通，要告诉它「请补上订单号再拨」，而不是甩一串错误代码——它听得懂的报错才是报错。查号类电话随便打，花钱办事类，必须设卡——这个下一集细说。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>客厅里主人刚开口，小七「唰」地掏出一部老式黄铜电话，听筒带风，[Push in] 快切</td><td>会打电话的管家才有用</td></tr>
+        <tr><td>2(10s)</td><td>小七认真拨号报信息，电话线延伸到一家餐厅门口，门口圆灯从红色圆点变成绿色对勾图形，[Tracking shot]</td><td>订今晚七点，四位</td></tr>
+        <tr><td>3(10s)</td><td>一面墙的一排五花八门插头收缩成一个金色统一插座，小七单手插入，整面墙的灯依次点亮</td><td>统一插座：一次对接全通用</td></tr>
+        <tr><td>4(10s)</td><td>小七从书架取下厚厚的手册翻开，页面上浮出发光的流程节点图形（圆点与连线，无文字），[Pan down]</td><td>岗位手册：遇活翻开</td></tr>
+        <tr><td>5(10s)</td><td>对比：一团乱码纸团砸在小七脸上 vs 一张画着箭头和补充图标的便签贴上来，小七看懂后自信拨号</td><td>报错要给「下一步」</td></tr>
+        <tr><td>6(10s)</td><td>左侧查号电话自由拨号绿灯通行，右侧金库门前的小闸机拦下小七，他出示徽章等待，定格</td><td>查号随便打，花钱要设卡</td></tr>
+      </table></div>
+
+      <h2>EP5 ｜ 资料室：开卷考试的艺术</h2>
+      <div class="narr"><span class="lab">旁白 · 约 240 字</span><p>很多答案不在管家脑子里，在资料室里，所以要学会开卷考试。流程像整理一间菜谱房：先把厚菜谱剪成卡片，相邻的留一点重叠，别把关键一句剪成两半；给每张卡贴上意思标签，放进检索柜；你提问，管理员先粗抓一把相关卡片，再按贴切程度精挑几张放最上面；然后照卡作答，注明出自哪张卡。最重要的一条：卡片上没有，就老实说「资料里没有」——宁可拒答，不许编造，敢说不知道的系统才值得信任。另外先分清：本来就有表格的数据，直接查表就行，别折腾成资料室。定期拿一份标准问答卷考它，防止越用越歪。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>小七推开一扇门，门后是顶天立地的发光资料迷宫，光尘飘浮，[Push in]</td><td>答案在资料室，不在脑子里</td></tr>
+        <tr><td>2(10s)</td><td>一把大剪刀把厚菜谱剪成金色卡片流，卡片像蝴蝶落进分类格，特写相邻卡片边缘互相重叠</td><td>剪卡片：留重叠，防剪断</td></tr>
+        <tr><td>3(10s)</td><td>卡片逐一亮起标签光晕飞入检索柜；小七拍手，柜中卡片按光晕强弱自动排成纵队，[Pan right]</td><td>先粗抓一把，再精挑几张</td></tr>
+        <tr><td>4(10s)</td><td>小七照卡片回答，答案旁浮现书形小徽章，一道细光箭头把徽章指向来源卡片</td><td>答案要注明出自哪张卡</td></tr>
+        <tr><td>5(10s)</td><td>关键镜头：检索柜空空如也，小七对镜头摊手摇头，头顶弹出一张干净的空白卡片图形</td><td>没资料就说没有，不许编</td></tr>
+        <tr><td>6(10s)</td><td>一卷考卷图形被盖上绿色对勾徽记，小七敬礼；角落一格表格柜亮绿灯表示「查表更快」，缓拉</td><td>定期拿标准卷考它</td></tr>
+      </table></div>
+
+      <h2>EP6 ｜ 记性：便签和记事本</h2>
+      <div class="narr"><span class="lab">旁白 · 约 225 字</span><p>好的管家要有记性。短期记性是桌上便签，这一单说完就清；长期记性是私人记事本——你不吃香菜、报销走哪个口径、每次都要看哪三份报表。记事本有三个原则：不是什么都记，写入要有标准；新的旧的打架，听新的；定期整理归档，本子不能无限变厚。记的时候按「人」记，不按「账号」记——几个人共用的账号，各自的习惯要分开，谁也只能看自己那页。隐私上记四件事：先定好哪类事实愿意记；本人能查、能改、能删；设个保存期限，几年前的偏好多半过期了；有的地区法规不允许，就整体关掉这个功能。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>小七端上一桌菜，客人皱眉从汤里挑出一撮香菜，小七尴尬冒汗，头顶弹出一个红色小感叹号</td><td>不吃香菜，说了三遍</td></tr>
+        <tr><td>2(10s)</td><td>便签纸片飘散消失，同时一支笔把要点写进皮质记事本、合上锁好推入书架，一气呵成的转场</td><td>便签清空，记事本留存</td></tr>
+        <tr><td>3(10s)</td><td>三枚铜制徽章依次点亮：漏斗（筛选）、天平（新旧）、压缩机（归档），小七逐一擦拭，[Static]</td><td>三原则：筛、新、整</td></tr>
+        <tr><td>4(10s)</td><td>记事本摊开成三栏，栏首是三个不同的小头像，各自记录互不串页，小七在中间递笔</td><td>按人记，不按账号记</td></tr>
+        <tr><td>5(10s)</td><td>隐私四格动画：门禁刷卡（入口把关）、放大镜（可查）、橡皮擦（可删）、沙漏（过期），依次亮起</td><td>能记什么，本人能改，会过期，能关掉</td></tr>
+        <tr><td>6(5s)</td><td>小七合上记事本微笑鞠躬，书架暖光，[Pull out] 缓拉</td><td>您的偏好，我有分寸</td></tr>
+      </table></div>
+
+      <h2>EP7 ｜ 行程：跟团游还是自由行</h2>
+      <div class="narr"><span class="lab">旁白 · 约 235 字</span><p>安排活儿有两种方式。跟团游是工作流：行程表写死，稳定、便宜、不出幺蛾子；自由行是 Agent：到了当地自己看情况调，灵活，但可能绕路、可能超支。行业共识：跟团能解决的，别自由行。自由行也要有底线：最多走几步、最多花多少钱、超时自动收工——会无限逛街刷爆卡的管家不是能干，是事故。行程中断怎么办？走到哪记到哪，恢复时从断点继续，别从头再来。那要不要多请几个管家？不是人多就好办——要开协调会、会对进度，还会重复买东西。先一个人干，活多但各干各的再加人，真要互相商量才组团队。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>岔路口：左边路牌画着旅游团小旗，右边路牌画着登山包和地图，小七站在路中央托腮思考</td><td>跟团稳，自由活</td></tr>
+        <tr><td>2(10s)</td><td>前半：大巴按时出发、团员有序上车，画面平稳；转场后半：小七在热闹集市里灵巧穿行讨价还价，画面灵动</td><td>各有各的好</td></tr>
+        <tr><td>3(10s)</td><td>俯拍地图，金色边框围出「预算圈」，小七走到边缘时边框闪红色警示光，他转身折返</td><td>底线：步数、预算、时间</td></tr>
+        <tr><td>4(10s)</td><td>暴风雨掀翻路线图，小七从背包抽出记录断点的卡片，在当前坐标亮起点，继续前行，[Tracking shot]</td><td>断了从断点继续</td></tr>
+        <tr><td>5(10s)</td><td>三个管家各抱一摞文件在走廊相撞，纸片乱飞；转场：一个管家从容完成同样一叠活，对比构图</td><td>人多=要开会、会撞车</td></tr>
+        <tr><td>6(10s)</td><td>小七在路线图终点盖上「完成」徽记图形，满足地擦汗，[Pull out] 缓拉定格</td><td>先单人，再加人，最后组队</td></tr>
+      </table></div>
+
+      <h2>EP8 ｜ 规矩：钥匙、银行卡和快递</h2>
+      <div class="narr"><span class="lab">旁白 · 约 240 字</span><p>管家最能干的地方，也是最容易出事的地方。三条底线：第一，花钱、发通知、改数据的动作，必须你亲自拍板——像网购，加购物车随它加，付款必须你输密码；而且批的时候要按今天的规矩再查一遍限额。第二，钥匙分级：查东西给家门钥匙，改数据的是保险柜；管家只收系统亲手发过的编号，它自己编的、别人粘贴的、藏在评论里埋进来的，一律不认。第三，外来的信先过消毒间再读，并且只许汇报、不许照做——信里可能藏着假指令。最后，它写的代码先关进试菜间隔离跑，别直接上你家厨房。每一步都留痕，出事查得到它到底干了什么。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>特写：一只泛着蓝光的机械手指压向巨大的红色「确认」按钮，另一只人手按住它，静帧定格半秒后转场</td><td>最危险的动作，交给人</td></tr>
+        <tr><td>2(10s)</td><td>网购流程：小七把商品丢进购物车轻松自由，切到付款页弹出密码键盘，主人郑重扫码，节奏一快一慢</td><td>加购随它，付款由你</td></tr>
+        <tr><td>3(10s)</td><td>钥匙串特写：大门钥匙递到小七手里，保险柜钥匙留在挂钩上；墙上权限表对应格亮灯</td><td>钥匙分级，最小够用</td></tr>
+        <tr><td>4(10s)</td><td>一串编号卡片过安检门：三张闪红光的卡（一张碎裂、一张复印、一张藏在信里）被弹回，金卡通过</td><td>只认系统发过的编号</td></tr>
+        <tr><td>5(10s)</td><td>信件穿过发光的消毒光幕，黑色小虫从信纸里被剥离掉落，干净信纸装进贴着封条的信封</td><td>外来的信：先消毒，只汇报</td></tr>
+        <tr><td>6(10s)</td><td>小七写的发光代码胶囊先落入透明玻璃罩里运行，绿灯亮起后才传送到厨房灶台，他对镜头比 OK</td><td>代码先进试菜间（沙箱）</td></tr>
+      </table></div>
+
+      <h2>EP9 ｜ 考核：怎么才算合格</h2>
+      <div class="narr"><span class="lab">旁白 · 约 240 字</span><p>一次表现好，不算学会。考核记住四条。第一，题目必须能自动判对错，判不了的选题直接淘汰。第二，同一道题考 N 次，报通过率区间——有审计发现同样条件重考 23 次，成绩能从 58 漂到 77，单次成绩基本等于运气。第三，让 AI 当阅卷老师可以，但要给评分锚点：0 分长什么样、75 分长什么样，写得明明白白；换了阅卷老师，要拿旧卷重新对分。第四，考卷里要有脏题和反向题：故意造混乱的前情，每个「应该办」配一道「应该拒绝」，真实翻车案例是最好的考题。改一道守则就重考一遍，先小范围试用，再全员上线。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>小七举着缀满星星的奖状，身后奖状突然碎裂成漫天问号，[Push in]</td><td>一次 100 分≠学会了</td></tr>
+        <tr><td>2(10s)</td><td>一道题的秒针重复转 23 圈，每次停在不同刻度，刻度点累积成一片散点区间图形，[Static]</td><td>单次成绩=运气，考 N 次报区间</td></tr>
+        <tr><td>3(10s)</td><td>失败分类墙：四格抽屉依次弹出（断线电话、空书页、转圈的回旋镖、提前收工的闹钟）小图标</td><td>失败要归类，别只看总数</td></tr>
+        <tr><td>4(10s)</td><td>铁皮机器人考官手持两份带星星锚点的标准样卷，对照给一份答卷点亮对应星数</td><td>AI 阅卷要给评分锚点</td></tr>
+        <tr><td>5(10s)</td><td>考题工厂：搅拌机把打翻的行李、交错的车票搅进一张考卷；两枚印章「该办/该拒」成对盖下</td><td>脏题+反向题，成对出现</td></tr>
+        <tr><td>6(10s)</td><td>考卷进入传送带自动检查，不达标的被闸门拦下堆在一边；小七在门边抱臂点头，[Pull out] 缓拉</td><td>不达标，不许上线</td></tr>
+      </table></div>
+
+      <h2>EP10 ｜ 账本：花了多少钱、慢在哪</h2>
+      <div class="narr"><span class="lab">旁白 · 约 245 字</span><p>靠谱的管家要随身带两样东西：行车记录仪和账本。每一单，花了多少钱、用了几分钟、答案有没有出处，都能翻出来——有人问「上周二怎么变慢了」，你打开记录就能讲清原因。再看计费的门道：AI 读你给的材料便宜，写回复贵大约五倍；重复的内容走会员价，只要一折。所以材料要按「多久变一次」来摆：永远不变的放最前，随时变的放最后——最忌讳把今天的日期写在最前面，每问一句就把整份会员价作废。做得好的团队能让九成以上账单走会员价。记住：准确率一样的两个方案，花费可以差六十四倍。先砍浪费，再换便宜的脑子，最后才动架构。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>会议室：老板拍桌发问，对面小七不慌不忙翻开一本厚账本，[Push in]</td><td>上周二为什么变慢？</td></tr>
+        <tr><td>2(10s)</td><td>账本投影：每单一行（耗时条+小钱袋+对勾），时间轴快速回卷，「上周二」位置亮起红色高亮</td><td>每单可回溯</td></tr>
+        <tr><td>3(10s)</td><td>一架天平：左盘一根轻羽毛标「读」，右盘沉重砝码组标「写」，砝码上有 5 倍刻度图形，[Static]</td><td>读信便宜，写信贵 5 倍</td></tr>
+        <tr><td>4(10s)</td><td>同一叠材料第一次付费金光四溅，第二次出示会员卡只掉落一枚小金币，小七微笑收卡</td><td>重复内容走会员价</td></tr>
+        <tr><td>5(10s)</td><td>一叠材料顶端贴着日历贴纸，红光每次扫过整叠材料全部重排；小七把贴纸揭下移到最后一页，红光消失</td><td>别把日期放最前面</td></tr>
+        <tr><td>6(10s)</td><td>两架天平对比：一侧金条堆成山、一侧三枚硬币，两侧准确率指针指向同一高度；小七选硬币侧</td><td>同样准，差 64 倍</td></tr>
+      </table></div>
+
+      <h2>EP11 ｜ 上岗三步 + 踩坑快闪</h2>
+      <div class="narr"><span class="lab">旁白 · 约 235 字</span><p>从能演示到真上岗，三步。第一步，能出活：答案带依据。第二步，够结实：查不到就说查不到，出错不崩。第三步，能转正：有考卷、有账本，还要和老师傅比工——这件事人工做几分钟、错多少，AI 同口径比，这本账才算得清。汇报的时候记住一句话：说测出来什么，别说用了什么。最后送你一张避坑清单：一次成功不算学会；没设预算上限就是事故；报错别甩天书；说明书越厚越糟；表格数据别去翻资料室；脑子和守则别一起改；每一个数字，都要经得起追问。十四条踩坑清单，完整版随时查。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>小七把学士帽抛向空中，帽子落下变成一枚「实习」工牌挂上胸口，[Push in]</td><td>毕业≠转正</td></tr>
+        <tr><td>2(10s)</td><td>三级台阶依次点亮：台阶一菜上桌带小旗，台阶二风雨中一把不倒的伞，台阶三小七与白胡子老师傅同台比武、两侧计时器对比</td><td>能出活→够结实→能转正</td></tr>
+        <tr><td>3(10s)</td><td>对比：一张写满抽象名词涂鸦的纸被丢进纸篓，另一张画着上升箭头与数字圆点的图表被郑重贴上墙</td><td>说测出来的，别说用过的</td></tr>
+        <tr><td>4(5s)</td><td>快闪：预算红线仪表爆表闪红警报，小七伸手按停</td><td>没上限=事故</td></tr>
+        <tr><td>5(5s)</td><td>快闪：漫天天书纸团砸向小七 vs 一张箭头便签被他稳稳接住</td><td>报错要给下一步</td></tr>
+        <tr><td>6(10s)</td><td>十四格格子墙，十三格依次点亮绿色对勾，最后一格亮起黄色问号并放大；小七对镜头招手，缓拉</td><td>十四条清单，完整版查</td></tr>
+      </table></div>
+
+      <h2>EP12 ｜ 黑话速查：听懂技术同事在说什么</h2>
+      <div class="narr"><span class="lab">旁白 · 约 230 字</span><p>最后，送你一本黑话翻译手册。他们说模型，就是管家的脑子；提示词，是你怎么交代活；上下文，是它此刻能看到的内容；温度，是回答随机性的旋钮；幻觉，是没资料也敢编；Token，是按字数计费的单位；缓存命中率，就是九成账单走会员价；RAG，开卷考试加资料室；微调，送去专项培训；MCP，统一的插座标准；Skill，岗位作业手册；自由行，Agent；跟团游，工作流；人工介入，付款前要你输密码。听懂这些，技术同事说的每一句话，你都能接住。想深入，完整版在知识库里等你。</p></div>
+      <div class="tw"><table>
+        <tr><th style="width:12%">镜(秒)</th><th>画面提示词</th><th style="width:30%">字幕要点</th></tr>
+        <tr><td>1(5s)</td><td>小七戴着耳机听技术会议，头顶冒出一串问号泡泡，泡泡里是抽象符号，[Pan left]</td><td>黑话十级听力测试</td></tr>
+        <tr><td>2(10s)</td><td>问号泡泡逐个「啵」地变成白话图标：发光大脑、任务清单、一叠书、一个旋钮，节奏轻快</td><td>模型·提示词·上下文·温度</td></tr>
+        <tr><td>3(10s)</td><td>继续：空白卡片（幻觉）、字数计价器、金卡（缓存）、书与放大镜（RAG）依次弹出</td><td>幻觉·Token·缓存·RAG</td></tr>
+        <tr><td>4(10s)</td><td>继续：毕业帽（微调）、金色插座（MCP）、手册（Skill）、登山包（Agent）与小团旗（工作流）</td><td>微调·MCP·Skill·Agent</td></tr>
+        <tr><td>5(10s)</td><td>收尾组：密码键盘（人工介入）、申请单与图章（先申请后执行）、玻璃罩（沙箱）、星杯（评测）</td><td>介入·申请·沙箱·评测</td></tr>
+        <tr><td>6(10s)</td><td>小七与技术同事隔着圆桌相谈甚欢，两人之间漂浮的问号全部变成金色小桥连接彼此，[Pull out] 缓拉，转片尾</td><td>从此句句接得住</td></tr>
+      </table></div>
+
+      <hr>
+
+      <h2>集数一览与发布节奏</h2>
+      <div class="tw"><table>
+        <tr><th style="width:16%">集</th><th>主题</th><th style="width:34%">对应白话版章节</th></tr>
+        <tr><td>EP1</td><td>全景十件套</td><td>第 0 章</td></tr>
+        <tr><td>EP2</td><td>请多聪明的脑子</td><td>第 1 章</td></tr>
+        <tr><td>EP3</td><td>交代与记事本</td><td>第 2 章</td></tr>
+        <tr><td>EP4</td><td>打电话·插座·手册</td><td>第 3 章</td></tr>
+        <tr><td>EP5</td><td>开卷资料室</td><td>第 4 章</td></tr>
+        <tr><td>EP6</td><td>便签与记事本</td><td>第 5 章</td></tr>
+        <tr><td>EP7</td><td>跟团 vs 自由行</td><td>第 6 章</td></tr>
+        <tr><td>EP8</td><td>钥匙与银行卡</td><td>第 7 章</td></tr>
+        <tr><td>EP9</td><td>转正考核</td><td>第 8 章</td></tr>
+        <tr><td>EP10</td><td>账本与会员价</td><td>第 9 章</td></tr>
+        <tr><td>EP11</td><td>上岗三步+避坑</td><td>第 10–11 章</td></tr>
+        <tr><td>EP12</td><td>黑话速查（收尾）</td><td>第 12 章</td></tr>
+      </table></div>
+      <p><b>发布建议</b>：EP1 先发定调，之后每周 2 集连更；每集封面用第 1 镜首帧加统一标题条；EP12 结尾挂知识库入口导流。</p>
+
+      <h2>开发时间轴</h2>
+      <div class="tl">
+        <div class="ti"><span class="td">2026-09-09</span><b>一天两个交付</b><p>白话版手册（05.1）当天交付，同日改编出 12 集 × 60 秒短视频脚本：TTS 旁白直读 + 逐镜画面提示词（Seedance / 海螺通用），管家「小七」角色锚与画风锚同步定稿。</p></div>
+        <div class="ti"><span class="td">2026-09-09</span><b>发布会风升级包</b><p>拆解某科技发布会逐字稿提炼 9 条叙事 DNA（冷开场 / 第一性原理设问 / 推导三拍 / One More Thing……），EP1、EP9 重写为示范集，其余十集给出逐集换装规则。</p></div>
+        <div class="ti"><span class="td">2026-09-25</span><b>上站</b><p>作品卡以「打磨中」状态进作品集，完整脚本阅读页同日上线。</p></div>
+        <div class="ti fix"><span class="td">2026-09-25 · 前车之鉴写入规范</span><b>画面出现文字必翻车</b><p>AI 视频生成写中文字必乱码——脚本把「画面永远不要出现文字，全部走后期字幕」定为硬规则，并要求同集镜头一次抽卡到位防风格漂移。</p></div>
+        <div class="ti"><span class="td">进行中</span><b>成片产线</b><p>TTS 配音 + 定妆照图生视频 + 角色一致性工作流搭建中，成片未拍。</p></div>
+      </div>
+
+      <h2>幕后：一场发布会的启发（升级包）</h2>
+      <p>脚本初版完成后，我又拆了一遍某场科技发布会的逐字稿，提炼出九条叙事 DNA，作为整个系列的升级方向：<b>冷开场不讲产品</b>（先放递进的场景再亮相）、<b>第一性原理设问</b>（「如果你从零设计一个理想的 X，你会怎么做？」把产品说成观众自己推导出的答案）、<b>工程叙事三拍</b>（怎么做到→巨大数字→用户利益）、<b>不点名的对比</b>、<b>揭幕仪式感</b>、<b>功能配小故事</b>、<b>接力棒节奏</b>、<b>One More Thing</b>、<b>情绪金句收尾</b>。</p>
+      <p>按这套手法重写了 EP1 与 EP9 的示范集。例如 EP9 开场不再讲道理，而是讲一个翻车故事：「一位新管家上岗第一天，订到了票。全公司都鼓掌了。然后呢？我们让同一道题，重考了二十三次。成绩从五十八分，漂到七十七分。二十三个满分，二十三次运气。」——其余十集按「冷开场 + 推导三拍 + 金句收尾 + One More Thing」逐集换装，分镜结构不变。</p>
+      <div class="chips">
+        <span class="chip">12 集 × 60 秒</span><span class="chip">TTS 旁白直读</span><span class="chip">Seedance / 海螺通用</span><span class="chip">定妆照 + 图生视频</span><span class="chip">管家「小七」IP</span>
+      </div>
+    </article>
+
+    <div class="endnote"><a href="index.html">← 回工坊</a> · El Taller de Andres</div>
+  </div>
+</div>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>
