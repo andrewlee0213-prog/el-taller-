@@ -269,6 +269,7 @@ const WB_FILE = {
   comments: path.join(DATA, "workbench-comments.json"),
   notes:    path.join(DATA, "cuaderno-extra.json"),
   memos:    path.join(DATA, "workbench-memos.json"),
+  holidays: path.join(DATA, "holidays.json"),
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -727,6 +728,22 @@ async function wbFetchArxiv() {
   };
 }
 
+/* ---------------- 抓取器 · F1 赛程（Jolpica = Ergast 官方继任者，只取正赛 + 冲刺赛） ---------------- */
+async function wbFetchF1() {
+  const txt = await httpGetText("https://api.jolpi.ca/ergast/f1/current.json", 30000);
+  let j = null; try { j = JSON.parse(txt); } catch {}
+  const races = j && j.MRData && j.MRData.RaceTable && j.MRData.RaceTable.Races;
+  if (!Array.isArray(races) || !races.length) return { ok: false, error: "赛程为空" };
+  return {
+    ok: true, at: Date.now(),
+    races: races.filter(r => r.date).map(r => ({
+      round: r.round, raceName: r.raceName, date: r.date,
+      sprint: (r.Sprint && r.Sprint.date) || null,
+      locality: (r.Circuit && r.Circuit.Location && r.Circuit.Location.locality) || "",
+    })),
+  };
+}
+
 /* ---------------- 调度（各板块独立节奏，失败分级重试，缓存落盘回放） ---------------- */
 const WB_INTERVALS = {
   glm:   { ok: 5 * 60e3,    fail: 2 * 60e3 },
@@ -734,8 +751,9 @@ const WB_INTERVALS = {
   bili:  { ok: 144 * 60e3,  fail: 3 * 60e3, failRisk: 60 * 60e3 },
   anth:  { ok: 24 * 3600e3, fail: 20 * 60e3 },
   arxiv: { ok: 24 * 3600e3, fail: 20 * 60e3 },
+  f1:    { ok: 24 * 3600e3, fail: 6 * 3600e3 },
 };
-let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null });
+let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
 let wbSched = {};
 function wbInitSchedule() {
   const now = Date.now();
@@ -744,11 +762,12 @@ function wbInitSchedule() {
     wbSched[k] = { busy: false, nextAt: Math.max(now, last + WB_INTERVALS[k].ok) };
     if (!wbCache[k]) wbSched[k].nextAt = now;   // 冷启动立即抓
   }
-  /* 错峰：glm 立即，oil/bili/anth/arxiv 依次让路 */
+  /* 错峰：glm 立即，oil/bili/anth/arxiv/f1 依次让路 */
   if (!wbCache.oil) wbSched.oil.nextAt = now + 8e3;
   if (!wbCache.bili) wbSched.bili.nextAt = now + 16e3;
   if (!wbCache.anth) wbSched.anth.nextAt = now + 30e3;
   if (!wbCache.arxiv) wbSched.arxiv.nextAt = now + 45e3;
+  if (!wbCache.f1) wbSched.f1.nextAt = now + 60e3;
 }
 function wbFail(section, msg) {
   console.log("[workbench] " + section + " 失败: " + msg);
@@ -782,6 +801,10 @@ async function wbRun(section) {
       const d = await wbFetchArxiv();
       if (d.ok) { wbCache.arxiv = d; console.log("[workbench] arxiv 终选: " + d.items.map(x => x.zh).join(" / ")); done(iv.ok); }
       else { wbFail("arxiv", d.error); done(iv.fail); }
+    } else if (section === "f1") {
+      const d = await wbFetchF1();
+      if (d.ok) { wbCache.f1 = d; console.log("[workbench] f1 赛程 " + d.races.length + " 站"); done(iv.ok); }
+      else { wbFail("f1", d.error); done(iv.fail); }
     }
   } catch (e) {
     wbFail(section, e.name === "TimeoutError" || e.name === "AbortError" ? "网络超时" : (e.message || "抓取失败"));
@@ -796,6 +819,89 @@ let wbComments = loadJson(WB_FILE.comments, {});  // { [url]: {url,source,title,
 let wbWeekly = loadJson(WB_FILE.weekly, {});      // { [start~end]: {id,start,end,range,summary,plan,confirmedAt,generatedAt} }
 let wbNotes = loadJson(WB_FILE.notes, []);        // [{id,title,date,tags,summary,body,visibility,sourceUrl,source}]
 let wbMemos = loadJson(WB_FILE.memos, []);        // [{id,date,text,done,createdAt}] 备忘记事（带日期上日历）
+
+/* ---------------- 节假日（holiday-cn：国务院公告口径，含调休补班；jsdelivr→raw 双源） ---------------- */
+const holidaysByYear = loadJson(WB_FILE.holidays, {});   // { 2026: [{name,date,isOffDay}] }
+const holidaysPending = {};
+async function ensureHolidays(year) {
+  year = parseInt(year, 10);
+  if (!(year >= 2024 && year <= 2100)) return null;
+  if (holidaysByYear[year]) return holidaysByYear[year];
+  if (holidaysPending[year]) return holidaysPending[year];
+  holidaysPending[year] = (async () => {
+    const sources = [
+      "https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/" + year + ".json",
+      "https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/" + year + ".json",
+    ];
+    for (const src of sources) {
+      try {
+        const r = await fetch(src, { signal: AbortSignal.timeout(15000) });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (Array.isArray(j.days) && j.days.length) {
+          holidaysByYear[year] = j.days.map(d => ({ name: String(d.name || ""), date: d.date, isOffDay: !!d.isOffDay }));
+          saveJson(WB_FILE.holidays, holidaysByYear);
+          delete holidaysPending[year];
+          return holidaysByYear[year];
+        }
+      } catch {}
+    }
+    delete holidaysPending[year];
+    return null;
+  })();
+  return holidaysPending[year];
+}
+
+/* ---------------- ICS 订阅源（iPhone/ICSx⁵ 订阅：工作记录 + 备忘 + F1） ---------------- */
+function icsEscape(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function icsFold(line) {
+  if (Buffer.byteLength(line, "utf8") <= 73) return line;
+  const parts = [];
+  let cur = "", len = 0, first = true;
+  for (const ch of String(line)) {
+    const l = Buffer.byteLength(ch, "utf8");
+    if (len + l > (first ? 73 : 72)) { parts.push(cur); cur = " " + ch; len = 1 + l; first = false; }
+    else { cur += ch; len += l; }
+  }
+  parts.push(cur);
+  return parts.join("\r\n");
+}
+function icsAddDays(ds, n) {
+  const d = new Date(ds + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+function buildCalendarICS() {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const ev = [];
+  const addDay = (ds, summary) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ds || "")) return;
+    ev.push("BEGIN:VEVENT",
+      "UID:" + md5(ds + "|" + summary).slice(0, 20) + "@taller",
+      "DTSTAMP:" + stamp,
+      "DTSTART;VALUE=DATE:" + ds.replace(/-/g, ""),
+      "DTEND;VALUE=DATE:" + icsAddDays(ds, 1).replace(/-/g, ""),
+      "SUMMARY:" + icsEscape(summary),
+      "END:VEVENT");
+  };
+  wbLog.forEach(e => addDay(e.date, "工作：" + e.text));
+  wbMemos.forEach(m => addDay(m.date, (m.done ? "✅ " : "备忘：") + m.text));
+  const races = (wbCache.f1 && wbCache.f1.races) || [];
+  races.forEach(r => {
+    addDay(r.date, "🏎 F1 " + r.raceName + (r.locality ? " · " + r.locality : ""));
+    if (r.sprint) addDay(r.sprint, "🏎 F1 冲刺赛 · " + r.raceName);
+  });
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//El Taller//Workbench//CN",
+    "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:El Taller 工作台", "X-WR-TIMEZONE:Asia/Shanghai",
+    "REFRESH-INTERVAL;VALUE=DURATION:PT6H", "X-PUBLISHED-TTL:PT6H",
+    ...ev, "END:VCALENDAR",
+  ];
+  return lines.map(icsFold).join("\r\n") + "\r\n";
+}
 
 const pad2 = n => String(n).padStart(2, "0");
 const dstr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
@@ -970,6 +1076,19 @@ const server = http.createServer(async (req, res) => {
       else wbCache.glm = { ok: false, error: "等待抓取", at: Date.now(), hit };
       saveJson(WB_FILE.cache, wbCache);
       json(res, 200, { ok: true });
+      return log(200);
+    }
+
+    /* ---- 日历订阅源（iPhone/ICSx⁵ 订阅，token 鉴权；必须在 admin 守卫之前） ---- */
+    if (p === "/api/workbench/calendar.ics" && req.method === "GET") {
+      const tok = String(u.searchParams.get("token") || "");
+      const expect = String(wbCfg.pushToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        json(res, 401, { error: "unauthorized" });
+        return log(401);
+      }
+      send(res, 200, buildCalendarICS(), { "Content-Type": "text/calendar; charset=utf-8" });
       return log(200);
     }
 
@@ -1157,7 +1276,14 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    /* ---- 收进日志的笔记：公开条目所有人可见，登录后含 friends，admin 含全部 ---- */
+      if (p === "/api/workbench/holidays" && req.method === "GET") {
+        const year = u.searchParams.get("year") || String(new Date().getFullYear());
+        const days = await ensureHolidays(year);
+        json(res, 200, { year: parseInt(year, 10) || null, days: days || [] });
+        return log(200);
+      }
+
+      /* ---- 收进日志的笔记：公开条目所有人可见，登录后含 friends，admin 含全部 ---- */
     if (p === "/api/notes-extra" && req.method === "GET") {
       const s = readSession(req);
       const admin = s && s.r === "admin";

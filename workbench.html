@@ -257,6 +257,11 @@ details.wkhist[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}
 .cdot.log{background:#3fb950}
 .cdot.memo{background:var(--g-accent)}
 .cdot.memodone{background:var(--g-accent);opacity:.35}
+.cdot.f1{background:#e10600}
+.calday .hol{font-size:9px;color:#ff6b6b;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calday .ban{font-size:9px;color:#7fb3ff;border:1px solid rgba(127,179,255,.45);border-radius:4px;padding:0 3px;line-height:1.3;align-self:flex-start}
+.calday.off b{color:#ff6b6b}
+.calhead{display:flex;align-items:baseline;gap:5px;min-width:0}
 .caldetail{border-left:1px solid rgba(255,255,255,.1);padding-left:26px;min-width:0}
 .caldetail h4{font-size:14.5px;font-weight:600;margin-bottom:10px}
 .dsec{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);margin:14px 0 8px}
@@ -409,7 +414,7 @@ details.settings[open] summary{border-bottom:1px solid rgba(255,255,255,.08)}
             <b id="calTitle">…</b>
             <button class="calbtn" id="calNext" title="下个月">›</button>
             <button class="calbtn" id="calToday">今天</button>
-            <div class="callegend"><span><i class="cdot log"></i>已完成的工作</span><span><i class="cdot memo"></i>备忘 / 计划</span></div>
+            <div class="callegend"><span><i class="cdot log"></i>已完成的工作</span><span><i class="cdot memo"></i>备忘 / 计划</span><span><i class="cdot f1"></i>F1</span></div>
           </div>
           <div class="calgrid" id="calGrid"></div>
         </div>
@@ -888,16 +893,37 @@ $("#cfgSave").addEventListener("click", async () => {
 /* ================= Calendario 日历 ================= */
 let calY = 0, calM = 0, calSel = "";   // 查看月份与选中日（YYYY-MM-DD）
 const WD_ZH = ["一", "二", "三", "四", "五", "六", "日"];
+const HOLIDAYS = {};                    // year -> [{name,date,isOffDay}]（服务端 holiday-cn 缓存）
+let holidaysAsked = {};
+function ensureHolidaysFront(year) {
+  if (HOLIDAYS[year] || holidaysAsked[year]) return;
+  holidaysAsked[year] = true;
+  api("GET", "/api/workbench/holidays?year=" + year).then(r => {
+    HOLIDAYS[year] = r.days || [];
+    renderCalendar();
+  }).catch(() => {});
+}
+function holidayMap(year) {
+  const m = {};
+  (HOLIDAYS[year] || []).forEach(h => { m[h.date] = h; });
+  return m;
+}
 function renderCalendar() {
   if (!calY) {
     const t = new Date();
     calY = t.getFullYear(); calM = t.getMonth(); calSel = dstr(t);
   }
+  ensureHolidaysFront(calY);
+  const holMap = holidayMap(calY);
   $("#calTitle").textContent = calY + " 年 " + (calM + 1) + " 月";
   const today = dstr(new Date());
   const map = {};
-  LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0 }).log++; });
-  MEMOS.forEach(m => { const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0 }); c.memo++; if (!m.done) c.memoOpen++; });
+  LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }).log++; });
+  MEMOS.forEach(m => { const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.memo++; if (!m.done) c.memoOpen++; });
+  (WB.f1 && WB.f1.races || []).forEach(r => {
+    if (r.date) { const c = (map[r.date] = map[r.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.f1 = c.f1 || { name: r.raceName, sprint: false }; }
+    if (r.sprint) { const c = (map[r.sprint] = map[r.sprint] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.f1 = c.f1 || { name: r.raceName, sprint: true }; }
+  });
   const first = new Date(calY, calM, 1);
   const offset = (first.getDay() + 6) % 7;             // 周一为第一列
   const daysInMonth = new Date(calY, calM + 1, 0).getDate();
@@ -907,15 +933,21 @@ function renderCalendar() {
     const dObj = new Date(calY, calM, i - offset + 1);
     const ds = dstr(dObj);
     const out = dObj.getMonth() !== calM;
+    const hol = holMap[ds];
+    const holHtml = hol ? (hol.isOffDay
+      ? '<span class="hol">' + esc(hol.name.replace(/节$/, "")) + "</span>"
+      : '<span class="ban">班</span>') : "";
     const c = map[ds];
     let dots = "";
     if (c) {
       dots = '<span class="caldots">' +
         (c.log ? '<i class="cdot log"></i>' : "") +
-        (c.memo ? '<i class="cdot ' + (c.memoOpen ? "memo" : "memodone") + '"></i>' : "") + "</span>";
+        (c.memo ? '<i class="cdot ' + (c.memoOpen ? "memo" : "memodone") + '"></i>' : "") +
+        (c.f1 ? '<i class="cdot f1"></i>' : "") + "</span>";
     }
     html += '<button type="button" class="calday' + (out ? " out" : "") + (ds === today ? " today" : "") +
-      (ds === calSel ? " sel" : "") + '" data-calday="' + ds + '"><b>' + dObj.getDate() + "</b>" + dots + "</button>";
+      (ds === calSel ? " sel" : "") + (hol && hol.isOffDay ? " off" : "") + '" data-calday="' + ds + '">' +
+      '<span class="calhead"><b>' + dObj.getDate() + "</b>" + holHtml + "</span>" + dots + "</button>";
   }
   $("#calGrid").innerHTML = html;
   renderCalDetail();
@@ -925,7 +957,16 @@ function renderCalDetail() {
   const wd = WD_ZH[(dObj.getDay() + 6) % 7];
   const logs = LOG.filter(e => e.date === calSel);
   const memos = MEMOS.filter(m => m.date === calSel);
+  const races = (WB.f1 && WB.f1.races) || [];
+  const f1Today = races.filter(r => r.date === calSel || r.sprint === calSel);
   let html = "<h4>" + (dObj.getMonth() + 1) + "月" + dObj.getDate() + "日 · 星期" + wd + (calSel === dstr(new Date()) ? " · 今天" : "") + "</h4>";
+  const hol = holidayMap(calY)[calSel];
+  if (hol) html += '<div class="dim small">' + (hol.isOffDay ? "节假日：" : "调休补班：") + esc(hol.name) + "</div>";
+  if (f1Today.length) {
+    html += '<div class="dsec">F1 赛历</div>';
+    html += f1Today.map(r => '<div class="drow"><i class="cdot f1"></i><span>🏎 ' + esc(r.raceName) +
+      (r.sprint === calSel ? " · 冲刺赛" : " · 正赛") + (r.locality ? " · " + esc(r.locality) : "") + "</span></div>").join("");
+  }
   html += '<div class="dsec">已完成的工作</div>';
   html += logs.length ? logs.map(l => '<div class="drow"><i class="cdot log"></i><span>' + esc(l.text) + "</span></div>").join("")
     : '<div class="dim small">这一天没有工作记录</div>';
