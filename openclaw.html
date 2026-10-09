@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>OpenClaw 个人 AI 中枢 · El Taller de Andres</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cellipse cx='32' cy='42' rx='11' ry='9' fill='%23ff9d2e'/%3E%3Cellipse cx='18' cy='28' rx='5' ry='7' fill='%23ffd9a3'/%3E%3Cellipse cx='32' cy='24' rx='5' ry='7.5' fill='%23ffd9a3'/%3E%3Cellipse cx='46' cy='28' rx='5' ry='7' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.hero-row{display:flex;gap:28px;align-items:center;margin:30px 0 20px;flex-wrap:wrap}
+.hero-row .icon{width:150px;height:150px;border-radius:34px;flex:none;
+  background:linear-gradient(145deg,#3a1e0a,#241006);
+  border:1px solid rgba(255,255,255,.25);box-shadow:0 22px 50px rgba(0,0,0,.5);
+  display:grid;place-items:center}
+.hero-row .icon svg{width:88px;height:88px}
+.ahead{flex:1;min-width:260px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 8px}
+.ahead .sub{font-size:14.5px;color:var(--g-dim)}
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article p{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 92%,transparent);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul,.article ol{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 92%,transparent);margin:4px 0}
+.article blockquote{border-left:3px solid color-mix(in srgb,var(--g-accent) 55%,transparent);background:color-mix(in srgb,var(--g-tint) 10%,transparent);padding:14px 20px;border-radius:14px;margin:16px 0}
+.article blockquote p{color:var(--g-dim);font-size:13.5px;margin:2px 0}
+.article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;min-width:0}
+.article table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+.article th{background:color-mix(in srgb,var(--g-accent) 18%,transparent);color:var(--g-accent-soft);font-weight:600;text-align:left}
+.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:9px 13px;vertical-align:top;line-height:1.7}
+.article td{color:color-mix(in srgb,var(--g-text) 92%,transparent)}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.tl{position:relative;margin:20px 0 6px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 60%,transparent),color-mix(in srgb,var(--g-accent) 15%,transparent))}
+.tl .ti{position:relative;padding:0 0 20px}
+.tl .ti:last-child{padding-bottom:4px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--g-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--g-accent) 18%,transparent)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 88%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.banlist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0 6px}
+.ban{display:flex;align-items:center;gap:9px;font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px;
+  padding:9px 13px;border-radius:10px;background:rgba(214,69,69,.10);border:1px solid rgba(214,69,69,.28);color:color-mix(in srgb,var(--g-text) 88%,transparent)}
+.ban .x{flex:none;width:16px;height:16px;border-radius:50%;background:rgba(214,69,69,.85);display:grid;place-items:center;font-family:var(--g-font);font-size:10px;font-weight:800;color:#fff}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:color-mix(in srgb,var(--g-text) 70%,transparent)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} .banlist{grid-template-columns:1fr} .hero-row .icon{width:110px;height:110px;border-radius:26px} .hero-row .icon svg{width:64px;height:64px} }
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller de Andres</b></div>
+      </div>
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <a class="btn-ghost" href="index.html">← 回工坊</a>
+    </header>
+
+    <div class="hero-row">
+      <div class="icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <ellipse cx="32" cy="44" rx="12" ry="10" fill="#ff9d2e"/>
+          <ellipse cx="16" cy="28" rx="5.5" ry="7.5" fill="#ffd9a3"/>
+          <ellipse cx="32" cy="23" rx="5.5" ry="8" fill="#ffd9a3"/>
+          <ellipse cx="48" cy="28" rx="5.5" ry="7.5" fill="#ffd9a3"/>
+        </svg>
+      </div>
+      <div class="ahead">
+        <span class="eyebrow">El Mayordomo · AI personal</span>
+        <h1>OpenClaw 个人 AI 中枢</h1>
+        <div class="sub">自托管 · 飞书即控制台 · 全国产模型矩阵 · 一台 Mac 承载全部</div>
+      </div>
+    </div>
+
+    <article class="article g-glass">
+      <h2>缘起与主张</h2>
+      <p>重度 AI 使用者的一天，入口是散的：笔记在一个 App、消息在飞书、代码在编辑器、日程在系统里。<b>OpenClaw</b>（MIT 开源、单操作者定位的个人 AI 助手框架，官方口号 "The AI that really does things"）提供了另一种可能——把这一切收进一台自己说了算的机器：Mac 当服务器，聊天软件当控制台，模型、记忆、技能、定时任务全部自己部署、自己审计。</p>
+      <blockquote><p><b>主张：AI 中枢的第一性问题是边界，不是能力。</b>部署这份实例时，花在「禁止它做什么」上的心思不比「让它做什么」少——本文最后一节就是这份边界清单。</p></blockquote>
+
+      <h2>部署架构</h2>
+      <div class="tw"><table>
+        <tr><th style="width:24%">层</th><th>做法</th></tr>
+        <tr><td>服务形态</td><td>launchd 常驻服务（<code>ai.openclaw.gateway</code>）：开机自启、崩溃自动拉起，不需要任何人登录守护；版本 OpenClaw 2026.9.6</td></tr>
+        <tr><td>网关</td><td>本地模式监听 <code>18789</code>，<b>只绑定回环地址</b>（loopback）+ token 认证——公网上摸不到这个端口；远程隧道（Tailscale）默认关闭</td></tr>
+        <tr><td>Web 控制台</td><td>浏览器打开网关即得：会话管理、终端、cron 面板、配置审计，暗色主题开箱即用</td></tr>
+        <tr><td>聊天渠道</td><td>飞书 <b>WebSocket 长连接</b>接入——出站连接即可工作，家用 Mac 不需要公网 IP、域名和证书；私聊白名单仅两个账号，群聊同样白名单制</td></tr>
+        <tr><td>语音</td><td>MiniMax 语音合成（中文音色），日报类消息可直接听</td></tr>
+      </table></div>
+
+      <h2>模型矩阵：全国产 + 一个协议统一接入</h2>
+      <p>四家供应商全部通过 <b>Anthropic 兼容协议</b>（个别走 OpenAI 兼容）接进同一张路由表，配置里只写 baseURL 和模型清单，切换供应商不动架构：</p>
+      <div class="tw"><table>
+        <tr><th style="width:26%">角色</th><th style="width:30%">模型</th><th>说明</th></tr>
+        <tr><td>主力</td><td>GLM-5.3-Flash</td><td>日常对话、工具调用的默认档，性价比优先</td></tr>
+        <tr><td>兜底</td><td>DeepSeek Chat</td><td>主力不可用时自动接管的 fallback 档</td></tr>
+        <tr><td>备选</td><td>MiniMax M3 / M2.7</td><td>M3 支持 100 万 token 上下文与视频输入，留给长材料任务</td></tr>
+        <tr><td>备选</td><td>Kimi K2.6</td><td>轻量快答档</td></tr>
+        <tr><td>周边能力</td><td>搜索 / TTS / 向量</td><td>网页搜索用 MiniMax，语音用 MiniMax，记忆向量化用智谱 embedding-3</td></tr>
+      </table></div>
+      <p>另有一道 <b>modelPolicy 白名单</b>：只有清单内的模型允许被调用，Agent 自己「想换模型」是不行的。</p>
+
+      <h2>记忆与人格：会做梦的助手</h2>
+      <ul>
+        <li><b>五份人格档案</b>：workspace 里放着 IDENTITY（身份）、SOUL（性格）、USER（对主人的认知）、MEMORY（工作记忆）、DREAMS（目标）五份 Markdown——它知道自己是谁、为谁工作。</li>
+        <li><b>向量记忆库</b>：embedding-3 驱动的语义检索，说过的话存得下、找得回。</li>
+        <li><b>每日 03:00 记忆整理</b>（Memory Dreaming）：夜里自动归档、去重、沉淀当日对话，第二天醒来记忆更干净。</li>
+        <li><b>心跳每 2 小时</b>（08:00–23:00 活跃时段）：只做自检与待办巡览，设为不主动发消息——安静是美德。</li>
+      </ul>
+
+      <h2>技能矩阵</h2>
+      <p>官方内置的 60 多个 skill 裁剪到只开 3 个，另在 workspace 自建十余个——<b>表面积越小越安全</b>。代表性的几个：</p>
+      <div class="tw"><table>
+        <tr><th style="width:30%">技能</th><th>做什么</th></tr>
+        <tr><td>得到大脑（Get 笔记）</td><td>直连得到 App「Get 笔记」开放平台：往聊天里发链接、图片说「记一下」自动入笔记；可搜索、可管理知识库。skill 里写死了<b>反幻觉边界</b>——禁止编造笔记 ID、异步任务必须轮询到终态、没真正调 API 不许说「已保存」</td></tr>
+        <tr><td>飞书全家桶</td><td>云文档 / 云盘 / 知识库 / 权限四个 skill，AI 能替我读写飞书文档</td></tr>
+        <tr><td>浏览器自动化 + Canvas</td><td>可控的网页操作与画布渲染，海报、截图类任务的执行手</td></tr>
+        <tr><td>数据面</td><td>金融数据（tushare）、宏观经济指标监控（FRED）、1Password 集成</td></tr>
+        <tr><td>内容与决策面</td><td>新闻扫描、公众号文章、长文阅读、暗知识、数字分身、人生决策辅助等自建技能</td></tr>
+      </table></div>
+
+      <h2>cron 自动化：七个常驻任务</h2>
+      <div class="tw"><table>
+        <tr><th style="width:34%">任务</th><th style="width:24%">节奏</th><th>送达</th></tr>
+        <tr><td>日终新闻扫描</td><td>每日 20:30</td><td>飞书私聊</td></tr>
+        <tr><td>全球局势晨报</td><td>每日凌晨</td><td>飞书群</td></tr>
+        <tr><td>家人晨间问候</td><td>每日 08:00</td><td>飞书私聊</td></tr>
+        <tr><td>数字分身定期训练</td><td>每周五</td><td>飞书私聊</td></tr>
+        <tr><td>技能集合周检</td><td>每 7 天</td><td>本地（自检报告）</td></tr>
+        <tr><td>记忆整理 Memory Dreaming</td><td>每日 03:00</td><td>本地</td></tr>
+        <tr><td>心跳自检</td><td>每 2 小时（活跃时段内）</td><td>本地</td></tr>
+      </table></div>
+      <p>新闻、局势、问候、训练四类任务都是「凌晨跑批、清晨送达」——AI 在我睡觉时干活，我醒来时结论已在聊天列表里。</p>
+
+      <h2>安全与隐私：边界清单</h2>
+      <p>这是整份部署里我最看重的部分。三层边界，全部写进配置，不靠模型自觉：</p>
+      <p><b>网络层</b>——网关只绑回环地址 + token 认证，没有任何入站端口暴露在局域网之外；飞书走出站 WebSocket；远程访问隧道默认关闭。</p>
+      <p><b>会话层</b>——私聊与群聊均为白名单制，名单之外的消息一律不理；笔记类技能内置隐私规则，群聊里不展示私人笔记内容。</p>
+      <p><b>设备层</b>——八条敏感命令直接进 deny 列表，摄像头、录屏、通讯录、日历、提醒事项、短信，AI 从协议层就碰不到：</p>
+      <div class="banlist">
+        <div class="ban"><span class="x">✕</span>camera.snap（拍照）</div>
+        <div class="ban"><span class="x">✕</span>camera.clip（录像）</div>
+        <div class="ban"><span class="x">✕</span>screen.record（录屏）</div>
+        <div class="ban"><span class="x">✕</span>contacts.add（写通讯录）</div>
+        <div class="ban"><span class="x">✕</span>calendar.add（写日历）</div>
+        <div class="ban"><span class="x">✕</span>reminders.add（写提醒）</div>
+        <div class="ban"><span class="x">✕</span>sms.send（发短信）</div>
+        <div class="ban"><span class="x">✕</span>sms.search（读短信）</div>
+      </div>
+      <blockquote><p><b>本页也过了一遍同样的关。</b>上站前清掉了所有密钥、应用 ID、账号标识与家人信息，你在这页看到的每一个数字与名字，都是「可以公开的那部分」。</p></blockquote>
+
+      <h2>开发时间轴</h2>
+      <div class="tl">
+        <div class="ti"><span class="td">2026-09-24 · Day 1</span><b>一个上午完成部署</b><p>官方向导 + <code>doctor</code> 体检跑通：launchd 服务就位、网关监听 18789、模型矩阵接入。当天 workspace 骨架与首批配置全部生成。</p></div>
+        <div class="ti"><span class="td">2026-09-24 起 · 第一周</span><b>飞书接入与技能铺开</b><p>飞书 WebSocket 渠道打通，私聊/群聊白名单上线；得到大脑（Get 笔记）skill 完成；浏览器自动化、飞书文档全家桶逐步挂载。</p></div>
+        <div class="ti"><span class="td">2026-09-28</span><b>心跳调优</b><p>心跳从默认改为每 2 小时、限定活跃时段、静默模式（不主动发消息）；向量记忆与 Memory Dreaming 例程稳定运行。</p></div>
+        <div class="ti"><span class="td">2026-10-08</span><b>配置刷新</b><p>服务环境与配置整体更新一次，launchd 服务连续运行无中断；cron 七任务全部绿灯。</p></div>
+        <div class="ti"><span class="td">2026-10-09</span><b>部署案例上站</b><p>以第 9 件作品进 El Taller 作品集（本页），脱敏后作为自托管 AI 中枢的部署范本。</p></div>
+      </div>
+
+      <blockquote><p>框架是开源的，模型是租来的，只有「部署的判断」是自己的——把哪个口子打开、把哪个口子焊死，才是个人 AI 工程师真正的作品。</p></blockquote>
+      <div class="chips">
+        <span class="chip">OpenClaw 2026.9.6</span><span class="chip">launchd 常驻</span><span class="chip">loopback + token</span><span class="chip">飞书 WebSocket</span><span class="chip">GLM · DeepSeek · MiniMax · Kimi</span><span class="chip">向量记忆</span><span class="chip">cron × 7</span><span class="chip">敏感命令 deny 列表</span>
+      </div>
+    </article>
+
+    <div class="endnote"><a href="index.html">← 回工坊</a> · 框架开源主页 openclaw.ai / github.com/openclaw/openclaw · El Taller de Andres</div>
+  </div>
+</div>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "glmKey": "在这里填入你的GLM_API_Key（open.bigmodel.cn 控制台获取，同一把 Key 用于额度查询/标题翻译/arXiv选文/周总结）",
+  "glmUrl": "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+  "biliCookie": "SESSDATA=xxx; buvid3=xxx  (浏览器登录B站→F12→网络→任意bilibili请求→请求头Cookie整串复制)",
+  "biliUps": [
+    { "uid": "520155988", "name": "示例UP主一" },
+    { "uid": "90183256", "name": "示例UP主二" }
+  ],
+  "arxivProfile": "- 方向一：关键词描述\n- 方向二：关键词描述\n(供 arXiv 五段选文的画像打分用, 工作台 Ajustes 里也可改)"
+}

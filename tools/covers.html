@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+/* 封面产线：900×450 × 3，浏览器截图后 sips 转 jpg 覆盖 assets/ 旧图。
+   本文件留在 tools/ 供以后新卡复用：加一个 .cover 段落 → 截图 → sips。 */
+*{margin:0;padding:0;box-sizing:border-box}
+::-webkit-scrollbar{width:0;height:0}
+html{scrollbar-width:none}
+body{background:#111;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow-x:hidden}
+.cover{width:900px;height:450px;position:relative;overflow:hidden;color:#fff6ec}
+.cover .eyebrow{font-size:15px;letter-spacing:5px;text-transform:uppercase;color:#ff9d2e;font-weight:600}
+.cover h1{font-size:44px;font-weight:650;letter-spacing:1px;line-height:1.2;margin:14px 0 10px;white-space:nowrap}
+.cover .sub{font-size:20px;color:rgba(255,240,228,.75)}
+.cover .chips{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+.cover .chip{font-size:15px;padding:8px 18px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,240,228,.85)}
+.cover .glow{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none}
+.cover .txt{position:absolute;left:490px;top:104px;width:392px}
+
+/* ── Kindle · 墨水屏设备 + 纸白仪表盘 ── */
+#k{background:radial-gradient(80% 110% at 82% 4%,rgba(255,150,45,.30),transparent 58%),linear-gradient(150deg,#46250e,#30190a 52%,#1a0c04)}
+#k .dev{position:absolute;left:84px;top:56px;width:300px;height:338px;border-radius:26px;background:#15100a;
+  border:1px solid rgba(255,255,255,.22);box-shadow:0 26px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);padding:14px}
+#k .scr{width:100%;height:100%;border-radius:12px;background:linear-gradient(160deg,#f7f3e8,#ece6d6);padding:20px 22px;color:#241d12}
+#k .row{display:flex;justify-content:space-between;align-items:baseline}
+#k .temp{font-size:44px;font-weight:750;letter-spacing:-1px}
+#k .wxt{font-size:15px;font-weight:600;margin-top:2px}
+#k .clk{font-size:46px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+#k .dt{font-size:12.5px;font-weight:600;opacity:.75;margin-top:2px}
+#k .sep{height:2px;background:#241d12;opacity:.75;margin:14px 0}
+#k .lab{font-size:13px;font-weight:750}
+#k .bar{height:14px;border-radius:3px;margin-top:6px;background:repeating-linear-gradient(135deg,#3a3226 0 7px,#b8b0a0 7px 11px)}
+#k .bar.dim{opacity:.55}
+#k .foot{font-size:12px;font-weight:600;opacity:.75;margin-top:10px}
+#k h1{font-size:36px}
+
+/* ── GLM 挂件 · 玻璃小窗 + 绿色进度 ── */
+#g{background:radial-gradient(70% 100% at 14% 12%,rgba(57,217,138,.22),transparent 55%),radial-gradient(50% 70% at 92% 88%,rgba(255,150,45,.20),transparent 58%),linear-gradient(152deg,#0f1d16,#0a1410 55%,#060b09)}
+#g .wg{position:absolute;left:88px;top:104px;width:352px;height:242px;border-radius:20px;
+  background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.26);box-shadow:0 26px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22);padding:18px 22px}
+#g .hd{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:650;color:rgba(255,246,236,.9)}
+#g .hd .live{width:9px;height:9px;border-radius:50%;background:#39d98a;box-shadow:0 0 10px rgba(57,217,138,.8)}
+#g .hd .win{margin-left:auto;font-size:11px;color:rgba(255,246,236,.5)}
+#g .mrow{margin-top:16px}
+#g .mrow .t{display:flex;justify-content:space-between;font-size:14px;color:rgba(255,246,236,.82);font-weight:600}
+#g .tr{height:13px;border-radius:7px;background:rgba(255,255,255,.10);margin-top:7px;overflow:hidden}
+#g .fill{height:100%;border-radius:7px;background:linear-gradient(90deg,#39d98a,#1fa763)}
+#g .fill.w{width:70%} #g .fill.w2{width:42%;background:linear-gradient(90deg,#7bd9a8,#3f9c6e)}
+#g .srcs{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+#g .srcs span{font-size:12px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:rgba(255,246,236,.7)}
+
+/* ── 海报产线 · 半成品 → 成品 双联 ── */
+#p{background:radial-gradient(80% 110% at 78% 6%,rgba(255,205,120,.24),transparent 56%),linear-gradient(150deg,#3f2210,#2b160a 52%,#170b04)}
+#p .po{position:absolute;width:172px;height:216px;border-radius:8px;background:#f7eedc;box-shadow:0 22px 46px rgba(0,0,0,.5);overflow:hidden}
+#p .po .tag{position:absolute;right:10px;top:10px;width:44px;height:16px;border-radius:3px;background:#3e2b1c}
+#p .po .no{position:absolute;left:10px;top:12px;font-size:9px;font-weight:750;color:#3e2b1c;opacity:.75}
+#p .po .t1{position:absolute;left:10px;top:34px;width:96px;height:15px;border-radius:3px;background:#efe4cd;border:1px solid #d8c9a8;transform:rotate(-2deg)}
+#p .po .t2{position:absolute;left:26px;top:54px;width:110px;height:15px;border-radius:3px;background:#2f6b5e;transform:rotate(2deg)}
+#p .po .mid{position:absolute;left:10px;top:80px;width:152px;height:74px;border-radius:6px;background:#fffdf6;border:1px solid #e4d9c0;display:grid;place-items:center}
+#p .po .mid .mess{width:34px;height:34px;border-radius:50%;border:4px dashed #b3a88e;background:transparent}
+#p .po .mid .ok{width:30px;height:30px;border-radius:50%;background:#2f9e63;position:absolute;right:8px;top:22px}
+#p .po .mid .ok::after{content:"";position:absolute;left:9px;top:6px;width:10px;height:15px;border-right:4px solid #fff;border-bottom:4px solid #fff;transform:rotate(40deg)}
+#p .po .ban{position:absolute;left:0;right:0;bottom:22px;height:18px;background:#3e2b1c}
+#p .po .cta{position:absolute;left:50%;bottom:4px;width:74px;height:12px;border-radius:7px;background:#2f6b5e;transform:translateX(-50%)}
+#p .po.a{left:78px;top:92px;transform:rotate(-4deg);filter:saturate(.7) brightness(.85)}
+
+/* ── 家庭英语启蒙 App · 悠悠球图标 + 黏土单词卡 ── */
+#e{background:radial-gradient(75% 105% at 20% 8%,rgba(255,170,90,.34),transparent 56%),radial-gradient(50% 70% at 92% 88%,rgba(255,110,80,.18),transparent 58%),linear-gradient(150deg,#47250e,#331a0a 52%,#1c0d05)}
+#e .icon{position:absolute;left:88px;top:92px;width:266px;height:266px;border-radius:60px;object-fit:cover;
+  border:1px solid rgba(255,255,255,.30);box-shadow:0 26px 60px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+#e .card{position:absolute;width:118px;height:142px;border-radius:14px;background:#fdfcf8;overflow:hidden;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.5)}
+#e .card img{width:100%;height:112px;object-fit:cover;display:block}
+#e .card b{display:block;text-align:center;font-size:15px;font-weight:750;color:#3a2b1a;padding-top:7px}
+#e .c1{left:356px;top:230px;transform:rotate(-6deg);z-index:5}
+#e .c2{left:250px;top:262px;transform:rotate(5deg)}
+#e h1{font-size:36px}
+#p .po.a::after{content:"";position:absolute;inset:0;border-radius:8px;background:repeating-linear-gradient(45deg,rgba(62,43,28,.10) 0 8px,transparent 8px 16px)}
+#p .po.b{left:286px;top:112px;transform:rotate(2deg)}
+#p .arrow{position:absolute;left:252px;top:186px;width:0;height:0;border-left:26px solid #ff9d2e;border-top:15px solid transparent;border-bottom:15px solid transparent;filter:drop-shadow(0 6px 14px rgba(255,157,46,.5))}
+
+/* ── OpenClaw · 玻璃控制台 + 模型矩阵 ── */
+#o{background:radial-gradient(75% 105% at 82% 10%,rgba(255,170,90,.30),transparent 56%),radial-gradient(50% 70% at 8% 90%,rgba(120,60,140,.20),transparent 58%),linear-gradient(150deg,#43230d,#2c1608 52%,#190b04)}
+#o .hub{position:absolute;left:84px;top:78px;width:340px;height:294px;border-radius:22px;
+  background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.26);box-shadow:0 26px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.22);padding:18px 20px}
+#o .hub .hd{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:650;color:rgba(255,246,236,.92)}
+#o .hub .hd .live{width:9px;height:9px;border-radius:50%;background:#39d98a;box-shadow:0 0 10px rgba(57,217,138,.8)}
+#o .hub .hd .pt{margin-left:auto;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:rgba(255,246,236,.5)}
+#o .msg{max-width:82%;border-radius:14px;padding:10px 14px;font-size:13px;line-height:1.55;margin-top:14px}
+#o .msg.u{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);color:rgba(255,246,236,.9);border-bottom-right-radius:4px}
+#o .msg.a{background:linear-gradient(150deg,rgba(255,157,46,.34),rgba(201,106,18,.26));border:1px solid rgba(255,200,140,.32);color:#ffe9d2;border-bottom-left-radius:4px}
+#o .msg.a .ok{color:#7be6a8;font-weight:700}
+#o .mods{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+#o .mods span{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:rgba(255,246,236,.75)}
+#o .mods span.lead{background:rgba(255,157,46,.22);border-color:rgba(255,180,90,.4);color:#ffd9a3}
+#o .cron{position:absolute;right:22px;top:-34px;display:flex;gap:7px}
+#o .cron i{width:8px;height:8px;border-radius:50%;background:rgba(255,214,163,.85);opacity:.85}
+#o .cron i:nth-child(2){opacity:.55} #o .cron i:nth-child(3){opacity:.3}
+#o h1{font-size:36px}
+</style>
+</head>
+<body>
+
+<div class="cover" id="k">
+  <div class="glow" style="width:340px;height:340px;right:-100px;bottom:-130px;background:rgba(255,150,45,.32)"></div>
+  <div class="dev"><div class="scr">
+    <div class="row"><div><div class="temp">28°</div><div class="wxt">多云 · 体感 31°</div></div>
+      <div style="text-align:right"><div class="clk">10:25</div><div class="dt">2026-09-15 周二</div></div></div>
+    <div class="sep"></div>
+    <div class="lab">GLM 用量 · 剩 85%</div><div class="bar"></div>
+    <div class="lab" style="margin-top:10px">本周 · 剩 44%</div><div class="bar dim"></div>
+    <div class="foot">上海 · 西北风 1 级 · 5 分钟后刷新</div>
+  </div></div>
+  <div class="txt">
+    <div class="eyebrow">Kindle Renovado</div>
+    <h1>Kindle 墨水屏信息看板</h1>
+    <div class="sub">2013 年旧机 · 常驻桌面仪表盘</div>
+    <div class="chips"><span class="chip">越狱</span><span class="chip">KUAL</span><span class="chip">FBInk</span><span class="chip">抗鬼影</span></div>
+  </div>
+</div>
+
+<div class="cover" id="g">
+  <div class="glow" style="width:340px;height:340px;right:-110px;top:-130px;background:rgba(57,217,138,.22)"></div>
+  <div class="wg">
+    <div class="hd"><span class="live"></span>GLM 额度<span class="win">置顶 · 贴边隐藏</span></div>
+    <div class="mrow"><div class="t"><span>今日 5h 档</span><span>剩 85%</span></div><div class="tr"><div class="fill w"></div></div></div>
+    <div class="mrow"><div class="t"><span>本周</span><span>剩 44%</span></div><div class="tr"><div class="fill w2"></div></div></div>
+    <div class="srcs"><span>Anthropic 动态</span><span>B 站订阅</span><span>上海油价</span></div>
+  </div>
+  <div class="txt">
+    <div class="eyebrow">Widget de escritorio</div>
+    <h1>GLM 用量桌面挂件</h1>
+    <div class="sub">一屏盯额度，后台线程不卡 UI</div>
+    <div class="chips"><span class="chip">PowerShell</span><span class="chip">WPF</span><span class="chip">watchdog 自愈</span></div>
+  </div>
+</div>
+
+<div class="cover" id="p">
+  <div class="glow" style="width:340px;height:340px;left:-110px;bottom:-130px;background:rgba(255,157,46,.30)"></div>
+  <div class="po a">
+    <div class="tag"></div><div class="no">No.0?</div>
+    <div class="t1"></div><div class="t2"></div>
+    <div class="mid"><div class="mess"></div><div class="ok"></div></div>
+    <div class="ban"></div><div class="cta"></div>
+  </div>
+  <div class="arrow"></div>
+  <div class="po b">
+    <div class="tag"></div><div class="no">No.01 / 6</div>
+    <div class="t1"></div><div class="t2"></div>
+    <div class="mid"><div class="mess"></div><div class="ok"></div></div>
+    <div class="ban"></div><div class="cta"></div>
+  </div>
+  <div class="txt">
+    <div class="eyebrow">Línea de pósters</div>
+    <h1>AI 海报批量产线</h1>
+    <div class="sub">AI 底图 → 裁切 → 套版，一次六张</div>
+    <div class="chips"><span class="chip">CogView</span><span class="chip">HTML 套版</span><span class="chip">自动化</span></div>
+  </div>
+</div>
+
+<div class="cover" id="e">
+  <div class="glow" style="width:340px;height:340px;right:-100px;bottom:-120px;background:rgba(255,140,80,.30)"></div>
+  <img class="icon" src="assets/kids/icon-yoyo.jpg" alt="">
+  <div class="card c2"><img src="assets/kids/w_moon.jpg" alt=""><b>moon</b></div>
+  <div class="card c1"><img src="assets/kids/w_cat.jpg" alt=""><b>cat</b></div>
+  <div class="txt">
+    <div class="eyebrow">Inglés para niños</div>
+    <h1>家庭英语启蒙 App</h1>
+    <div class="sub">六年规划 · 1600 词 · AI 内容工厂</div>
+    <div class="chips"><span class="chip">SwiftUI</span><span class="chip">SRS 引擎</span><span class="chip">iPhone 真机</span></div>
+  </div>
+</div>
+<div class="cover" id="o">
+  <div class="glow" style="width:340px;height:340px;right:-100px;bottom:-130px;background:rgba(255,150,45,.30)"></div>
+  <div class="hub">
+    <div class="cron"><i></i><i></i><i></i></div>
+    <div class="hd"><span class="live"></span>OpenClaw 网关在线<span class="pt">:18789</span></div>
+    <div class="msg u">把这篇文章存进笔记，明早八点给我新闻摘要</div>
+    <div class="msg a"><span class="ok">✓</span> 已存入知识库 · 新闻扫描排入 20:30 的 cron</div>
+    <div class="mods"><span class="lead">GLM 主力</span><span>DeepSeek 兜底</span><span>MiniMax</span><span>Kimi</span></div>
+  </div>
+  <div class="txt">
+    <div class="eyebrow">El Mayordomo · AI personal</div>
+    <h1>OpenClaw 个人 AI 中枢</h1>
+    <div class="sub">自托管 · 飞书即控制台 · 敏感命令硬禁</div>
+    <div class="chips"><span class="chip">launchd 常驻</span><span class="chip">向量记忆</span><span class="chip">cron × 7</span></div>
+  </div>
+</div>
+
+</body>
+</html>

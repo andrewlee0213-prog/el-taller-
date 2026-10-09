@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>海报六连 · El Taller de Andres</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(1120px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.top .back{margin-left:auto}
+.btn-ghost{border:0;cursor:pointer;font-family:inherit;border-radius:999px;transition:.25s;text-decoration:none;
+  padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16)}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+
+.section-head{display:flex;align-items:baseline;gap:16px;margin:34px 0 10px}
+.section-head .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.section-head h2{font-size:24px;font-weight:650}
+.lead{font-size:14px;line-height:1.9;color:color-mix(in srgb,var(--g-text) 75%,transparent);max-width:760px;margin:6px 0 26px}
+.lead b{color:var(--g-accent-soft);font-weight:600}
+
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;min-width:0}
+.pcard{border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.15);text-decoration:none;display:block;position:relative;
+  background:linear-gradient(155deg,var(--g-card-hi),var(--g-card-lo));
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);transition:.3s}
+.pcard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--g-accent-soft) 35%,transparent);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.pcard img{width:100%;display:block;aspect-ratio:1025/1280;object-fit:cover}
+.pcard .cap{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:12.5px;color:var(--g-dim)}
+.pcard .cap b{color:var(--g-text);font-weight:600;font-size:13px}
+.pcard .cap span{color:var(--g-accent-soft)}
+
+.method{margin:40px 0 10px;border-radius:26px;padding:26px 30px;
+  background:linear-gradient(155deg,var(--g-card-hi),var(--g-card-lo));
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.15)}
+.method h3{font-size:16.5px;font-weight:600;margin-bottom:12px}
+.method p{font-size:13.5px;line-height:1.9;color:color-mix(in srgb,var(--g-text) 75%,transparent);margin:6px 0}
+.method .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.method .chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.tl{position:relative;margin:14px 0 4px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 55%,transparent),color-mix(in srgb,var(--g-accent) 10%,transparent))}
+.tl .ti{position:relative;padding:0 0 18px}
+.tl .ti:last-child{padding-bottom:2px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--g-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--g-accent) 16%,transparent)}
+.tl .ti.fix::before{background:#39d98a;box-shadow:0 0 0 4px rgba(57,217,138,.16)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 75%,transparent)}
+
+.footer{margin:60px 0 0;padding:26px 0 34px;text-align:center}
+.footer .motto{font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-dim)}
+@media (max-width:680px){ .pgrid{grid-template-columns:1fr} .method{padding:20px} .section-head h2{font-size:20px} }
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+  --g-blob1:rgba(80,170,255,.30); --g-blob2:rgba(120,220,255,.18);
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+  --g-blob1:rgba(90,215,140,.26); --g-blob2:rgba(230,200,90,.14);
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+  --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass,.g-card,.enlace{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
+.g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller de Andres</b></div>
+      </div>
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <a class="btn-ghost back" href="index.html">← 回工坊</a>
+    </header>
+
+    <section>
+      <div class="section-head">
+        <span class="eyebrow">Serie de pósters</span>
+        <h2>海报六连 · Agent 不迷路计划</h2>
+      </div>
+      <p class="lead">
+        「AI 海报批量产线」的一套完整成品：同一版式、同一母题、同一配色，六张讲完一个产品故事。
+        母题是<b>索引卡与藏书票</b>——知识库业务的票据感物件；墨绿藏书色压重、米黄纸纹打底、一个高饱和焦点色只给标题与 CTA。
+        点击任意一张看原图。
+      </p>
+
+      <div class="pgrid">
+        <a class="pcard" href="assets/posters/poster-01.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-01.png" alt="海报 01 · 收藏夹一百篇，不如读透一本" loading="lazy">
+          <div class="cap"><b>No.01 收藏夹一百篇，不如读透一本</b><span>立认知</span></div>
+        </a>
+        <a class="pcard" href="assets/posters/poster-02.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-02.png" alt="海报 02 · 黑话多得像天书，它带你讲人话" loading="lazy">
+          <div class="cap"><b>No.02 黑话多得像天书，它带你讲人话</b><span>卖点：白话对照</span></div>
+        </a>
+        <a class="pcard" href="assets/posters/poster-03.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-03.png" alt="海报 03 · 评审像玩找不同，清单帮你交卷" loading="lazy">
+          <div class="cap"><b>No.03 评审像玩找不同，清单帮你交卷</b><span>卖点：避坑清单</span></div>
+        </a>
+        <a class="pcard" href="assets/posters/poster-04.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-04.png" alt="海报 04 · 汇报只报用了啥，改报测出什么" loading="lazy">
+          <div class="cap"><b>No.04 汇报只报用了啥，改报测出什么</b><span>卖点：成果导向</span></div>
+        </a>
+        <a class="pcard" href="assets/posters/poster-05.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-05.png" alt="海报 05 · Demo 一上就翻车，九成不在模型" loading="lazy">
+          <div class="cap"><b>No.05 Demo 一上就翻车，九成不在模型</b><span>卖点：工程兜底</span></div>
+        </a>
+        <a class="pcard" href="assets/posters/poster-06.png" target="_blank" rel="noreferrer">
+          <img src="assets/posters/poster-06.png" alt="海报 06 · AI 快到追不上，先把底座打牢" loading="lazy">
+          <div class="cap"><b>No.06 AI 快到追不上，先把底座打牢</b><span>情绪收尾</span></div>
+        </a>
+      </div>
+
+      <div class="method">
+        <h3>这套图怎么来的</h3>
+        <p>底图由 CogView 按「留白文字区」策略批量生成——AI 直出中文大字必乱码，所以全部文字后期用 HTML 模板套版渲染，保真度最高；水印裁切、批渲染全流程脚本化，一次跑完六张。</p>
+        <p>版式是固定的六槽位：品牌区 / 双条斜叠标题 / Before→After 主视觉 / 三徽章 / 金句横幅 / CTA。全系列只有四个槽位在变，骨架永不重开。方法论与批量生成规范都写在工坊日志里。</p>
+        <div class="chips">
+          <span class="chip">六槽位版式</span><span class="chip">索引卡母题</span><span class="chip">墨绿×米黄×焦点色</span>
+          <span class="chip">CogView 底图</span><span class="chip">HTML 套版</span><span class="chip">1025×1280</span>
+        </div>
+      </div>
+    </section>
+
+      <div class="method">
+        <h3>开发时间轴</h3>
+        <div class="tl">
+          <div class="ti"><span class="td">病例期</span><b>首套系列长出方法论</b><p>订票助手系列海报跑通「六槽位 + 批量生成」雏形——方法论从个案中长出来，个案成了后文的「病例」。</p></div>
+          <div class="ti"><span class="td">2026-09-24</span><b>Seed 知识手册六连</b><p>设计决策表推导（索引卡母题 / 墨绿藏书色）→ CogView 底图 → 水印裁切 → HTML 套版，六张一次跑完，验收 6/6——就是本页这六张。</p></div>
+          <div class="ti fix"><span class="td">2026-09-24 · 关键坑</span><b>AI 直出中文大字必乱码</b><p>文字交给生成模型就变形。对策：出图时留白文字区，全部文字走 HTML 模板后期套版——保真度最高，从此成为产线铁律。</p></div>
+          <div class="ti"><span class="td">2026-09-24</span><b>方法论固化</b><p>《通用适配篇》与《Agent 运行规范》沉淀成文，产线打包为 ZCode Skill（四阶段：访谈 → 决策表 → 样图 → 批量）。</p></div>
+          <div class="ti"><span class="td">2026-09-25</span><b>上站</b><p>海报六连详情页上线，作品卡直链本页。</p></div>
+        </div>
+      </div>
+
+    <footer class="footer">
+      <div class="motto">Hecho a mano, pieza a pieza</div>
+    </footer>
+  </div>
+</div>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>

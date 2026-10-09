@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>La Biblioteca · 个人 AI 学习知识库</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 18h10v36H14zM28 18h10v36H28zM42 20l10-2 4 34-10 2z' fill='%23ff9d2e'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-pillactive:rgba(58,32,15,.68); --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.stage{position:relative;min-height:100vh;overflow-x:hidden}
+.stage::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 90%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(1180px,94vw);margin:0 auto;padding-top:26px}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+
+.top{display:flex;align-items:center;gap:16px;padding-bottom:18px}
+.back{display:inline-flex;align-items:center;gap:8px;color:var(--g-dim);text-decoration:none;font-size:13px;
+  padding:9px 16px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);transition:.25s}
+.back:hover{color:var(--g-text)}
+.brand{margin-right:auto}
+.brand b{font-size:17px;font-weight:600;display:block}
+.brand small{font-size:11px;color:var(--g-dim);letter-spacing:2px;text-transform:uppercase}
+.search{display:flex;align-items:center;gap:10px;height:42px;padding:0 16px;border-radius:999px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);width:min(320px,40vw)}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--g-text);font:inherit;font-size:13px}
+.search input::placeholder{color:var(--g-dim)}
+.search svg{width:16px;height:16px;stroke:var(--g-dim);stroke-width:2;fill:none;stroke-linecap:round}
+
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:22px;align-items:start;padding-bottom:40px}
+.sidebar{border-radius:28px;padding:16px 14px;position:sticky;top:20px;max-height:calc(100vh - 44px);overflow-y:auto;min-width:0}
+.book-tabs{display:flex;gap:6px;padding:5px;border-radius:999px;background:rgba(255,255,255,.07);margin-bottom:14px}
+.book-tab{flex:1;padding:9px 6px;border-radius:999px;border:0;background:transparent;color:var(--g-dim);
+  font-family:inherit;font-size:12.5px;cursor:pointer;transition:.25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.book-tab.on{background:var(--g-pillactive);color:var(--g-text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.toc-head{padding:6px 10px 10px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+.toc-head b{font-size:13.5px;display:block;line-height:1.5}
+.toc-head small{font-size:11px;color:var(--g-dim);line-height:1.6;display:block;margin-top:3px}
+.toc{list-style:none}
+.toc button{display:flex;width:100%;text-align:left;gap:10px;align-items:baseline;border:0;background:transparent;
+  color:var(--g-dim);font-family:inherit;font-size:13px;padding:10px 10px;border-radius:12px;cursor:pointer;transition:.2s;line-height:1.5}
+.toc button:hover{color:var(--g-text);background:rgba(255,255,255,.06)}
+.toc button.on{color:var(--g-text);background:var(--g-pillactive);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.toc .no{flex:none;font-size:11px;color:var(--g-accent);opacity:.9;min-width:20px;font-variant-numeric:tabular-nums}
+.toc-hint{padding:14px 10px;font-size:11.5px;color:var(--g-dim);line-height:1.7}
+
+.article{border-radius:32px;padding:38px 44px 46px;min-height:480px;min-width:0}
+.article .crumb{font-size:11.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-accent);font-weight:600;margin-bottom:10px}
+.article h1{font-size:26px;font-weight:650;line-height:1.35;margin-bottom:18px}
+.article .body{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 88%,transparent)}
+.article .body h3{font-size:18px;font-weight:600;margin:30px 0 12px;color:var(--g-accent-soft)}
+.article .body h4{font-size:15.5px;font-weight:600;margin:24px 0 10px}
+.article .body p{margin:10px 0}
+.article .body strong{color:var(--g-accent-soft)}
+.article .body code{font-size:.9em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.article .body pre.kb-pre{background:rgba(15,8,3,.55);border:1px solid rgba(255,255,255,.10);border-radius:14px;
+  padding:16px 18px;overflow-x:auto;margin:14px 0;font-size:12.5px;line-height:1.7}
+.article .body pre.kb-pre code{background:none;padding:0;color:var(--g-accent-soft)}
+.article .body blockquote{border-left:3px solid var(--g-accent);background:color-mix(in srgb,var(--g-accent) 7%,transparent);
+  padding:12px 16px;border-radius:0 12px 12px 0;margin:14px 0;color:var(--g-dim);font-size:13.5px;line-height:1.8}
+.article .body ul,.article .body ol{padding-left:24px;margin:10px 0}
+.article .body li{margin:6px 0}
+.article .body table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13px;line-height:1.7}
+.article .body th{background:color-mix(in srgb,var(--g-accent) 13%,transparent);color:var(--g-accent-soft);font-weight:600}
+.article .body th,.article .body td{border:1px solid rgba(255,255,255,.13);padding:9px 12px;text-align:left;vertical-align:top}
+.article .body hr{border:0;height:1px;background:rgba(255,255,255,.12);margin:26px 0}
+.search-results{padding:6px 10px;font-size:11.5px;color:var(--g-dim)}
+.search-results b{color:var(--g-accent-soft)}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static;max-height:none}
+  .article{padding:26px 20px 34px}
+  .search{width:100%}
+  .top{flex-wrap:wrap}
+}
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+  --g-blob1:rgba(80,170,255,.30); --g-blob2:rgba(120,220,255,.18);
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+  --g-blob1:rgba(90,215,140,.26); --g-blob2:rgba(230,200,90,.14);
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+  --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass,.g-card,.enlace{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
+.g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <a class="back" href="index.html">← Taller</a>
+      <div class="brand"><b>La Biblioteca</b><small>Estudio · 个人 AI 学习知识库</small></div>
+<div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input type="text" id="searchBox" placeholder="搜索章节与知识点…">
+      </label>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar g-glass">
+        <div class="book-tabs" id="bookTabs"></div>
+        <div class="toc-head"><b id="bookTitle"></b><small id="bookDesc"></small></div>
+        <ul class="toc" id="toc"></ul>
+        <div class="toc-hint" id="tocHint">💡 内容为个人学习笔记，请勿外传。素材更新后经维护机制并入。</div>
+      </aside>
+      <main class="article g-glass">
+        <div class="crumb" id="crumb"></div>
+        <h1 id="chapterTitle"></h1>
+        <div class="body" id="chapterBody"></div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script src="kb-data.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let bookIdx = 0, chapterIdx = 0;
+
+function saveState(){ try{ localStorage.setItem('kb-state', JSON.stringify({b:bookIdx,c:chapterIdx})); }catch(e){} }
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem('kb-state')||'null');
+    if (s && window.KB.books[s.b] && window.KB.books[s.b].chapters[s.c]) return s;
+  }catch(e){}
+  return null;
+}
+
+function renderBookList(filter){
+  const box = $('#toc'); box.innerHTML = '';
+  const results = $('#tocHint');
+  if (filter){
+    const kw = filter.toLowerCase();
+    const hits = [];
+    window.KB.books.forEach((b,bi)=>b.chapters.forEach((c,ci)=>{
+      const inTitle = c.title.toLowerCase().includes(kw);
+      const pos = c.text.toLowerCase().indexOf(kw);
+      if (inTitle || pos >= 0){
+        let snip = '';
+        if (!inTitle && pos >= 0){
+          const start = Math.max(0, c.text.length && pos > 40 ? pos - 40 : 0);
+          snip = '…' + c.text.substr(start, 90).trim() + '…';
+        }
+        hits.push({bi, ci, title:c.title, snip, inTitle});
+      }
+    }));
+    results.innerHTML = '找到 <b>' + hits.length + '</b> 个匹配章节';
+    box.innerHTML = hits.map(h=>{
+      const b = window.KB.books[h.bi];
+      return '<li><button data-b="'+h.bi+'" data-c="'+h.ci+'"><span class="no">'+(h.bi+1)+'.'+(h.ci+1)+'</span><span><div>'+h.title+'</div>'+(h.snip?'<small style="opacity:.65;font-size:11px;line-height:1.5;display:block;margin-top:3px">'+h.snip+'</small>':'')+'</span></button></li>';
+    }).join('') || '<li class="search-results">没有匹配的章节</li>';
+  } else {
+    const b = window.KB.books[bookIdx];
+    results.textContent = '共 ' + b.chapters.length + ' 章';
+    box.innerHTML = b.chapters.map((c,ci)=>
+      '<li><button data-b="'+bookIdx+'" data-c="'+ci+'" class="'+(ci===chapterIdx?'on':'')+'"><span class="no">'+String(ci).padStart(2,'0')+'</span><span>'+c.title+'</span></button></li>'
+    ).join('');
+  }
+  box.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+    bookIdx = +btn.dataset.b; chapterIdx = +btn.dataset.c;
+    $('#searchBox').value = ''; renderAll(); saveState();
+  }));
+}
+
+function renderChapter(){
+  const b = window.KB.books[bookIdx], c = b.chapters[chapterIdx];
+  $('#crumb').textContent = b.es + ' · ' + (chapterIdx+1) + ' / ' + b.chapters.length;
+  $('#chapterTitle').textContent = c.title;
+  $('#chapterBody').innerHTML = c.html;
+  window.scrollTo(0,0);
+}
+
+const TABS = { 'agent-handbook': '📘 Manual', 'interview-bank': '📙 Preguntas' };
+function renderBookTabs(){
+  $('#bookTabs').innerHTML = window.KB.books.map((b,bi)=>
+    '<button class="book-tab'+(bi===bookIdx?' on':'')+'" data-b="'+bi+'">'+(TABS[b.id]||b.es)+'</button>').join('');
+  $('#bookTabs').querySelectorAll('.book-tab').forEach(t=>t.addEventListener('click',()=>{
+    bookIdx = +t.dataset.b; chapterIdx = 0; renderAll(); saveState();
+  }));
+  const b = window.KB.books[bookIdx];
+  $('#bookTitle').textContent = b.title;
+  $('#bookDesc').textContent = b.desc;
+}
+
+function renderAll(){ renderBookTabs(); renderBookList($('#searchBox').value.trim()); renderChapter(); }
+
+$('#searchBox').addEventListener('input', e=>{
+  const v = e.target.value.trim();
+  renderBookList(v);
+  if (v) $('#chapterTitle').textContent = '搜索「'+v+'」';
+});
+
+/* 未登录（kb-data.js 被 401 拦截）→ 去登录 */
+(function boot(){
+  if (!window.KB){ location.href = 'login.html?next=%2Fkb.html'; return; }
+  const s = loadState();
+  if (s){ bookIdx = s.b; chapterIdx = s.c; }
+  renderAll();
+})();
+</script>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>

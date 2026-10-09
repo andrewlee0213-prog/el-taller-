@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<title>Kindle 墨水屏信息看板 · El Taller de Andres</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
+  --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
+  --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,var(--g-glow-a),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,var(--g-glow-b),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,var(--g-glow-c),transparent 65%),
+    linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.hero-img{border-radius:30px;overflow:hidden;margin:30px 0 22px;border:1px solid rgba(255,255,255,.15);box-shadow:0 34px 90px rgba(0,0,0,.45)}
+.hero-img img{width:100%;display:block}
+.ahead{margin:6px 0 18px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 12px}
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article p{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:4px 0}
+.article blockquote{border-left:3px solid color-mix(in srgb,var(--g-accent) 50%,transparent);background:color-mix(in srgb,var(--g-tint) 6%,transparent);padding:14px 20px;border-radius:14px;margin:16px 0}
+.article blockquote p{color:var(--g-dim);font-size:13.5px;margin:2px 0}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.tl{position:relative;margin:20px 0 6px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 55%,transparent),color-mix(in srgb,var(--g-accent) 10%,transparent))}
+.tl .ti{position:relative;padding:0 0 20px}
+.tl .ti:last-child{padding-bottom:4px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--g-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--g-accent) 16%,transparent)}
+.tl .ti.fix::before{background:#39d98a;box-shadow:0 0 0 4px rgba(57,217,138,.16)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 75%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:color-mix(in srgb,var(--g-text) 40%,transparent)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} }
+
+/* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
+html[data-theme="oceano"]{
+  --g-accent:#4fb3ff; --g-accent-soft:#a9ddff; --g-accent-deep:#1f6fb2; --g-accent-mid:#2b8ad4; --g-on-accent:#052540;
+  --g-text:#edf6ff; --g-dim:rgba(226,241,255,.60);
+  --g-glass-hi:rgba(105,150,198,.36); --g-glass-lo:rgba(38,74,112,.32);
+  --g-card-hi:rgba(212,237,255,.13); --g-card-lo:rgba(168,214,250,.06);
+  --g-pillactive:rgba(12,36,58,.68); --g-tint:#d4edff;
+  --g-glow-a:rgba(80,170,255,.24); --g-glow-b:rgba(28,88,148,.30); --g-glow-c:rgba(64,190,190,.14);
+  --g-bg-1:#0d2f4e; --g-bg-2:#0a2136; --g-bg-3:#050f1c; --g-bg-base:#081826;
+  --g-blob1:rgba(80,170,255,.30); --g-blob2:rgba(120,220,255,.18);
+}
+html[data-theme="bosque"]{
+  --g-accent:#4ed08a; --g-accent-soft:#b6eeca; --g-accent-deep:#1e8a50; --g-accent-mid:#2aa765; --g-on-accent:#042614;
+  --g-text:#eefff4; --g-dim:rgba(226,246,236,.60);
+  --g-glass-hi:rgba(105,160,125,.36); --g-glass-lo:rgba(40,88,60,.32);
+  --g-card-hi:rgba(214,245,226,.13); --g-card-lo:rgba(176,234,204,.06);
+  --g-pillactive:rgba(14,42,27,.68); --g-tint:#d6f5e2;
+  --g-glow-a:rgba(90,215,140,.20); --g-glow-b:rgba(26,105,60,.28); --g-glow-c:rgba(210,180,70,.10);
+  --g-bg-1:#123524; --g-bg-2:#0d2418; --g-bg-3:#06120b; --g-bg-base:#081a10;
+  --g-blob1:rgba(90,215,140,.26); --g-blob2:rgba(230,200,90,.14);
+}
+html[data-theme="crepusculo"]{
+  --g-accent:#b18cff; --g-accent-soft:#ddc9ff; --g-accent-deep:#7a52d6; --g-accent-mid:#9268e8; --g-on-accent:#1a0e38;
+  --g-text:#f5f1ff; --g-dim:rgba(238,232,255,.60);
+  --g-glass-hi:rgba(150,125,195,.38); --g-glass-lo:rgba(72,52,115,.32);
+  --g-card-hi:rgba(230,222,255,.13); --g-card-lo:rgba(205,185,250,.06);
+  --g-pillactive:rgba(36,20,60,.68); --g-tint:#e6deff;
+  --g-glow-a:rgba(170,120,255,.22); --g-glow-b:rgba(88,52,150,.30); --g-glow-c:rgba(220,90,170,.12);
+  --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
+  --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
+}
+body{transition:background-color .35s}
+
+/* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
+.g-glass,.g-card,.enlace{position:relative}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
+  border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+.g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
+  backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
+.g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
+    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  mix-blend-mode:screen}
+.g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
+
+/* ---- 主题切换圆点 ---- */
+.g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
+.themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+.tdot:hover{transform:scale(1.18)}
+.tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
+@media (max-width:680px){ .themedots{display:none} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller de Andres</b></div>
+      </div>
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+      </div>
+      <a class="btn-ghost" href="index.html">← 回工坊</a>
+    </header>
+
+    <div class="hero-img"><img src="assets/cover-kindle.jpg" alt="Kindle 墨水屏信息看板实拍"></div>
+
+    <div class="ahead">
+      <span class="eyebrow">Kindle Renovado · 旧物新生</span>
+      <h1>Kindle 墨水屏信息看板</h1>
+    </div>
+
+    <article class="article g-glass">
+      <p>一台 2013 年的 Kindle Paperwhite，在抽屉里吃了多年灰。它的电子墨水屏却恰恰是做「常驻信息看板」的完美材料：反光显示、强光下更清晰、静止时零功耗、不发光不刺眼。于是把它从书架上救了下来，改造成桌面上常亮的仪表盘。</p>
+
+      <h2>改造了什么</h2>
+      <ul>
+        <li><b>越狱 + 自研 KUAL 扩展</b>：绕过原厂阅读器的限制，让 Kindle 开机直接进入看板程序，无需任何人为操作。</li>
+        <li><b>FBInk 直接写屏</b>：绕开图形栈，直接往墨水屏帧缓冲上渲染文字与版式，轻到可以在老设备上流畅运行。</li>
+        <li><b>四个信息模块</b>：时钟、上海天气、GLM 用量额度、科技快讯——都是抬眼就能看一眼的信息。</li>
+        <li><b>5 分钟自刷新</b>：定时拉新数据重绘版面，信息永远新鲜，但人可以完全不管它。</li>
+        <li><b>抗鬼影</b>：墨水屏的特性是残影会累积，定时插入一次全刷清屏，长年挂着也不花。</li>
+      </ul>
+
+      <h2>为什么值得做</h2>
+      <p>市面上的信息看板要么是一块费电的平板，要么是一张会过期的打印纸。墨水屏卡在中间刚刚好：常显、省电、无蓝光，而一台十年前的旧设备本来就是闲置成本。<b>改造完成后它彻底不依赖 PC</b>——通电、联网、自己转，像一件家具一样待在桌面上。</p>
+      <h2>开发时间轴</h2>
+      <p style="font-size:13px;color:color-mix(in srgb,var(--g-text) 55%,transparent)">（项目在旧机上完成，逐日记录未随迁移保留——以下按里程碑回溯）</p>
+      <div class="tl">
+        <div class="ti"><span class="td">里程碑一</span><b>越狱解锁</b><p>破解 2013 年 Kindle Paperwhite 的系统限制，通过 KUAL 扩展框架拿到常驻运行与开机自启能力——改造的地基。</p></div>
+        <div class="ti"><span class="td">里程碑二</span><b>渲染管线</b><p>弃用图形栈，改用 FBInk 直接写墨水屏帧缓冲：渲染轻到老硬件流畅运行，版式完全自主可控。</p></div>
+        <div class="ti"><span class="td">里程碑三</span><b>数据模块</b><p>时钟、上海天气、GLM 用量额度、科技快讯四个模块陆续接入，看板从「能显示」变成「有用」。</p></div>
+        <div class="ti"><span class="td">里程碑四</span><b>自主运转</b><p>5 分钟定时自刷新 + 开机自启打通，彻底摆脱「连电脑才能更新」——它从此是一件家具，不是一台设备。</p></div>
+        <div class="ti fix"><span class="td">里程碑五 · 问题修复</span><b>墨水屏残影累积</b><p>局部刷新用久了残影叠加、画面发花。对策：定时插入一次全刷清屏，用极短的闪屏换常年干净——抗鬼影机制从此常驻。</p></div>
+      </div>
+
+      <blockquote><p>旧物改造的乐趣在于：硬件是别人的成熟设计，软件是自己的从零到一。这台 Kindle 现在的第二春，比它前十年当阅读器的时候忙得多。</p></blockquote>
+      <div class="chips">
+        <span class="chip">硬件改造</span><span class="chip">越狱</span><span class="chip">KUAL</span><span class="chip">KOReader</span><span class="chip">FBInk</span><span class="chip">Shell</span><span class="chip">墨水屏</span>
+      </div>
+    </article>
+
+    <div class="endnote"><a href="index.html">← 回工坊</a> · El Taller de Andres</div>
+  </div>
+</div>
+<script>
+/* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
+(function(){
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.tdot'));
+  function apply(t){
+    if (t === 'naranja') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+  }
+  var cur = 'naranja';
+  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  apply(cur);
+  dots.forEach(function(d){ d.addEventListener('click', function(){
+    cur = d.dataset.themeDot;
+    try { localStorage.setItem('taller-theme', cur); } catch(_){}
+    apply(cur);
+  }); });
+})();
+</script>
+</body>
+</html>

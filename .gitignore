@@ -1,0 +1,6 @@
+# 运行时/敏感数据：绝不入库（新机部署按 deploy/DEPLOY.md 单独创建）
+data/
+# 60MB 验收截图存档
+tools/shots/
+*.log
+.DS_Store
