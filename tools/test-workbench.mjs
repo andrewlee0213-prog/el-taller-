@@ -171,6 +171,36 @@ try {
   check("命中率进入 glm.hit", r.json.data.glm && r.json.data.glm.hit && r.json.data.glm.hit.day === 88.8,
     JSON.stringify((r.json.data.glm || {}).hit));
 
+  /* ---- ICS 日历订阅源（先造一条备忘再验证内容） ---- */
+  cookie = "";
+  r = await req("GET", "/api/workbench/calendar.ics");
+  check("无 token 订阅 → 401", r.status === 401, r.status);
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  await req("POST", "/api/workbench/memos", { date: "2026-10-20", text: "ICS订阅测试备忘" });
+  let icsRes = await fetch(BASE + "/api/workbench/calendar.ics?token=" + pushToken);
+  let icsText = await icsRes.text();
+  check("带 token 订阅 → VCALENDAR", icsRes.status === 200 && icsText.includes("BEGIN:VCALENDAR"), icsRes.status);
+  check("订阅含备忘事件", icsText.includes("备忘：ICS订阅测试备忘"), icsText.slice(0, 200));
+
+  /* ---- 节假日 + F1（真实数据源，需网络） ---- */
+  r = await req("GET", "/api/workbench/holidays?year=2026");
+  check("节假日 holiday-cn 拉取", r.json && r.json.year === 2026 && Array.isArray(r.json.days) && r.json.days.length > 5,
+    JSON.stringify(r.json).slice(0, 120));
+  await req("POST", "/api/workbench/refresh", { section: "f1" });
+  let f1ok = false;
+  for (let i = 0; i < 15; i++) {
+    await new Promise(rs => setTimeout(rs, 3000));
+    const d = await req("GET", "/api/workbench/data");
+    if ((d.json.data.f1 || {}).ok) { f1ok = true; break; }
+  }
+  check("F1 赛程抓取（Jolpica）", f1ok, "45s 内未完成");
+  if (f1ok) {
+    icsRes = await fetch(BASE + "/api/workbench/calendar.ics?token=" + pushToken);
+    icsText = await icsRes.text();
+    check("订阅含 F1 赛事", icsText.includes("🏎 F1 "), icsText.slice(0, 150));
+  }
+
   /* ---- 备忘记事（日历数据源） ---- */
   r = await req("POST", "/api/workbench/memos", { date: "2026-10-15", text: "测试备忘：交周报" });
   check("新增备忘", r.json && r.json.ok && r.json.memo.id, JSON.stringify(r.json));
