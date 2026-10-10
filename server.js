@@ -1711,7 +1711,10 @@ const server = http.createServer(async (req, res) => {
       const expect = String(wbCfg.collectToken || "");
       const a = Buffer.from(tok), b = Buffer.from(expect);
       if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
-      const body = await readJson(req);
+      /* 回传的 md 可达数百 KB，readJson 只吃 16KB —— 走 raw body 再解析 */
+      let body;
+      try { body = JSON.parse((await readRawBody(req, 700 * 1024)).toString("utf8")); }
+      catch { json(res, 400, { ok: false, error: "bad json / body 超过 700KB" }); return log(400); }
       const it = kbCollect.items.find(i => i.id === String(body.id || ""));
       if (!it) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
       if (it.state !== "pending") { json(res, 409, { ok: false, error: "该任务已处理过（" + it.state + "）" }); return log(409); }
