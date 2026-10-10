@@ -249,6 +249,8 @@ function loadKb() {
 const KB_UPLOAD_DIR = path.join(DATA, "kb-uploads");
 const KB_UPLOAD_FILE = path.join(DATA, "kb-uploads.json");
 let kbUploads = loadJson(KB_UPLOAD_FILE, {});
+/* 待处理队列上线前的旧上传一律视为已看过（站主主动收的），不回灌工作台 */
+for (const u of Object.values(kbUploads)) if (!u.state) u.state = "keep";
 const kbUploadEsc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function kbMdInline(s) {
   let t = kbUploadEsc(s);
@@ -378,20 +380,20 @@ function kbUploadBooks() {
         cached = kbUploadParsed[u.id] = { chapters, intro: parsed.intro };
       }
       return { id: "up-" + u.id, title: u.title.replace(/\.md$/i, ""), es, desc: "上传收录 · " + new Date(u.at).toLocaleDateString(),
-        intro: cached.intro, chapters: cached.chapters, uploaded: true };
+        intro: cached.intro, chapters: cached.chapters, uploaded: true, note: u.note || "" };
     }
     return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: "上传收录 · PDF 原文",
       intro: "PDF 原文内嵌查看（浏览器原生渲染）。",
       chapters: [{ id: "pdf", title: "查看 PDF 原文",
         html: '<iframe src="/api/kb/file/' + u.file + '" style="width:100%;height:72vh;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;background:var(--g-bg-base)"></iframe>' +
           '<p style="margin-top:10px"><a href="/api/kb/file/' + u.file + '" target="_blank" rel="noopener">↗ 新窗口打开 / 下载</a></p>',
-        text: "" }], uploaded: true };
+        text: "" }], uploaded: true, note: u.note || "" };
   }).filter(b => b.chapters.length > 0);
 }
 /* 目录（不含正文）：藏书成百上千时 kb-data.js 也只有几十 KB；正文按需 /api/kb/chapter */
 function kbCatalog() {
   return kbAllBooks().map(b => ({
-    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded,
+    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, note: b.note || "",
     chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
   }));
 }
@@ -1582,9 +1584,37 @@ const server = http.createServer(async (req, res) => {
       const id = "u" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36);
       const file = id + ext;
       fs.writeFileSync(path.join(KB_UPLOAD_DIR, file), buf);
-      kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now() };
+      kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now(), state: "new" };
       saveJson(KB_UPLOAD_FILE, kbUploads);
       json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
+      return log(200);
+    }
+
+    /* 待处理队列：keep=要（留库）/ discard=不要（删书删文件）/ note=写了评论（算看过，附站主笔记） */
+    if (p === "/api/kb/triage" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const body = await readJson(req);
+      const e = kbUploads[String(body.id || "")];
+      const act = String(body.act || "");
+      if (!e || !["keep", "discard", "note"].includes(act)) { json(res, 400, { ok: false, error: "bad request" }); return log(400); }
+      if (act === "discard") {
+        try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
+        delete kbUploadParsed[e.id];
+        delete kbUploads[e.id];
+        saveJson(KB_UPLOAD_FILE, kbUploads);
+        json(res, 200, { ok: true, discarded: true });
+        return log(200);
+      }
+      if (act === "note") {
+        const note = String(body.note || "").trim().slice(0, 500);
+        if (!note) { json(res, 400, { ok: false, error: "评论内容为空" }); return log(400); }
+        e.note = note;
+      }
+      e.state = "keep";
+      e.readAt = Date.now();
+      saveJson(KB_UPLOAD_FILE, kbUploads);
+      json(res, 200, { ok: true, id: e.id });
       return log(200);
     }
 
@@ -1649,10 +1679,15 @@ const server = http.createServer(async (req, res) => {
       if (ws.r !== "admin") { json(res, 403, { error: "forbidden" }); return log(403); }
 
       if (p === "/api/workbench/data" && req.method === "GET") {
+        const upBooks = kbUploadBooks();
         json(res, 200, {
           cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
           data: wbCache,
           dislikes: wbDislikes,
+          kbInbox: Object.values(kbUploads).filter(u => u.state === "new").sort((a, b) => a.at - b.at).map(u => {
+            const b = upBooks.find(x => x.id === "up-" + u.id);
+            return { id: u.id, title: u.title, type: u.type, at: u.at, chapters: b ? b.chapters.length : 0 };
+          }),
           sched: Object.fromEntries(Object.entries(wbSched).map(([k, s]) => [k, { busy: s.busy, nextAt: s.nextAt }])),
           now: Date.now(),
         });

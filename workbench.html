@@ -219,6 +219,11 @@ html[data-theme="crepusculo"]{
 .panel h3 small{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-accent);margin-right:8px}
 textarea.big{width:100%;min-height:74px;resize:vertical;border-radius:14px;padding:11px 13px;font:inherit;font-size:12.5px;
   color:var(--g-text);background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);outline:0;line-height:1.7}
+/* Biblioteca 待处理行：评论输入 + 三种出队动作 */
+.kinrow{display:flex;gap:6px;margin-top:6px}
+.kinpt{flex:1;min-width:0;height:28px;border-radius:999px;padding:0 12px;font:inherit;font-size:11.5px;color:var(--g-text);
+  background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);outline:0}
+.kinpt:focus{border-color:var(--g-accent)}
 textarea.big:focus{border-color:color-mix(in srgb,var(--g-accent) 55%,transparent)}
 textarea.big::placeholder{color:var(--g-dim)}
 input.date{height:34px;border-radius:999px;padding:0 14px;font:inherit;font-size:12.5px;color:var(--g-text);
@@ -450,6 +455,12 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
           <button class="rfbtn" data-sec="arxiv" title="重新选文（五段漏斗，约 1 分钟）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody ilist" id="arxivBody"><span class="dim">等待首抓…</span></div>
       </div>
+
+      <div class="g-card wbcard" id="card-kbin" style="--c:#8b7cf6">
+        <div class="chead"><span class="cbar"></span><b>Biblioteca 待处理</b>
+          <span class="upd" id="kbinUpd"></span></div>
+        <div class="cbody ilist" id="kbinBody"><span class="dim">…</span></div>
+      </div>
     </div>
 
     <!-- ============ Calendario 日历 ============ -->
@@ -554,6 +565,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SRC_LABEL = { bili: "B站", anth: "Anthropic", arxiv: "arXiv" };
 
 let CFG = null, WB = null, SCHED = null, LOG = [], CMT = {}, DIS = {}, MEMOS = [], WEEKLY = { weeks: {}, current: { start: "", end: "" } };
+let INBOX = [];   // Biblioteca 待处理（state=new 的上传）
 
 function toast(msg) {
   const t = $("#toast");
@@ -775,6 +787,45 @@ function renderArxiv() {
     return itemRowHtml(a.url, a.url, t, esc(a.why || ""), "arxiv", a.zh);
   }).join("") + "</div>" + (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
 }
+/* ================= Biblioteca 待处理（上传材料巡检） ================= */
+function renderKbInbox() {
+  const body = $("#kbinBody"), upd = $("#kbinUpd");
+  upd.textContent = INBOX.length ? INBOX.length + " 份待看" : "";
+  if (!INBOX.length) { body.innerHTML = '<span class="dim">✓ 上传的材料都看过啦 —— 点过 要 / 不要 或写过评论的不再出现</span>'; return; }
+  body.innerHTML = INBOX.map(u =>
+    '<div class="item"><div class="l1"><a class="it" href="kb.html#b=up-' + esc(u.id) + '&c=0" target="_blank" rel="noopener" title="去 Biblioteca 阅读">' +
+    esc(u.title.replace(/\.(md|pdf)$/i, "")) + '</a>' +
+    '<button class="icmt" data-kin="' + esc(u.id) + '" data-act="keep" title="要：留在 Biblioteca">✅</button>' +
+    '<button class="icmt dsl" data-kin="' + esc(u.id) + '" data-act="discard" title="不要：从 Biblioteca 删除，文件一并移除">🗑</button></div>' +
+    '<span class="imeta">' + (u.type === "pdf" ? "PDF 原文" : "MD · " + u.chapters + " 章") + " · 上传于 " + hm(u.at) + "</span>" +
+    '<div class="kinrow"><input class="kinpt" type="text" data-kinnote="' + esc(u.id) + '" placeholder="写一句评论（回车提交，算看过）" maxlength="200">' +
+    '<button class="bmini" data-kin="' + esc(u.id) + '" data-act="note" title="保存评论并出队">💬</button></div></div>').join("");
+}
+async function kbTriage(btn) {
+  const id = btn.dataset.kin, act = btn.dataset.act;
+  let note = "";
+  if (act === "note") {
+    const inp = btn.closest(".kinrow").querySelector("input");
+    note = inp ? inp.value.trim() : "";
+    if (!note) { toast("评论内容为空"); if (inp) inp.focus(); return; }
+  }
+  if (act === "discard" && !confirm("不要这份材料？将从 Biblioteca 删除，文件一并移除。")) return;
+  btn.disabled = true;
+  const r = await api("POST", "/api/kb/triage", { id, act, note });
+  btn.disabled = false;
+  if (!r.ok) { toast(r.error || "操作失败"); return; }
+  INBOX = INBOX.filter(u => u.id !== id);
+  renderKbInbox();
+}
+document.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const inp = e.target;
+  if (inp && inp.matches && inp.matches("input[data-kinnote]")) {
+    const btn = inp.closest(".kinrow").querySelector("[data-act=note]");
+    if (btn) btn.click();
+  }
+});
+
 function renderPanelHint() {
   const busyList = ["arxiv"].filter(k => SCHED && SCHED[k] && SCHED[k].busy);
   $("#panelHint").textContent = busyList.length ? "arXiv 五段选文进行中，完成后自动换新" : "";
@@ -816,7 +867,8 @@ function renderWeekly() {
 
 /* ================= 评论框交互（事件委托） ================= */
 document.addEventListener("click", async e => {
-  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-dis]");
+  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-dis],[data-kin]");
+  if (tg && tg.hasAttribute("data-kin")) { kbTriage(tg); return; }
   if (!tg) return;
   if (tg.hasAttribute("data-dis")) {
     const url = tg.dataset.url;
@@ -1202,7 +1254,7 @@ function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
 }
 function renderAll() {
-  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv();
+  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderKbInbox();
   renderLog(); renderWeekly(); renderPanelHint();
   renderCalendar(); renderMemos();
 }
@@ -1215,6 +1267,7 @@ async function loadAll() {
     api("GET", "/api/workbench/memos"),
   ]);
   CFG = d.cfg; WB = d.data; SCHED = d.sched; DIS = d.dislikes || {};
+  INBOX = d.kbInbox || [];
   LOG = log.items || [];
   CMT = {};
   (cmt.items || []).forEach(c => { CMT[c.url] = c; });

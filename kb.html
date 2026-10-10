@@ -70,6 +70,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 
 .article{border-radius:32px;padding:38px 44px 46px;min-height:480px;min-width:0}
 .article .crumb{font-size:11.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-accent);font-weight:600;margin-bottom:10px}
+.article .owner-note{font-size:13px;line-height:1.7;color:var(--g-text);background:color-mix(in srgb,var(--g-tint) 55%,transparent);
+  border-left:3px solid var(--g-accent);border-radius:8px;padding:10px 14px;margin-bottom:16px;white-space:pre-wrap}
 .article h1{font-size:26px;font-weight:650;line-height:1.35;margin-bottom:18px}
 .article .body{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 88%,transparent)}
 .article .body h3{font-size:18px;font-weight:600;margin:30px 0 12px;color:var(--g-accent-soft)}
@@ -247,6 +249,7 @@ html[data-theme="negro"]{
       </aside>
       <main class="article g-glass">
         <div class="crumb" id="crumb"></div>
+        <div id="bookNote" class="owner-note" style="display:none"></div>
         <h1 id="chapterTitle"></h1>
         <div class="body" id="chapterBody"></div>
       </main>
@@ -293,6 +296,9 @@ function renderBook(){
   const b = bookById(bookId);
   document.getElementById('bookTitle').textContent = b.title;
   document.getElementById('bookDesc').textContent = b.desc || '';
+  const nb = document.getElementById('bookNote');
+  nb.style.display = b.note ? '' : 'none';
+  nb.textContent = b.note ? '📝 ' + b.note : '';
   document.getElementById('kbDel').style.display = (IS_ADMIN && b.uploaded) ? '' : 'none';
   const box = document.getElementById('toc');
   box.innerHTML = b.chapters.map((c,ci) =>

@@ -224,6 +224,44 @@ try {
   r = await req("POST", "/api/workbench/refresh", { section: "glm" });
   check("刷新指令受理", r.json && r.json.ok === true, JSON.stringify(r.json));
 
+  /* ---- Biblioteca 待处理队列（上传 → inbox → keep/note/discard 三态） ---- */
+  async function rawUpload(name, bytes) {
+    const ru = await fetch(BASE + "/api/kb/upload", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/octet-stream", "x-file-name": encodeURIComponent(name) }, cookie ? { Cookie: cookie } : {}),
+      body: bytes,
+    });
+    return { status: ru.status, json: await ru.json().catch(() => ({})) };
+  }
+  cookie = "";   // 先验证匿名守卫，再恢复 admin 会话
+  r = await req("POST", "/api/kb/triage", { id: "whatever", act: "keep" });
+  check("匿名 triage → 401", r.status === 401, r.status);
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  let up = await rawUpload("队列测试-甲.md", "# 队列甲\n\n## 一\n\n内容一\n");
+  check("上传甲 → 进库", up.json && up.json.ok && up.json.id, JSON.stringify(up.json));
+  up = await rawUpload("队列测试-乙.md", "# 队列乙\n\n## 二\n\n内容二\n");
+  check("上传乙 → 进库", up.json && up.json.ok && up.json.id);
+  r = await req("GET", "/api/workbench/data");
+  check("inbox 列出 2 份 new（含章数）", (r.json.kbInbox || []).length === 2 && r.json.kbInbox.every(u => u.chapters >= 1), JSON.stringify(r.json.kbInbox));
+  const idA = r.json.kbInbox[0].id, idB = r.json.kbInbox[1].id;
+  r = await req("POST", "/api/kb/triage", { id: idA, act: "keep" });
+  check("triage keep → 出队", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("POST", "/api/kb/triage", { id: idB, act: "note", note: "测试评论：值得留" });
+  check("triage note → 出队并记笔记", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("GET", "/api/workbench/data");
+  check("inbox 清空", (r.json.kbInbox || []).length === 0, JSON.stringify(r.json.kbInbox));
+  r = await req("GET", "/kb-data.js");
+  check("目录带站主笔记", (r.text || "").includes("测试评论：值得留"));
+  up = await rawUpload("队列测试-丙.md", "# 队列丙\n\n## 三\n\n内容三\n");
+  r = await req("POST", "/api/kb/triage", { id: up.json.id, act: "discard" });
+  check("triage discard → 删书", r.json && r.json.discarded === true, JSON.stringify(r.json));
+  r = await req("GET", "/kb-data.js");
+  check("discard 后目录移除", !(r.text || "").includes("队列测试-丙"));
+  r = await req("POST", "/api/kb/triage", { id: idA, act: "burn" });
+  check("非法 act → 400", r.status === 400, r.status);
+  r = await req("POST", "/api/kb/triage", { id: idA, act: "note", note: "   " });
+  check("空评论 → 400", r.status === 400, r.status);
+
   /* ---- BLOCKED 目录 ---- */
   cookie = "";
   r = await req("GET", "/data/server-config.json");
