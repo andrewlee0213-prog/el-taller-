@@ -249,8 +249,11 @@ function loadKb() {
 const KB_UPLOAD_DIR = path.join(DATA, "kb-uploads");
 const KB_UPLOAD_FILE = path.join(DATA, "kb-uploads.json");
 let kbUploads = loadJson(KB_UPLOAD_FILE, {});
-/* 待处理队列上线前的旧上传一律视为已看过（站主主动收的），不回灌工作台 */
-for (const u of Object.values(kbUploads)) if (!u.state) u.state = "keep";
+/* 设计修正（2026-10-10 站主反馈）：主动上传 ≠ 看过——只有点过 要/不要 或写过评论（有 readAt）的才算处置过，
+   其余一律回待处理队列。旧版迁移曾把无 state 的标成 keep，无 readAt 的 keep 一并重排（幂等）。 */
+for (const u of Object.values(kbUploads)) {
+  if (!u.state || (u.state === "keep" && !u.readAt)) u.state = "new";
+}
 
 /* ---------------- 视频收集桥（Biblioteca 提交链接 → Mac openclaw 领取 → 转录回传） ----------------
    队列存 data/kb-collect.json；pending 超 3 小时视为失败（Mac 未领取或处理卡死） */

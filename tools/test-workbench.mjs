@@ -50,6 +50,11 @@ async function waitPort(tries = 40) {
 }
 
 const tmpData = fs.mkdtempSync(path.join(os.tmpdir(), "taller-wb-test-"));
+/* 预置一条无 state 的旧上传（站主反馈 2026-10-10：主动上传≠看过，启动应重排进待处理队列） */
+fs.mkdirSync(path.join(tmpData, "kb-uploads"), { recursive: true });
+fs.writeFileSync(path.join(tmpData, "kb-uploads", "ulegacy1.md"), "# 旧上传\n\n## 一\n\n旧内容\n");
+fs.writeFileSync(path.join(tmpData, "kb-uploads.json"),
+  JSON.stringify({ ulegacy1: { id: "ulegacy1", title: "旧上传-未处置.md", file: "ulegacy1.md", type: "md", size: 24, at: Date.now() - 86400000 } }));
 console.log("临时数据目录: " + tmpData);
 console.log("测试端口: " + PORT);
 const child = spawn(NODE24, ["server.js"], {
@@ -242,12 +247,17 @@ try {
   up = await rawUpload("队列测试-乙.md", "# 队列乙\n\n## 二\n\n内容二\n");
   check("上传乙 → 进库", up.json && up.json.ok && up.json.id);
   r = await req("GET", "/api/workbench/data");
-  check("inbox 列出 2 份 new（含章数）", (r.json.kbInbox || []).length === 2 && r.json.kbInbox.every(u => u.chapters >= 1), JSON.stringify(r.json.kbInbox));
-  const idA = r.json.kbInbox[0].id, idB = r.json.kbInbox[1].id;
+  check("inbox 列出 3 份 new（预置旧上传已重排进队）", (r.json.kbInbox || []).length === 3 &&
+    r.json.kbInbox.some(u => (u.title || "").includes("旧上传")) && r.json.kbInbox.every(u => u.chapters >= 1), JSON.stringify(r.json.kbInbox));
+  const idA = r.json.kbInbox[1].id, idB = r.json.kbInbox[2].id;
   r = await req("POST", "/api/kb/triage", { id: idA, act: "keep" });
   check("triage keep → 出队", r.json && r.json.ok === true, JSON.stringify(r.json));
   r = await req("POST", "/api/kb/triage", { id: idB, act: "note", note: "测试评论：值得留" });
   check("triage note → 出队并记笔记", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("GET", "/api/workbench/data");
+  check("仅剩旧上传待处置", (r.json.kbInbox || []).length === 1 && (r.json.kbInbox[0].title || "").includes("旧上传"), JSON.stringify(r.json.kbInbox));
+  r = await req("POST", "/api/kb/triage", { id: "ulegacy1", act: "keep" });
+  check("旧上传 keep → 出队（有 readAt 后不再重排）", r.json && r.json.ok === true, JSON.stringify(r.json));
   r = await req("GET", "/api/workbench/data");
   check("inbox 清空", (r.json.kbInbox || []).length === 0, JSON.stringify(r.json.kbInbox));
   r = await req("GET", "/kb-data.js");
