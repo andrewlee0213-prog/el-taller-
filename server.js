@@ -289,6 +289,7 @@ const WB_FILE = {
   holidays: path.join(DATA, "holidays.json"),
   reader:   path.join(DATA, "workbench-reader.json"),   // 对照阅读的文章正文缓存（3 天无评论自动清除）
   biblio:   path.join(DATA, "biblioteca-articles.json"),// 评论过 → 收进 Biblioteca 的文章（永久）
+  dislikes: path.join(DATA, "workbench-dislikes.json"), // 不感兴趣：强降权 + 永不进 Biblioteca
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -645,9 +646,15 @@ function arxivPrefilter(papers, topN) {
 }
 function arxivFeedback() {
   const cut = Date.now() - 14 * 86400e3;
+  const dis = Object.values(wbDislikes).filter(d => d.source === "arxiv" && d.at >= cut);
+  let out = "";
+  if (dis.length) {
+    out += "用户明确标记「不感兴趣」的论文（同类主题一律强降权，尽量不要再推荐相近方向）：\n" +
+      dis.map(d => "-「" + String(d.title || "").slice(0, 60) + "」").join("\n") + "\n\n";
+  }
   const list = Object.values(wbComments).filter(c => c.source === "arxiv" && c.createdAt >= cut && c.text);
-  if (!list.length) return "";
-  return "用户近期阅读反馈（打分与推荐时酌情参考：用户明确喜欢的方向可加权，被批评同质或无用的方向降权）：\n" +
+  if (!list.length) return out;
+  return out + "用户近期阅读反馈（打分与推荐时酌情参考：用户明确喜欢的方向可加权，被批评同质或无用的方向降权）：\n" +
     list.map(c => "-「" + String(c.title || "").slice(0, 50) + "」：" + String(c.text).slice(0, 120)).join("\n") + "\n\n";
 }
 async function wbFetchArxiv() {
@@ -840,6 +847,7 @@ let wbNotes = loadJson(WB_FILE.notes, []);        // [{id,title,date,tags,summar
 let wbMemos = loadJson(WB_FILE.memos, []);        // [{id,date,text,done,createdAt}] 备忘记事（带日期上日历）
 let wbReader = loadJson(WB_FILE.reader, {});      // { [url]: {url,source,title,pub,paras:[[src,zh]],firstAt,fetchedAt,promotedAt} }
 let wbBiblio = loadJson(WB_FILE.biblio, {});      // { [url]: {url,id,source,title,promotedAt,html,text} } 评论过的文章进 Biblioteca
+let wbDislikes = loadJson(WB_FILE.dislikes, {});  // { [url]: {url,source,title,at} } 不感兴趣：强降权、永不进 Biblioteca
 
 /* ---------------- 节假日（holiday-cn：国务院公告口径，含调休补班；jsdelivr→raw 双源） ---------------- */
 const holidaysByYear = loadJson(WB_FILE.holidays, {});   // { 2026: [{name,date,isOffDay}] }
@@ -1067,8 +1075,10 @@ async function readerEnsureInner(url) {
   saveJson(WB_FILE.reader, wbReader);
   return e;
 }
-/* 评论过 → 文章（中英对照）+评论 收进 Biblioteca；评论改/删时同步更新条目（文章保留） */
+/* 评论过 → 文章（中英对照）+评论 收进 Biblioteca；评论改/删时同步更新条目（文章保留）
+   标过「不感兴趣」的文章永不收录 */
 async function promoteArticle(url) {
+  if (wbDislikes[url]) return;
   const e = await readerEnsure(url);
   if (!e) return;
   const c = wbComments[url];
@@ -1294,6 +1304,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 200, {
           cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
           data: wbCache,
+          dislikes: wbDislikes,
           sched: Object.fromEntries(Object.entries(wbSched).map(([k, s]) => [k, { busy: s.busy, nextAt: s.nextAt }])),
           now: Date.now(),
         });
@@ -1379,8 +1390,33 @@ const server = http.createServer(async (req, res) => {
         return log(200);
       }
 
+      if (p === "/api/workbench/dislike" && req.method === "PUT") {
+        /* 不感兴趣（可撤销）：强降权未来推荐（进 arXiv 选文 prompt）、永不进 Biblioteca、
+           已收录的立即退出、正文缓存即清 */
+        const body = await readJson(req);
+        const url = String(body.url || "").trim();
+        if (!/^https?:\/\//.test(url)) { json(res, 400, { ok: false, error: "缺少文章 URL" }); return log(400); }
+        if (body.undo) {
+          delete wbDislikes[url];
+          saveJson(WB_FILE.dislikes, wbDislikes);
+          json(res, 200, { ok: true, disliked: false });
+          return log(200);
+        }
+        wbDislikes[url] = {
+          url,
+          source: ["anth", "arxiv"].includes(body.source) ? body.source : "",
+          title: String(body.title || "").slice(0, 200),
+          at: Date.now(),
+        };
+        if (wbBiblio[url]) { delete wbBiblio[url]; saveJson(WB_FILE.biblio, wbBiblio); }
+        if (wbReader[url]) { delete wbReader[url]; saveJson(WB_FILE.reader, wbReader); }
+        saveJson(WB_FILE.dislikes, wbDislikes);
+        json(res, 200, { ok: true, disliked: true });
+        return log(200);
+      }
+
       if (p === "/api/workbench/article" && req.method === "GET") {
-        /* 对照阅读：懒加载抓正文 + GLM 逐段翻译（首次约 10~60 秒），缓存于 workbench-reader.json */
+        /* 对照阅读：正文+译文已在预取缓存就绪（首次点开兜底懒加载，约 10~30 秒） */
         const url = String(u.searchParams.get("url") || "").trim();
         if (!/^https?:\/\//.test(url)) { json(res, 400, { ok: false, error: "缺少文章 URL" }); return log(400); }
         let e = null;
