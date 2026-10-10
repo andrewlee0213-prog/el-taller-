@@ -230,6 +230,11 @@ const nextParam = (()=>{
   const n = new URLSearchParams(location.search).get('next');
   return (n && n.startsWith('/') && !n.startsWith('//')) ? n : null;
 })();
+/* kb.html 深链的 hash（如 #b=agent-handbook&c=8）会随 302 继承到本页地址栏——登录回跳时原样带回 */
+function goNext(){
+  const u = nextParam || 'index.html';
+  location.href = u.includes('#') ? u : (u + location.hash);
+}
 
 function showErr(el, text){
   el.textContent = text; el.className = 'msg err';
@@ -260,7 +265,7 @@ $('#loginForm').addEventListener('submit', async e=>{
         $('#changeForm').style.display='block';
         $('#must').style.display='block';
       } else {
-        location.href = nextParam || 'index.html';
+        goNext();
       }
     } else {
       showErr($('#msg'), j.error || '登录失败');
@@ -286,7 +291,7 @@ $('#changeForm').addEventListener('submit', async e=>{
     const j = await r.json();
     if (j.ok){
       showOk($('#msg2'), '密码已更新，正在进入…');
-      setTimeout(()=>location.href = nextParam || 'index.html', 800);
+      setTimeout(goNext, 800);
       return;
     }
     showErr($('#msg2'), j.error || '修改失败');
