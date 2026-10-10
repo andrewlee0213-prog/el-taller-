@@ -330,6 +330,16 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 .setgrid input::placeholder,.setgrid textarea::placeholder{color:var(--g-dim)}
 .setnote{grid-column:1/-1;font-size:11px;color:var(--g-dim);line-height:1.7}
 
+/* ---- 日历分类筛选 ---- */
+.calchips{display:flex;gap:4px;margin-left:2px}
+.calchip{border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--ink) 6%,transparent);
+  color:var(--g-dim);border-radius:999px;padding:3px 11px;font:inherit;font-size:11px;cursor:pointer;transition:.2s}
+.calchip.on{color:var(--g-accent);border-color:color-mix(in srgb,var(--g-accent) 45%,transparent);background:color-mix(in srgb,var(--g-accent) 12%,transparent)}
+.mtag{border:0;border-radius:6px;padding:1px 7px;font-size:10px;cursor:pointer;flex:none;font-weight:600;
+  background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.mtag.life{background:color-mix(in srgb,var(--g-accent) 14%,transparent);color:var(--g-accent)}
+.mtag:hover{filter:brightness(1.15)}
+
 /* ---- 油价卡四标号 chips（95# 高亮） ---- */
 .oilgrades{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
 .ogchip{font-size:11px;padding:2px 9px;border-radius:999px;color:var(--g-dim);
@@ -453,6 +463,11 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
             <b id="calTitle">…</b>
             <button class="calbtn" id="calNext" title="下个月">›</button>
             <button class="calbtn" id="calToday">今天</button>
+            <div class="calchips" id="calChips">
+              <button class="calchip" data-calf="all">全部</button>
+              <button class="calchip" data-calf="work">工作</button>
+              <button class="calchip" data-calf="life">生活</button>
+            </div>
             <div class="callegend"><span><i class="cdot log"></i>已完成的工作</span><span><i class="cdot memo"></i>备忘 / 计划</span><span><i class="cdot f1"></i>F1</span></div>
           </div>
           <div class="calgrid" id="calGrid"></div>
@@ -481,7 +496,7 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
             <input class="date" type="date" id="memoDate" style="flex:none">
           </div>
           <textarea class="big" id="memoText" style="min-height:52px" placeholder="要记住的事 / 待办 —— 选未来的日期就是计划，会落在日历上"></textarea>
-          <div class="crow"><button class="btn btn-hot" id="memoSave" style="padding:8px 18px;font-size:12.5px">记下</button></div>
+          <div class="crow"><button class="btn btn-hot" id="memoSave" style="padding:8px 18px;font-size:12.5px">记下</button><button class="bmini" id="memoCat" title="点击切换：这条备忘记到工作还是生活">分类：生活</button></div>
           <div class="memolist" id="memoList"></div>
         </div>
       </div>
@@ -959,6 +974,13 @@ $("#cfgSave").addEventListener("click", async () => {
 
 /* ================= Calendario 日历 ================= */
 let calY = 0, calM = 0, calSel = "";   // 查看月份与选中日（YYYY-MM-DD）
+let calFilter = "all";                   // 日历分类筛选：all / work / life
+let memoCat = "life";                    // 新建备忘的分类（表单按钮切换）
+try { calFilter = localStorage.getItem("cal-filter") || "all"; } catch (e) {}
+const memoCatOf = m => m.cat === "work" ? "work" : "life";   // 旧备忘无 cat 默认生活
+const calShowLogs = () => calFilter !== "life";
+const calShowF1 = () => calFilter !== "work";
+const calShowMemo = m => calFilter === "all" || memoCatOf(m) === calFilter;
 const WD_ZH = ["一", "二", "三", "四", "五", "六", "日"];
 const HOLIDAYS = {};                    // year -> [{name,date,isOffDay}]（服务端 holiday-cn 缓存）
 let holidaysAsked = {};
@@ -983,11 +1005,12 @@ function renderCalendar() {
   ensureHolidaysFront(calY);
   const holMap = holidayMap(calY);
   $("#calTitle").textContent = calY + " 年 " + (calM + 1) + " 月";
+  document.querySelectorAll("#calChips .calchip").forEach(c => c.classList.toggle("on", c.dataset.calf === calFilter));
   const today = dstr(new Date());
   const map = {};
-  LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }).log++; });
-  MEMOS.forEach(m => { const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.memo++; if (!m.done) c.memoOpen++; });
-  (WB.f1 && WB.f1.races || []).forEach(r => {
+  if (calShowLogs()) LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }).log++; });
+  MEMOS.forEach(m => { if (!calShowMemo(m)) return; const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.memo++; if (!m.done) c.memoOpen++; });
+  if (calShowF1()) (WB.f1 && WB.f1.races || []).forEach(r => {
     if (r.date) { const c = (map[r.date] = map[r.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); if (!c.f1) c.f1 = { name: r.raceName, sprint: false, hm: r.time || "" }; }
     if (r.sprint) { const c = (map[r.sprint] = map[r.sprint] || { log: 0, memo: 0, memoOpen: 0, f1: null }); if (!c.f1) c.f1 = { name: r.raceName, sprint: true, hm: r.sprintTime || "" }; }
   });
@@ -1022,14 +1045,14 @@ function renderCalendar() {
 function renderCalDetail() {
   const dObj = new Date(calSel + "T00:00:00");
   const wd = WD_ZH[(dObj.getDay() + 6) % 7];
-  const logs = LOG.filter(e => e.date === calSel);
-  const memos = MEMOS.filter(m => m.date === calSel);
+  const logs = calShowLogs() ? LOG.filter(e => e.date === calSel) : [];
+  const memos = MEMOS.filter(m => m.date === calSel && calShowMemo(m));
   const races = (WB.f1 && WB.f1.races) || [];
   const f1Today = races.filter(r => r.date === calSel || r.sprint === calSel);
   let html = "<h4>" + (dObj.getMonth() + 1) + "月" + dObj.getDate() + "日 · 星期" + wd + (calSel === dstr(new Date()) ? " · 今天" : "") + "</h4>";
   const hol = holidayMap(calY)[calSel];
   if (hol) html += '<div class="dim small">' + (hol.isOffDay ? "节假日：" : "调休补班：") + esc(hol.name) + "</div>";
-  if (f1Today.length) {
+  if (calShowF1() && f1Today.length) {
     html += '<div class="dsec">F1 赛历</div>';
     html += f1Today.map(r => {
       const isSprint = r.sprint === calSel && r.date !== calSel;
@@ -1040,17 +1063,24 @@ function renderCalDetail() {
         (r.locality ? " · " + esc(r.locality) : "") + "</span></div>";
     }).join("");
   }
-  html += '<div class="dsec">已完成的工作</div>';
-  html += logs.length ? logs.map(l => '<div class="drow"><i class="cdot log"></i><span>' + esc(l.text) + "</span></div>").join("")
-    : '<div class="dim small">这一天没有工作记录</div>';
+  if (calShowLogs()) {
+    html += '<div class="dsec">已完成的工作</div>';
+    html += logs.length ? logs.map(l => '<div class="drow"><i class="cdot log"></i><span>' + esc(l.text) + "</span></div>").join("")
+      : '<div class="dim small">这一天没有工作记录</div>';
+  }
   html += '<div class="dsec">备忘 / 计划</div>';
   html += memos.length ? memos.map(m => memoRowHtml(m)).join("") : '<div class="dim small">这一天没有备忘</div>';
   $("#calDetail").innerHTML = html;
 }
+function memoTagHtml(m) {
+  const cat = memoCatOf(m);
+  return '<button type="button" class="mtag' + (cat === "life" ? " life" : "") + '" data-mcat="' + m.id +
+    '" title="点击切换 工作/生活">' + (cat === "work" ? "工" : "生") + "</button>";
+}
 function memoRowHtml(m) {
   return '<div class="mrow' + (m.done ? " done" : "") + '"><button type="button" class="mchk' + (m.done ? " on" : "") +
     '" data-mchk="' + m.id + '" title="' + (m.done ? "标记未完成" : "标记完成") + '">' + (m.done ? "✓" : "") + "</button>" +
-    '<span class="mtext">' + esc(m.text) + "</span>" +
+    '<span class="mtext">' + esc(m.text) + "</span>" + memoTagHtml(m) +
     '<button type="button" class="del" data-mdel="' + m.id + '" title="删除">✕</button></div>';
 }
 function renderMemos() {
@@ -1081,7 +1111,8 @@ $("#calGrid").addEventListener("click", e => {
 $("#memoSave").addEventListener("click", async () => {
   const text = $("#memoText").value.trim();
   if (!text) { toast("写点内容再记下"); return; }
-  const r = await api("POST", "/api/workbench/memos", { text, date: $("#memoDate").value });
+  const r = await api("POST", "/api/workbench/memos", { text, date: $("#memoDate").value, cat: memoCat });
+    if (r.ok) { $("#memoCat").textContent = "分类：生活"; memoCat = "life"; }
   if (r.ok) {
     $("#memoText").value = "";
     const d = await api("GET", "/api/workbench/memos");
@@ -1090,7 +1121,27 @@ $("#memoSave").addEventListener("click", async () => {
     toast("备忘已记 ✓");
   } else toast(r.error || "记录失败");
 });
+document.getElementById("calChips").addEventListener("click", e => {
+  const c = e.target.closest("[data-calf]");
+  if (!c) return;
+  calFilter = c.dataset.calf;
+  try { localStorage.setItem("cal-filter", calFilter); } catch (_) {}
+  renderCalendar();
+});
+document.getElementById("memoCat").addEventListener("click", () => {
+  memoCat = memoCat === "life" ? "work" : "life";
+  document.getElementById("memoCat").textContent = "分类：" + (memoCat === "life" ? "生活" : "工作");
+});
 document.addEventListener("click", async e => {
+  const mc = e.target.closest("[data-mcat]");
+  if (mc) {
+    const m = MEMOS.find(x => x.id === mc.dataset.mcat);
+    if (!m) return;
+    const next = memoCatOf(m) === "life" ? "work" : "life";
+    const r = await api("PUT", "/api/workbench/memos", { id: m.id, cat: next });
+    if (r.ok) { m.cat = next; renderMemos(); renderCalendar(); }
+    return;
+  }
   const tg = e.target.closest("[data-mchk],[data-mdel],[data-mjump]");
   if (!tg) return;
   if (tg.hasAttribute("data-mchk")) {
