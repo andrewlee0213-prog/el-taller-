@@ -813,12 +813,12 @@ async function wbRun(section) {
       else { wbFail("bili", d.error); done(d.risky ? iv.failRisk : iv.fail); }
     } else if (section === "anth") {
       const d = await wbFetchAnth();
-      if (d.ok) { wbCache.anth = d; done(iv.ok); }
+      if (d.ok) { wbCache.anth = d; done(iv.ok); readerPrefetch("anth"); }
       else { wbFail("anth", d.error); done(iv.fail); }
     } else if (section === "arxiv") {
       console.log("[workbench] arxiv 五段选文开始");
       const d = await wbFetchArxiv();
-      if (d.ok) { wbCache.arxiv = d; console.log("[workbench] arxiv 终选: " + d.items.map(x => x.zh).join(" / ")); done(iv.ok); }
+      if (d.ok) { wbCache.arxiv = d; console.log("[workbench] arxiv 终选: " + d.items.map(x => x.zh).join(" / ")); done(iv.ok); readerPrefetch("arxiv"); }
       else { wbFail("arxiv", d.error); done(iv.fail); }
     } else if (section === "f1") {
       const d = await wbFetchF1();
@@ -1092,6 +1092,22 @@ function readerPurge() {
     }
   }
   if (dirty) saveJson(WB_FILE.reader, wbReader);
+}
+/* 预取：anth/arxiv 抓取成功后，后台把在列文章的正文+译文备好——点开 📄 即读，不再等首抓 */
+const readerPrefetching = {};
+function readerPrefetch(section) {
+  if (readerPrefetching[section]) return;
+  const items = ((wbCache[section] || {}).items) || [];
+  if (!items.length) return;
+  readerPrefetching[section] = true;
+  (async () => {
+    for (const it of items) {
+      const e = wbReader[it.url];
+      if (e && Array.isArray(e.paras) && e.paras.length) continue;   // 已备好
+      try { await readerEnsure(it.url); } catch {}
+      await new Promise(rs => setTimeout(rs, 3000));   // 温和间隔，不与抓取/翻译抢
+    }
+  })().catch(() => {}).finally(() => { readerPrefetching[section] = false; });
 }
 
 /* ---------------- 管理台占位页（证明守卫生效） ---------------- */
@@ -1603,6 +1619,8 @@ setInterval(() => {
 /* 对照阅读缓存：3 天无评论且未晋升 → 清除（启动即清一次 + 每小时巡检） */
 readerPurge();
 setInterval(readerPurge, 3600e3).unref();
+/* 重启补拉：卡片缓存里的在列文章若正文未备好，90 秒后后台预取（错过首轮抓取钩子的兜底） */
+setTimeout(() => { readerPrefetch("anth"); readerPrefetch("arxiv"); }, 90e3).unref();
 
 server.listen(CFG.PORT, "0.0.0.0", () => {
   const lans = [];
