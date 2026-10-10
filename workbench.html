@@ -871,7 +871,7 @@ async function openReader(url, title) {
   const m = $("#readerModal");
   $("#rTitle").textContent = title || url;
   $("#rMeta").textContent = "";
-  const loading = '<p class="dim" id="rLoading" style="padding:24px 0">抓取正文与翻译中（首次约 20~60 秒，完成后缓存秒开，请勿重复点击）…</p>';
+  const loading = '<p class="dim" id="rLoading" style="padding:24px 0">正在取正文（后台通常已预取，正常一两秒即开；若在预取中请稍候）…</p>';
   $("#rBody").innerHTML = loading;
   m.classList.add("on");
   const t0 = Date.now();
