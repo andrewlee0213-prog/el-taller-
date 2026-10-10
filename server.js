@@ -1023,7 +1023,8 @@ function wbAddNote(o) {
 
 /* ---------------- 对照阅读：抓正文 → GLM 逐段翻译 → 评论即入 Biblioteca / 3 天无评论清除 ---------------- */
 const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-/* Anthropic 研究页正文抽取：<article>/<main> 内的 <p>，滤掉短碎导航句 */
+/* Anthropic 研究页 / arXiv HTML 正文抽取：<article>/<main> 内的 <p>，
+   滤掉短碎导航句、未转换的 LaTeX 宏汤（tcolorbox 之类）、花括号密度异常段 */
 function extractArticleParas(html) {
   const h = String(html)
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -1035,7 +1036,10 @@ function extractArticleParas(html) {
   let pm;
   while ((pm = re.exec(m[0]))) {
     const t = cleanText(pm[1].replace(/<[^>]+>/g, " "));
-    if (t.length >= 40) paras.push(t.slice(0, 2000));
+    if (t.length < 40) continue;
+    if ((t.match(/\\[a-zA-Z_]+/g) || []).length >= 2) continue;        // LaTeX 宏汤
+    if ((t.match(/[{}]/g) || []).length > t.length * 0.1) continue;    // 花括号密度异常
+    paras.push(t.slice(0, 2000));
   }
   return paras.slice(0, 60);
 }
@@ -1072,8 +1076,26 @@ async function glmTranslateLinesFast(lines) {
   const outs = await Promise.all(chunks.map(c => glmTranslateLines(c)));
   return outs.flat();
 }
+/* arXiv 内容三级兜底：官方 HTML 全文（LaTeXML，2024 后论文基本都有）→ ar5iv → abs 摘要 */
+async function arxivContent(url) {
+  const idm = /arxiv\.org\/abs\/([^?#]+)/.exec(url);
+  if (!idm) return [];
+  const id = idm[1];
+  for (const u of [
+    "https://arxiv.org/html/" + id,
+    "https://ar5iv.labs.arxiv.org/html/" + id.replace(/v\d+$/, ""),
+  ]) {
+    try {
+      const paras = extractArticleParas(await httpGetText(u, 25000));
+      if (paras.length >= 6) return paras;   // 少于 6 段视为没有像样的全文
+    } catch {}
+  }
+  return arxivAbstract(url);
+}
+
 /* 确保文章正文+译文在缓存里（懒加载：首次点开才抓+翻译；译文全空则隔 10 分钟允许重试）
-   readerBusy 去重：弹窗连点/多人同时开同一篇只触发一次抓取+翻译 */
+   readerBusy 去重：连点/多人同时开同一篇只触发一次抓取+翻译
+   arXiv 旧条目（full!==1，只有摘要）自动重抓全文 */
 const readerBusy = new Map();
 async function readerEnsure(url) {
   if (readerBusy.has(url)) return readerBusy.get(url);
@@ -1081,14 +1103,19 @@ async function readerEnsure(url) {
   readerBusy.set(url, p);
   return p;
 }
+/* 条目是否已备好：有正文；arXiv 必须是全文版（full=1，旧摘要条目重抓）；译文全空隔 10 分钟重试 */
+function readerEntryReady(e) {
+  if (!e || !Array.isArray(e.paras) || !e.paras.length) return false;
+  if (e.source === "arxiv" && e.full !== 1) return false;
+  return !(e.needZh && Date.now() - (e.fetchedAt || 0) > 600e3);
+}
 async function readerEnsureInner(url) {
   const anth = ((wbCache.anth && wbCache.anth.items) || []).find(x => x.url === url);
   const arx = ((wbCache.arxiv && wbCache.arxiv.items) || []).find(x => x.url === url);
   const item = anth || arx;
   if (!item) return wbReader[url] || null;   // 只读当前卡片里在列的文章；已不在卡片只有缓存可给
   const old = wbReader[url];
-  if (old && Array.isArray(old.paras) && old.paras.length &&
-      !(old.needZh && Date.now() - (old.fetchedAt || 0) > 600e3)) return old;
+  if (readerEntryReady(old)) return old;
   const source = anth ? "anth" : "arxiv";
   /* 境外源直连偶发抖动：失败重试，最多 3 次（arXiv 限流 429 退避要长） */
   const gapMs = source === "arxiv" ? 12000 : 4000;
@@ -1096,7 +1123,7 @@ async function readerEnsureInner(url) {
   for (let tries = 2; tries >= 0; tries--) {
     try {
       if (source === "anth") srcs = extractArticleParas(await httpGetText(url, 25000));
-      else srcs = await arxivAbstract(url);
+      else srcs = await arxivContent(url);
     } catch {}
     if (srcs.length) break;
     if (tries > 0) await new Promise(rs => setTimeout(rs, gapMs));
@@ -1109,6 +1136,7 @@ async function readerEnsureInner(url) {
     paras: srcs.map((s, i) => [s, keepEnglishTerms(zhs[i] || "")]),
     firstAt: (old && old.firstAt) || Date.now(), fetchedAt: Date.now(),
     needZh: zhs.every(z => !z),
+    full: source === "arxiv" ? (srcs.length >= 6 ? 1 : 0) : 1,   // arXiv：≥6 段才算全文
   };
   wbReader[url] = e;
   saveJson(WB_FILE.reader, wbReader);
@@ -1163,10 +1191,7 @@ function readerPrefetch(section) {
   const gap = section === "arxiv" ? 10000 : 3000;   // arXiv 对连续请求限流(429)，间隔拉大
   (async () => {
     for (const it of items) {
-      const e = wbReader[it.url];
-      const ready = e && Array.isArray(e.paras) && e.paras.length &&
-        (!e.needZh || Date.now() - (e.fetchedAt || 0) <= 600e3);   // 译文全空的隔 10 分钟重试
-      if (ready) continue;
+      if (readerEntryReady(wbReader[it.url])) continue;   // 已备好（含 arXiv 摘要条目自动升级全文）
       console.log("[workbench] 预取 " + section + ": " + String(it.zh || it.url).slice(0, 44));
       try { await readerEnsure(it.url); } catch {}
       await new Promise(rs => setTimeout(rs, gap));
@@ -1622,8 +1647,8 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    /* ---- 工作台（仅 admin：未登录去登录页，非 admin 明示 403） ---- */
-    if (p === "/workbench.html") {
+    /* ---- 工作台（仅 admin：未登录去登录页，非 admin 明示 403；reader.html 对照阅读页同守卫） ---- */
+    if (p === "/workbench.html" || p === "/reader.html") {
       const s = readSession(req);
       if (!s || s.mc) {
         res.writeHead(302, { Location: "/login.html?next=%2Fworkbench.html" });

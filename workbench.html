@@ -330,29 +330,6 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 .setgrid input::placeholder,.setgrid textarea::placeholder{color:var(--g-dim)}
 .setnote{grid-column:1/-1;font-size:11px;color:var(--g-dim);line-height:1.7}
 
-/* ---- 对照阅读弹窗（anth/arxiv 正文，中文在上/原文在下） ---- */
-.rmodal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;
-  background:rgba(0,0,0,.5);backdrop-filter:blur(5px)}
-.rmodal.on{display:flex}
-.rglass{width:min(880px,94vw);max-height:84vh;display:flex;flex-direction:column;overflow:hidden;
-  border-radius:var(--g-radius);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);
-  background:linear-gradient(160deg,var(--g-card-hi),var(--g-card-lo));
-  backdrop-filter:blur(var(--g-blur)) saturate(1.6);box-shadow:0 14px 40px var(--g-drop)}
-.rhead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px dashed color-mix(in srgb,var(--ink) 12%,transparent)}
-.rhead b{font-size:14px;flex:1;min-width:0;line-height:1.5}
-.rmeta{font-size:11px;color:var(--g-dim);flex-basis:100%}
-.rheadwrap{display:flex;flex-wrap:wrap;gap:4px 10px;flex:1;min-width:0}
-.rclose{border:0;background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--g-text);width:26px;height:26px;
-  border-radius:8px;cursor:pointer;font-size:12px;flex:none}
-.rbody{overflow:auto;padding:6px 18px 18px}
-.rpair{padding:10px 0;border-bottom:1px dashed color-mix(in srgb,var(--ink) 8%,transparent)}
-.rpair:last-child{border-bottom:0}
-.rzh{font-size:13.5px;line-height:1.75;color:var(--g-text)}
-.rorig{font-size:12px;line-height:1.65;opacity:.62;margin-top:4px;word-break:break-word}
-.rcmt{margin-top:12px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--ok) 12%,transparent)}
-.rcmt b{font-size:12px;color:var(--ok)}
-.rcmt p{font-size:12.5px;margin-top:4px;line-height:1.7}
-
 .banner{display:none;border-radius:16px;padding:12px 18px;margin-bottom:16px;font-size:12.5px;line-height:1.7;
   border:1px solid color-mix(in srgb,var(--g-accent) 40%,transparent);
   background:color-mix(in srgb,var(--g-tint) 8%,transparent);color:color-mix(in srgb,var(--g-text) 88%,transparent)}
@@ -542,17 +519,6 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 </div>
 <div id="toast"></div>
 
-<!-- 对照阅读弹窗：anth/arxiv 点 📄 打开 -->
-<div class="rmodal" id="readerModal">
-  <div class="rglass">
-    <div class="rhead">
-      <div class="rheadwrap"><b id="rTitle"></b><span class="rmeta" id="rMeta"></span></div>
-      <button class="rclose" id="rClose" title="关闭">✕</button>
-    </div>
-    <div class="rbody" id="rBody"></div>
-  </div>
-</div>
-
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
@@ -718,8 +684,7 @@ function cboxHtml(url, title) {
 function itemRowHtml(url, href, titleHtml, metaHtml, source, title) {
   const readable = (source === "anth" || source === "arxiv");
   const rd = readable
-    ? '<button class="icmt" data-read="1" data-url="' + esc(url) + '" data-title="' + esc(title) +
-      '" title="对照阅读全文（中文在上·原文在下；评论后收进 Biblioteca，3 天没评论自动清除）">📄</button>' : "";
+    ? '<a class="icmt" href="reader.html?url=' + encodeURIComponent(url) + '" title="对照阅读全文（中文在上·原文在下；评论后收进 Biblioteca，3 天没评论自动清除）">📄</a>' : "";
   const dl = readable
     ? '<button class="icmt dsl' + (DIS[url] ? " has" : "") + '" data-dis="1" data-url="' + esc(url) +
       '" data-src="' + source + '" data-title="' + esc(title) +
@@ -826,7 +791,7 @@ function renderWeekly() {
 
 /* ================= 评论框交互（事件委托） ================= */
 document.addEventListener("click", async e => {
-  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-read],[data-dis]");
+  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-dis]");
   if (!tg) return;
   if (tg.hasAttribute("data-dis")) {
     const url = tg.dataset.url;
@@ -844,7 +809,6 @@ document.addEventListener("click", async e => {
     toast(undo ? "已撤销不感兴趣" : "已标记不感兴趣：减少同类推荐，不会进 Biblioteca");
     return;
   }
-  if (tg.hasAttribute("data-read")) { openReader(tg.dataset.url, tg.dataset.title); return; }
   if (tg.dataset.cmt != null && tg.dataset.cmt !== undefined && tg.hasAttribute("data-cmt")) {
     const box = document.querySelector('[data-cbox="' + CSS.escape(tg.dataset.url) + '"]');
     if (box) box.classList.toggle("on");
@@ -892,48 +856,6 @@ document.addEventListener("click", async e => {
     toast("已删除");
   }
 });
-
-/* ================= 对照阅读弹窗 ================= */
-async function openReader(url, title) {
-  const m = $("#readerModal");
-  $("#rTitle").textContent = title || url;
-  $("#rMeta").textContent = "";
-  const loading = '<p class="dim" id="rLoading" style="padding:24px 0">正在取正文（后台通常已预取，正常一两秒即开；若在预取中请稍候）…</p>';
-  $("#rBody").innerHTML = loading;
-  m.classList.add("on");
-  const t0 = Date.now();
-  const timer = setInterval(() => {
-    const el = document.getElementById("rLoading");
-    if (el) el.textContent = "抓取正文与翻译中…已等 " + Math.round((Date.now() - t0) / 1000) +
-      " 秒（首次约 20~60 秒，正在后台抓取与翻译，勿关闭弹窗）";
-  }, 1000);
-  try {
-    const r = await api("GET", "/api/workbench/article?url=" + encodeURIComponent(url));
-    if (!r.ok || !r.article) {
-      $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">' + esc(r.error || "读取失败") +
-        '<br>境外源偶发抖动，稍等几秒再点一次 📄 通常就好。</p>';
-      return;
-    }
-    const a = r.article;
-    const hoursLeft = Math.max(0, Math.ceil((a.deadline - Date.now()) / 3600e3));
-    const st = a.promoted
-      ? "已收入 Biblioteca ✓"
-      : "未评论 · " + hoursLeft + " 小时后自动清除";
-    $("#rMeta").textContent =
-      (a.source === "arxiv" ? "arXiv" : "Anthropic 研究") + (a.pub ? " · " + a.pub : "") + " · " + st +
-      (a.comment ? " · 已评论" : " · 评论后收进 Biblioteca");
-    $("#rBody").innerHTML = a.paras.map(p => p[1]
-      ? '<div class="rpair"><p class="rzh">' + esc(p[1]) + '</p><p class="rorig">' + esc(p[0]) + "</p></div>"
-      : '<div class="rpair"><p class="rzh">' + esc(p[0]) + "</p></div>").join("") +
-      (a.comment ? '<div class="rcmt"><b>我的评论</b><p>' + esc(a.comment) + "</p></div>" : "");
-  } catch (err) {
-    $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">读取失败：' + esc(String(err && err.message || err)) + "</p>";
-  } finally {
-    clearInterval(timer);
-  }
-}
-$("#rClose").addEventListener("click", () => $("#readerModal").classList.remove("on"));
-$("#readerModal").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove("on"); });
 
 /* ================= 刷新按钮：触发 + 轮询 ================= */
 document.querySelectorAll(".rfbtn").forEach(btn => btn.addEventListener("click", async () => {
