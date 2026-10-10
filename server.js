@@ -169,6 +169,8 @@ const MIME = {
 const BLOCKED_DIRS = ["data", "tools", "node_modules", ".git", "deploy"]; // 永不对外
 function serveStatic(req, res, urlPath) {
   let rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
+  const hx = rel.indexOf("#");
+  if (hx >= 0) rel = rel.slice(0, hx);   // # 被编码成 %23 混进路径（转发链接常见）→ 截断还原，按真实页面走
   if (rel === "") rel = "index.html";
   const abs = path.normalize(path.join(ROOT, rel));
   /* 必须带路径分隔符：不带则 /opt/taller-xxx 等同前缀兄弟目录也能通过检查 */

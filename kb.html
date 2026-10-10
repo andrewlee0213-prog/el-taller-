@@ -301,6 +301,15 @@ $('#searchBox').addEventListener('input', e=>{
 });
 
 /* 深链：#b=<书id>&c=<章序号>，如 kb.html#b=agent-handbook&c=8（站内文章可直达对应章节） */
+/* 链接被转发时 # 常被编码成 %23 混进路径（kb.html%23b=...）：还原成真 hash 再定位 */
+(function restoreHash(){
+  const pm = decodeURIComponent(location.pathname);
+  const hx = pm.indexOf("#");
+  if (hx >= 0) {
+    const frag = pm.slice(hx + 1) + location.search.replace(/^\?/, "");
+    history.replaceState(null, "", pm.slice(0, hx) + "#" + frag);
+  }
+})();
 function hashState(){
   const m = /^#b=([\w-]+)&c=(\d+)$/.exec(location.hash);
   if (!m) return null;
