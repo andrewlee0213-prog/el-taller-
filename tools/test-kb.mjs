@@ -43,7 +43,21 @@ check('基座 4 书 51 章（动态阅读精选允许）',
   staticBooks.length === 4 && staticBooks.reduce((n, b) => n + b.chapters.length, 0) === 51 &&
   kb.books.every(b => b.chapters.length > 0),
   kb.books.map(b => b.id + ':' + b.chapters.length).join(' '));
-check('章节内容非空', kb.books.every(b => b.chapters.every(c => c.html.length > 200)), '');
+check('章节内容非空（按需端点）', await (async () => {
+  const rr = await req('GET', '/api/kb/chapter?b=agent-handbook&c=0');
+  return rr.json && rr.json.ok === true && rr.json.html.length > 200;
+})(), '');
+r = await req('GET', '/api/kb/chapter?b=agent-handbook&c=99');
+check('不存在的章节 404', r.status === 404, r.status);
+r = await req('GET', '/api/kb/search?q=agent');
+check('全文搜索命中', r.json && r.json.ok === true && r.json.total > 0, JSON.stringify(r.json).slice(0, 80));
+r = await req('GET', '/api/kb/chapter?b=agent-handbook&c=0');
+check('章节端点未登录 401', await (async () => {
+  const keep = cookie; cookie = '';
+  const rr = await req('GET', '/api/kb/chapter?b=agent-handbook&c=0');
+  cookie = keep;
+  return rr.status === 401;
+})(), '');
 r = await req('GET', '/kb.html', null, 'follow');
 check('登录后 /kb.html 200 含 Biblioteca', r.status === 200 && r.text.includes('La Biblioteca'), r.status);
 

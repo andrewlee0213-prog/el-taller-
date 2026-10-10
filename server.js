@@ -340,15 +340,45 @@ function kbSplitUploadBook(md) {
   chapters.forEach(c => { c.html = kbMdToHtml(c.md.join("\n")); c.text = c.html.replace(/<[^>]+>/g, " "); delete c.md; });
   return { title: titles.join(" ｜ ") || "未命名文档", intro: kbMdInline(intro), chapters: chapters.filter(c => c.html.length > 0) };
 }
+/* 全量书装配（含正文）：静态基座（mtime 缓存解析）+ 阅读精选 + 上传书 */
+const kbUploadParsed = {};   // 上传 md 解析缓存（id → {chapters, intro}；文件不可变，进程内一次）
+let kbFullCache = { mtime: 0, books: [] };
+function kbFullBooks() {
+  const f = path.join(ROOT, "kb-data.js");
+  const mt = fs.statSync(f).mtimeMs;
+  if (mt !== kbFullCache.mtime) {
+    try {
+      const t = fs.readFileSync(f, "utf8");
+      kbFullCache = { mtime: mt, books: JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)).books || [] };
+    } catch { /* 解析失败沿用旧缓存 */ }
+  }
+  return kbFullCache.books;
+}
+function kbAllBooks() {
+  const books = kbFullBooks().slice();
+  const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
+  if (arts.length) books.push({
+    id: "lectura", title: "阅读精选 · 对照阅读", es: "📖 Lectura",
+    desc: "Anthropic 研究与 arXiv 论文的全文中英对照。工作台里评论过的文章自动收进本书（未评论的 3 天后清除）。",
+    intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
+    chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
+  });
+  return books.concat(kbUploadBooks());
+}
 function kbUploadBooks() {
   return Object.values(kbUploads).sort((a, b) => b.at - a.at).map(u => {
     const es = (u.title || "文档").replace(/\.(md|pdf)$/i, "").slice(0, 10);
     if (u.type === "md") {
-      const parsed = kbSplitUploadBook(fs.readFileSync(path.join(KB_UPLOAD_DIR, u.file), "utf8"));
-      const chapters = parsed.chapters.length ? parsed.chapters
-        : [{ id: "ch0", title: u.title.replace(/\.md$/i, ""), html: kbMdToHtml(fs.readFileSync(path.join(KB_UPLOAD_DIR, u.file), "utf8")), text: "" }];   // 无 ## 节的 md 整篇成一章
+      let cached = kbUploadParsed[u.id];
+      if (!cached) {
+        const md = fs.readFileSync(path.join(KB_UPLOAD_DIR, u.file), "utf8");
+        const parsed = kbSplitUploadBook(md);
+        const chapters = parsed.chapters.length ? parsed.chapters
+          : [{ id: "ch0", title: u.title.replace(/\.md$/i, ""), html: kbMdToHtml(md), text: "" }];
+        cached = kbUploadParsed[u.id] = { chapters, intro: parsed.intro };
+      }
       return { id: "up-" + u.id, title: u.title.replace(/\.md$/i, ""), es, desc: "上传收录 · " + new Date(u.at).toLocaleDateString(),
-        intro: parsed.intro, chapters, uploaded: true };
+        intro: cached.intro, chapters: cached.chapters, uploaded: true };
     }
     return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: "上传收录 · PDF 原文",
       intro: "PDF 原文内嵌查看（浏览器原生渲染）。",
@@ -357,6 +387,13 @@ function kbUploadBooks() {
           '<p style="margin-top:10px"><a href="/api/kb/file/' + u.file + '" target="_blank" rel="noopener">↗ 新窗口打开 / 下载</a></p>',
         text: "" }], uploaded: true };
   }).filter(b => b.chapters.length > 0);
+}
+/* 目录（不含正文）：藏书成百上千时 kb-data.js 也只有几十 KB；正文按需 /api/kb/chapter */
+function kbCatalog() {
+  return kbAllBooks().map(b => ({
+    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded,
+    chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
+  }));
 }
 /* 原始二进制 body 读取（上传用；readBody 只吃 16KB JSON） */
 function readRawBody(req, maxBytes) {
@@ -1464,6 +1501,40 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- Biblioteca 章节按需下发 / 全文搜索（登录可见） ---- */
+    if (p === "/api/kb/chapter" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
+      const b = kbAllBooks().find(x => x.id === u.searchParams.get("b"));
+      const ci = parseInt(u.searchParams.get("c") || "0", 10);
+      if (!b || !b.chapters[ci]) { json(res, 404, { error: "not found" }); return log(404); }
+      const c = b.chapters[ci];
+      json(res, 200, { ok: true, book: b.title, es: b.es, title: c.title, html: c.html, idx: ci, total: b.chapters.length });
+      return log(200);
+    }
+    if (p === "/api/kb/search" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
+      const q = (u.searchParams.get("q") || "").trim().toLowerCase();
+      if (q.length < 2) { json(res, 200, { ok: true, total: 0, results: [] }); return log(200); }
+      const out = [];
+      for (const b of kbAllBooks()) {
+        b.chapters.forEach((c, ci) => {
+          const inTitle = c.title.toLowerCase().includes(q);
+          const text = c.text || c.html || "";
+          const pos = text.toLowerCase().indexOf(q);
+          if (inTitle || pos >= 0) {
+            const start = Math.max(0, pos > 40 ? pos - 40 : 0);
+            out.push({ b: b.id, bTitle: b.title, c: ci, cTitle: c.title, inTitle,
+              snip: inTitle ? "" : "…" + text.substr(start, 90).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() + "…" });
+          }
+        });
+        if (out.length >= 200) break;
+      }
+      json(res, 200, { ok: true, total: out.length, results: out.slice(0, 80) });
+      return log(200);
+    }
+
     /* ---- Biblioteca 上传收录（admin 上传；文件服务登录可见） ---- */
     if (p === "/api/kb/upload" && (req.method === "POST" || req.method === "DELETE")) {
       const s = readSession(req);
@@ -1472,6 +1543,7 @@ const server = http.createServer(async (req, res) => {
         const e = kbUploads[u.searchParams.get("id") || ""];
         if (!e) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
         try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
+        delete kbUploadParsed[e.id];
         delete kbUploads[e.id];
         saveJson(KB_UPLOAD_FILE, kbUploads);
         json(res, 200, { ok: true });
@@ -1820,23 +1892,15 @@ const server = http.createServer(async (req, res) => {
         json(res, 401, { error: "unauthorized" });
         return log(401);
       }
-      /* /kb-data.js 动态下发：静态两本书基座 + 「阅读精选」第三本（评论收进 Biblioteca 的对照文章） */
+      /* /kb-data.js 动态下发：轻量目录（书名+章名，藏书多时也只几十 KB）；正文按需 /api/kb/chapter */
       if (p === "/kb-data.js") {
-        let kb = null;
+        let generated = new Date().toISOString();
         try {
           const t = fs.readFileSync(path.join(ROOT, "kb-data.js"), "utf8");
-          kb = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+          const g = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1)).generated;
+          if (g) generated = g;
         } catch { json(res, 404, { error: "not found" }); return log(404); }
-        if (!Array.isArray(kb.books)) kb.books = [];
-        const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
-        if (arts.length) kb.books.push({
-          id: "lectura", title: "阅读精选 · 对照阅读", es: "📖 Lectura",
-          desc: "Anthropic 研究与 arXiv 论文的全文中英对照。工作台里评论过的文章自动收进本书（未评论的 3 天后清除）。",
-          intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
-          chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
-        });
-        kb.books = kb.books.concat(kbUploadBooks());   /* admin 上传收录的 PDF/MD 文档 */
-        send(res, 200, "window.KB = " + JSON.stringify(kb) + ";\n",
+        send(res, 200, "window.KB = " + JSON.stringify({ generated, books: kbCatalog() }) + ";\n",
           { "Content-Type": "text/javascript; charset=utf-8" });
         return log(200);
       }
