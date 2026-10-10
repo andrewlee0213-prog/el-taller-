@@ -16,6 +16,7 @@
   --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#2a1505; --g-tint:#ffecd8;
   --g-glow-a:rgba(255,150,45,.26); --g-glow-b:rgba(150,80,28,.30); --g-glow-c:rgba(120,60,140,.16);
   --g-bg-1:#4a290f; --g-bg-2:#331a0a; --g-bg-3:#1d0d05; --g-bg-base:#241006;
+  --ink:#ffffff; --g-drop:rgba(0,0,0,.45);
   --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -33,7 +34,7 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
   -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
   border:1px solid var(--g-brd);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px var(--g-drop)}
 .top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
 .brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
@@ -41,11 +42,11 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .brand b{font-size:15px;font-weight:600;white-space:nowrap}
 .btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
-  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
-.btn-ghost:hover{background:rgba(255,255,255,.18)}
+  background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--g-text);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);transition:.25s}
+.btn-ghost:hover{background:color-mix(in srgb,var(--ink) 18%,transparent)}
 .hero-row{display:flex;gap:28px;align-items:center;margin:30px 0 20px;flex-wrap:wrap}
 .hero-row .icon{width:150px;height:150px;border-radius:34px;flex:none;object-fit:cover;
-  border:1px solid rgba(255,255,255,.25);box-shadow:0 22px 50px rgba(0,0,0,.5)}
+  border:1px solid color-mix(in srgb,var(--ink) 25%,transparent);box-shadow:0 22px 50px var(--g-drop)}
 .ahead{flex:1;min-width:260px}
 .ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
 .ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 8px}
@@ -62,9 +63,9 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;min-width:0}
 .article table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
 .article th{background:color-mix(in srgb,var(--g-accent) 14%,transparent);color:var(--g-accent-soft);font-weight:600;text-align:left}
-.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:9px 13px;vertical-align:top;line-height:1.7}
+.article th,.article td{border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);padding:9px 13px;vertical-align:top;line-height:1.7}
 .article td{color:color-mix(in srgb,var(--g-text) 80%,transparent)}
-.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:color-mix(in srgb,var(--ink) 10%,transparent);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
 .tl{position:relative;margin:20px 0 6px;padding-left:28px}
 .tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(color-mix(in srgb,var(--g-accent) 55%,transparent),color-mix(in srgb,var(--g-accent) 10%,transparent))}
 .tl .ti{position:relative;padding:0 0 20px}
@@ -75,9 +76,9 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
 .tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:color-mix(in srgb,var(--g-text) 75%,transparent)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
-.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);color:var(--g-dim)}
 .cardwall{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:20px 0 8px}
-.kcard{border-radius:16px;overflow:hidden;background:#fdfcf8;box-shadow:0 16px 36px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.35)}
+.kcard{border-radius:16px;overflow:hidden;background:#fdfcf8;box-shadow:0 16px 36px var(--g-drop);border:1px solid color-mix(in srgb,var(--ink) 35%,transparent)}
 .kcard img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .kcard .lab{display:flex;align-items:baseline;justify-content:space-between;padding:9px 14px 11px}
 .kcard .lab b{font-size:16px;font-weight:750;color:#3a2b1a}
@@ -118,6 +119,32 @@ html[data-theme="crepusculo"]{
   --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
 }
 body{transition:background-color .35s}
+html[data-theme="blanco"] .article pre,html[data-theme="blanco"] .article .body pre.kb-pre{background:#2e1f10;border-color:rgba(255,255,255,.08)}
+
+/* ---- blanco / negro：亮暗两极（结构同前四主题，光影同步换底） ---- */
+html[data-theme="blanco"]{
+  --g-accent:#d97706; --g-accent-soft:#96600c; --g-accent-deep:#b45f09; --g-accent-mid:#e08514; --g-on-accent:#fff8ec;
+  --g-text:#33261a; --g-dim:rgba(74,56,32,.66); --g-brd:rgba(62,46,26,.16);
+  --g-glass-hi:rgba(255,255,255,.78); --g-glass-lo:rgba(255,255,255,.46);
+  --g-card-hi:rgba(255,255,255,.72); --g-card-lo:rgba(255,252,245,.40);
+  --g-pillactive:rgba(255,255,255,.92); --g-tint:#f2e3c9;
+  --g-glow-a:rgba(255,160,60,.22); --g-glow-b:rgba(214,150,80,.16); --g-glow-c:rgba(160,110,210,.08);
+  --g-bg-1:#fdf9f2; --g-bg-2:#f8f1e6; --g-bg-3:#f1e7d6; --g-bg-base:#f8f3ea;
+  --g-blob1:rgba(255,170,70,.32); --g-blob2:rgba(170,120,255,.10);
+  --ok:#1f9d5c; --warn:#b9791a; --pause:rgba(74,56,32,.45);
+  --ink:#3a2c18; --g-drop:rgba(96,72,42,.16);
+}
+html[data-theme="negro"]{
+  --g-accent:#ffa335; --g-accent-soft:#ffd9a3; --g-accent-deep:#c96a12; --g-accent-mid:#d97c14; --g-on-accent:#1c1206;
+  --g-text:#f1efec; --g-dim:rgba(240,238,234,.60); --g-brd:rgba(255,255,255,.13);
+  --g-glass-hi:rgba(255,255,255,.09); --g-glass-lo:rgba(255,255,255,.035);
+  --g-card-hi:rgba(255,255,255,.08); --g-card-lo:rgba(255,255,255,.028);
+  --g-pillactive:rgba(48,48,50,.92); --g-tint:#ece7de;
+  --g-glow-a:rgba(255,155,55,.15); --g-glow-b:rgba(140,140,148,.10); --g-glow-c:rgba(210,90,220,.07);
+  --g-bg-1:#1b1b1d; --g-bg-2:#101012; --g-bg-3:#050506; --g-bg-base:#0b0b0c;
+  --g-blob1:rgba(255,150,50,.15); --g-blob2:rgba(170,120,255,.09);
+  --ink:#ffffff; --g-drop:rgba(0,0,0,.62);
+}
 
 /* ---- 液态玻璃（Apple Liquid Glass 质感）：镜面高光 + 内缘光 + 高饱和折射 ---- */
 .g-glass,.g-card,.enlace{position:relative}
@@ -126,20 +153,20 @@ body{transition:background-color .35s}
   backdrop-filter:blur(var(--g-blur)) saturate(1.8) brightness(1.05);
   border:1px solid color-mix(in srgb,var(--g-text) 20%,transparent);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -1px 0 rgba(0,0,0,.14),
-    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px rgba(0,0,0,.45)}
+    inset 0 18px 34px -26px rgba(255,255,255,.30),0 34px 90px var(--g-drop)}
 .g-card,.workcard,.notecard,.enlace{-webkit-backdrop-filter:blur(18px) saturate(1.7) brightness(1.04);
   backdrop-filter:blur(18px) saturate(1.7) brightness(1.04)}
 .g-glass::before,.g-card::before,.workcard::before,.notecard::before,.enlace::before,.card::before{
   content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:radial-gradient(120% 62% at 16% 0%,rgba(255,255,255,.16),transparent 55%),
-    linear-gradient(115deg,rgba(255,255,255,.08),transparent 30%,transparent 72%,rgba(255,255,255,.05));
+  background:radial-gradient(120% 62% at 16% 0%,color-mix(in srgb,var(--ink) 16%,transparent),transparent 55%),
+    linear-gradient(115deg,color-mix(in srgb,var(--ink) 8%,transparent),transparent 30%,transparent 72%,color-mix(in srgb,var(--ink) 5%,transparent));
   mix-blend-mode:screen}
 .g-glass>*,.g-card>*,.workcard>*,.notecard>*,.enlace>*,.card>*{position:relative;z-index:1}
 
 /* ---- 主题切换圆点 ---- */
 .g-pill a{text-shadow:0 1px 10px rgba(0,0,0,.38)}
 .themedots{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;flex:none;
-  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+  background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
 .tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
   background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
   box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
@@ -162,6 +189,8 @@ body{transition:background-color .35s}
         <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
         <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
         <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+        <button class="tdot" type="button" data-theme-dot="blanco" style="--dot:#ffffff" title="纸白 · Blanco" aria-label="纸白主题"></button>
+        <button class="tdot" type="button" data-theme-dot="negro" style="--dot:#181818" title="玄黑 · Negro" aria-label="玄黑主题"></button>
       </div>
       <a class="btn-ghost" href="index.html">← 回工坊</a>
     </header>
@@ -218,7 +247,7 @@ body{transition:background-color .35s}
       <blockquote><p><b>移植不是复制。</b>逻辑判定层双端同源：同一套 SRS 配额、儿歌排程与收听边界判定，iOS 与 Android 各自实现、共享同一组断言——任何一侧漂移，验证器当场抓住。</p></blockquote>
       <p>同月落地的还有<b>听觉研究四波</b>：磨耳朵的「韵律好感输入」定位、连续收听 30 分钟自然边界、故事满遍 ×3 自动换篇、ListeningPolicy 纯判定抽成双端同源模块。以及一条小产线——儿歌功能宣传单页，设计决策表 + SVG 贴纸产线自动出图，和单词插画同一个思路：人定设计，机器出活。</p>
       <figure style="margin:18px 0 6px">
-        <img src="assets/kids/promo-songs.jpg" alt="儿歌功能宣传单页" style="width:100%;border-radius:16px;border:1px solid rgba(255,255,255,.35);box-shadow:0 16px 36px rgba(0,0,0,.4);display:block">
+        <img src="assets/kids/promo-songs.jpg" alt="儿歌功能宣传单页" style="width:100%;border-radius:16px;border:1px solid color-mix(in srgb,var(--ink) 35%,transparent);box-shadow:0 16px 36px var(--g-drop);display:block">
         <figcaption style="font-size:12px;color:var(--g-dim);margin-top:8px">儿歌功能宣传单页（1025×1280）：「找歌排歌费妈 → 每周主打直接听」，自动排歌单 / 一键连播 / 听久自动提醒。</figcaption>
       </figure>
 
