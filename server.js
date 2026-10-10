@@ -1814,7 +1814,7 @@ const server = http.createServer(async (req, res) => {
         let date = String(body.date || "");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = dstr(new Date());
         const memo = { id: "m-" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
-          date, text: text.slice(0, 500), done: false, createdAt: Date.now() };
+          date, text: text.slice(0, 500), done: false, cat: body.cat === "work" ? "work" : "life", createdAt: Date.now() };
         wbMemos.push(memo);
         saveJson(WB_FILE.memos, wbMemos);
         json(res, 200, { ok: true, memo });
@@ -1824,7 +1824,8 @@ const server = http.createServer(async (req, res) => {
         const body = await readJson(req);
         const memo = wbMemos.find(m => m.id === String(body.id || ""));
         if (!memo) { json(res, 404, { ok: false, error: "备忘不存在" }); return log(404); }
-        memo.done = !!body.done;
+        if (typeof body.done === "boolean") memo.done = body.done;
+        if (body.cat === "work" || body.cat === "life") memo.cat = body.cat;
         saveJson(WB_FILE.memos, wbMemos);
         json(res, 200, { ok: true, memo });
         return log(200);
