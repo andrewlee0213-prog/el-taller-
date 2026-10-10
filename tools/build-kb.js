@@ -112,12 +112,34 @@ function splitBook(md) {
   return { title, intro: inline(intro), chapters };
 }
 
+/* ---------- 按书预处理器 ----------
+   video：第二个 H1（苹果发布会风格升级包）降为 ## 章标题、其内部 ## 降为 ###，
+          否则整段会糊进上一章正文；
+   dala：首个 ## 前的说明段（Theme/Dala operates）转 > 引用，让它进书简介
+          而不是被拆章逻辑丢弃；书名用中文覆盖源文件英文标题 ---------- */
+function preVideo(md) {
+  const cut = md.indexOf("\n# 附：苹果发布会风格升级包");
+  if (cut < 0) return md;
+  const head = md.slice(0, cut);
+  const rest = md.slice(cut + 1);                       // 去掉 "# "，保留标题文字
+  const nl = rest.indexOf("\n");
+  const titleLine = rest.slice(0, nl);
+  const body = rest.slice(nl + 1).replace(/^## /gm, "### ");
+  return head + "\n## 附 ｜ " + titleLine + "\n" + body;
+}
+function preDala(md) {
+  const cut = md.indexOf("\n## ");
+  const head = cut > 0 ? md.slice(0, cut) : md;
+  const rest = cut > 0 ? md.slice(cut) : "";
+  return head.replace(/^(?![>#\s]).+$/gm, m => "> " + m) + rest;
+}
+
 const books = [
   {
     id: "agent-handbook",
     file: path.join(SEED, "03-AI Agent构建知识手册.md"),
     es: "Manual de Agentes",
-    desc: "生产级 Agent 系统的十个组成部分、反模式清单与交付纪律。Seed 知识库知识本体，新材料按 00 维护机制五阶段并入。",
+    desc: "生产级 Agent 系统的十个组成部分、反模式清单与交付纪律。个人知识库知识本体，新材料按 00 维护机制五阶段并入。",
   },
   {
     id: "interview-bank",
@@ -125,9 +147,27 @@ const books = [
     es: "Banco de preguntas",
     desc: "见习 AI 应用工程师面试题库：11 题计分体系、三档评分（OK/还行/不合格）、内转调整与增补题。",
   },
+  {
+    id: "video-scripts",
+    file: path.join(SEED, "07-白话版短视频脚本-12集60秒.md"),
+    es: "Guiones de video",
+    desc: "白话版的知识视频化改编：12 集 × 60 秒旁白脚本（TTS 直接可读）+ 逐镜画面提示词 + 发布建议与苹果发布会风格升级包。",
+    pre: preVideo,
+  },
+  {
+    id: "dala-design",
+    file: path.join(SEED, "style", "DESIGN-Dala.md"),
+    es: "Lenguaje de diseño",
+    desc: "黑色天鹅绒舞台上的星座视觉——Dala 设计语言完整参考：色彩/字体/间距/组件/守则，新页面快速对齐风格用。",
+    pre: preDala,
+    title: "Dala 设计语言 · 黑色星座风格参考",
+  },
 ].map(b => {
-  const parsed = splitBook(fs.readFileSync(b.file, "utf8"));
-  return { id: b.id, title: parsed.title, es: b.es, desc: b.desc, intro: parsed.intro, chapters: parsed.chapters };
+  let md = fs.readFileSync(b.file, "utf8");
+  if (b.pre) md = b.pre(md);
+  const parsed = splitBook(md);
+  const chapters = parsed.chapters.filter(c => c.html.length > 0);   // 源里偶有只挂标题的空节（如 Dala 的 Agent Prompt Guide），产物中剔除
+  return { id: b.id, title: b.title || parsed.title, es: b.es, desc: b.desc, intro: parsed.intro, chapters };
 });
 
 const total = books.reduce((n, b) => n + b.chapters.length, 0);
@@ -145,7 +185,7 @@ const SANITIZE = [
   [/Seed 知识库/g, "个人知识库"],
   [/泛微/g, "某 OA"], [/北森/g, "某 HR 系统"], [/钉钉/g, "某 IM"], [/中达/g, "某客户"], [/祥承/g, "公司"],
   [/Seed 部门/g, "所在团队"],
-  [/Seed/g, "工坊"],
+  [/Seed(?!ance)/g, "工坊"],   // 负向前瞻：Seedance（即梦/豆包，公开产品名）不能被打成「工坊ance」
 ];
 
 let payload = JSON.stringify({ generated: new Date().toISOString(), books }, null, 1);

@@ -36,10 +36,11 @@ check('临时账号登录', r.json && r.json.ok === true, JSON.stringify(r.json)
 r = await req('GET', '/kb-data.js');
 check('登录后可读 kb-data', r.status === 200 && r.text.includes('agent-handbook'), r.status);
 const kb = JSON.parse(r.text.match(/window\.KB = ([\s\S]+);\n?/)[1]);
-/* 基座固定 2 书 22 章；服务端可动态追加「阅读精选」（lectura）第三本——只要有章节就合法 */
-const staticBooks = kb.books.filter(b => b.id === 'agent-handbook' || b.id === 'interview-bank');
-check('基座 2 书 22 章（动态阅读精选允许）',
-  staticBooks.length === 2 && staticBooks.reduce((n, b) => n + b.chapters.length, 0) === 22 &&
+/* 基座固定 4 书 51 章（13+9+16+13，源内空节已剔除）；服务端可动态追加「阅读精选」（lectura）——只要有章节就合法 */
+const staticIds = ['agent-handbook', 'interview-bank', 'video-scripts', 'dala-design'];
+const staticBooks = kb.books.filter(b => staticIds.includes(b.id));
+check('基座 4 书 51 章（动态阅读精选允许）',
+  staticBooks.length === 4 && staticBooks.reduce((n, b) => n + b.chapters.length, 0) === 51 &&
   kb.books.every(b => b.chapters.length > 0),
   kb.books.map(b => b.id + ':' + b.chapters.length).join(' '));
 check('章节内容非空', kb.books.every(b => b.chapters.every(c => c.html.length > 200)), '');

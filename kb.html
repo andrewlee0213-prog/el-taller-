@@ -280,7 +280,7 @@ function renderChapter(){
   window.scrollTo(0,0);
 }
 
-const TABS = { 'agent-handbook': '📘 Manual', 'interview-bank': '📙 Preguntas' };
+const TABS = { 'agent-handbook': '📘 Manual', 'interview-bank': '📙 Preguntas', 'video-scripts': '🎬 Guiones', 'dala-design': '🎨 Diseño' };
 function renderBookTabs(){
   $('#bookTabs').innerHTML = window.KB.books.map((b,bi)=>
     '<button class="book-tab'+(bi===bookIdx?' on':'')+'" data-b="'+bi+'">'+(TABS[b.id]||b.es)+'</button>').join('');
