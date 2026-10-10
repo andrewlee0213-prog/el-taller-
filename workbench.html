@@ -190,6 +190,9 @@ html[data-theme="crepusculo"]{
 .icmt{border:0;background:none;color:var(--g-dim);cursor:pointer;font-size:12px;padding:2px 4px;flex:none;line-height:1}
 .icmt:hover{color:var(--g-accent-soft)}
 .icmt.has{color:var(--g-accent)}
+.icmt.dsl.has{color:var(--warn)}
+.item.disliked{opacity:.5}
+.item.disliked .it{text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--warn) 55%,transparent)}
 .cbox{display:none;flex-direction:column;gap:7px;margin:6px 0 4px}
 .cbox.on{display:flex}
 .cbox textarea{width:100%;min-height:64px;resize:vertical;border-radius:12px;padding:9px 11px;font:inherit;font-size:12px;
@@ -561,7 +564,7 @@ const dstr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SRC_LABEL = { bili: "B站", anth: "Anthropic", arxiv: "arXiv" };
 
-let CFG = null, WB = null, SCHED = null, LOG = [], CMT = {}, MEMOS = [], WEEKLY = { weeks: {}, current: { start: "", end: "" } };
+let CFG = null, WB = null, SCHED = null, LOG = [], CMT = {}, DIS = {}, MEMOS = [], WEEKLY = { weeks: {}, current: { start: "", end: "" } };
 
 function toast(msg) {
   const t = $("#toast");
@@ -713,12 +716,20 @@ function cboxHtml(url, title) {
     '<button class="bmini hot" data-cnote="' + esc(url) + '">收进日志</button><span class="csaved"></span></div></div>';
 }
 function itemRowHtml(url, href, titleHtml, metaHtml, source, title) {
-  const rd = (source === "anth" || source === "arxiv")
+  const readable = (source === "anth" || source === "arxiv");
+  const rd = readable
     ? '<button class="icmt" data-read="1" data-url="' + esc(url) + '" data-title="' + esc(title) +
       '" title="对照阅读全文（中文在上·原文在下；评论后收进 Biblioteca，3 天没评论自动清除）">📄</button>' : "";
-  return '<div class="item"><div class="l1"><a class="it" href="' + esc(href) + '" target="_blank" rel="noopener">' + titleHtml + "</a>" +
-    rd + cmtBtnHtml(url, source, title) + "</div>" +
+  const dl = readable
+    ? '<button class="icmt dsl' + (DIS[url] ? " has" : "") + '" data-dis="1" data-url="' + esc(url) +
+      '" data-src="' + source + '" data-title="' + esc(title) +
+      '" title="不感兴趣：以后减少推荐这类，且永不进 Biblioteca（再点一次撤销）">👎</button>' : "";
+  const disNote = DIS[url]
+    ? '<span class="imeta" style="color:var(--warn)">已标记不感兴趣 · 后续减少同类推荐 · 不进 Biblioteca</span>' : "";
+  return '<div class="item' + (DIS[url] ? " disliked" : "") + '"><div class="l1"><a class="it" href="' + esc(href) + '" target="_blank" rel="noopener">' + titleHtml + "</a>" +
+    rd + cmtBtnHtml(url, source, title) + dl + "</div>" +
     (metaHtml ? '<span class="imeta">' + metaHtml + "</span>" : "") +
+    disNote +
     cboxHtml(url, title) + "</div>";
 }
 function isNewDay(tsSecOrDate, now) {
@@ -815,8 +826,24 @@ function renderWeekly() {
 
 /* ================= 评论框交互（事件委托） ================= */
 document.addEventListener("click", async e => {
-  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-read]");
+  const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-read],[data-dis]");
   if (!tg) return;
+  if (tg.hasAttribute("data-dis")) {
+    const url = tg.dataset.url;
+    const undo = !!DIS[url];
+    tg.disabled = true;
+    const r = await api("PUT", "/api/workbench/dislike", {
+      url, source: tg.dataset.src, title: tg.dataset.title, undo,
+    });
+    tg.disabled = false;
+    if (!r.ok) { toast(r.error || "操作失败"); return; }
+    if (undo) delete DIS[url];
+    else DIS[url] = { url, source: tg.dataset.src, title: tg.dataset.title, at: Date.now() };
+    renderAnth();
+    renderArxiv();
+    toast(undo ? "已撤销不感兴趣" : "已标记不感兴趣：减少同类推荐，不会进 Biblioteca");
+    return;
+  }
   if (tg.hasAttribute("data-read")) { openReader(tg.dataset.url, tg.dataset.title); return; }
   if (tg.dataset.cmt != null && tg.dataset.cmt !== undefined && tg.hasAttribute("data-cmt")) {
     const box = document.querySelector('[data-cbox="' + CSS.escape(tg.dataset.url) + '"]');
@@ -919,7 +946,7 @@ document.querySelectorAll(".rfbtn").forEach(btn => btn.addEventListener("click",
   for (let i = 0; i < 45; i++) {
     await sleep(2000);
     const d = await api("GET", "/api/workbench/data");
-    WB = d.data; SCHED = d.sched; CFG = d.cfg;
+    WB = d.data; SCHED = d.sched; CFG = d.cfg; DIS = d.dislikes || {};
     renderAll();
     if ((WB[sec] || {}).at !== startAt && !(SCHED[sec] || {}).busy) break;
   }
@@ -1189,7 +1216,7 @@ async function loadAll() {
     api("GET", "/api/workbench/weekly"),
     api("GET", "/api/workbench/memos"),
   ]);
-  CFG = d.cfg; WB = d.data; SCHED = d.sched;
+  CFG = d.cfg; WB = d.data; SCHED = d.sched; DIS = d.dislikes || {};
   LOG = log.items || [];
   CMT = {};
   (cmt.items || []).forEach(c => { CMT[c.url] = c; });
