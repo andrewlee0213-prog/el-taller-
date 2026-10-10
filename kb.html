@@ -266,8 +266,7 @@ const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scrip
 const bookIcon = b => b.uploaded ? '📄' : (ICONS[b.id] || '📚');
 const bookById = id => window.KB.books.find(b => b.id === id);
 
-function saveState(){ try{ localStorage.setItem('kb-state', JSON.stringify({ view, b: bookId, c: chapterIdx })); }catch(e){} }
-function loadState(){ try{ return JSON.parse(localStorage.getItem('kb-state')||'null'); }catch(e){ return null; } }
+try{ localStorage.removeItem('kb-state'); }catch(e){}   /* 旧版位置记忆已废弃：进 Biblioteca 一律落书架，仅深链直达章节 */
 
 function render(){
   const bl = document.getElementById('bookLayout'), sv = document.getElementById('shelfView');
@@ -363,9 +362,9 @@ async function doSearch(q){
 /* 统一事件委托：书架卡片 / 搜索结果跳章 / 书内目录 / 回书架 */
 document.getElementById('shelfGrid').addEventListener('click', e => {
   const card = e.target.closest('[data-bid]');
-  if (card) { view = 'book'; bookId = card.dataset.bid; chapterIdx = 0; render(); saveState(); return; }
+  if (card) { view = 'book'; bookId = card.dataset.bid; chapterIdx = 0; render(); return; }
   const row = e.target.closest('[data-sb]');
-  if (row) { view = 'book'; bookId = row.dataset.sb; chapterIdx = +row.dataset.sc; render(); saveState(); }
+  if (row) { view = 'book'; bookId = row.dataset.sb; chapterIdx = +row.dataset.sc; render(); }
 });
 document.getElementById('toc').addEventListener('click', e => {
   const btn = e.target.closest('button');
@@ -374,9 +373,9 @@ document.getElementById('toc').addEventListener('click', e => {
   else if (btn.dataset.sb) { bookId = btn.dataset.sb; chapterIdx = +btn.dataset.sc; }
   else return;
   document.getElementById('searchBox').value = '';
-  renderBook(); saveState();
+  renderBook();
 });
-document.getElementById('backShelf').addEventListener('click', () => { view = 'shelf'; render(); saveState(); });
+document.getElementById('backShelf').addEventListener('click', () => { view = 'shelf'; render(); });
 
 /* 上传收录（admin）：书架头「＋ 上传」 */
 (function kbUploadSetup(){
@@ -435,7 +434,7 @@ function hashState(){
 /* 同页面改 hash（如从文章链接返回已打开的 kb 页）是同文档导航，boot 不重跑 → 监听定位 */
 window.addEventListener('hashchange', () => {
   const h = hashState();
-  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; render(); saveState(); }
+  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; render(); }
 });
 
 (function boot(){
@@ -444,13 +443,6 @@ window.addEventListener('hashchange', () => {
   }
   const h = hashState();
   if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; }
-  else {
-    const st = loadState();
-    if (st && st.view === 'book' && bookById(st.b)) {
-      const b = bookById(st.b);
-      view = 'book'; bookId = st.b; chapterIdx = Math.min(st.c || 0, b.chapters.length - 1);
-    }
-  }
   render();
 })();
 fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); }).catch(()=>{});
