@@ -287,6 +287,8 @@ const WB_FILE = {
   notes:    path.join(DATA, "cuaderno-extra.json"),
   memos:    path.join(DATA, "workbench-memos.json"),
   holidays: path.join(DATA, "holidays.json"),
+  reader:   path.join(DATA, "workbench-reader.json"),   // 对照阅读的文章正文缓存（3 天无评论自动清除）
+  biblio:   path.join(DATA, "biblioteca-articles.json"),// 评论过 → 收进 Biblioteca 的文章（永久）
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -836,6 +838,8 @@ let wbComments = loadJson(WB_FILE.comments, {});  // { [url]: {url,source,title,
 let wbWeekly = loadJson(WB_FILE.weekly, {});      // { [start~end]: {id,start,end,range,summary,plan,confirmedAt,generatedAt} }
 let wbNotes = loadJson(WB_FILE.notes, []);        // [{id,title,date,tags,summary,body,visibility,sourceUrl,source}]
 let wbMemos = loadJson(WB_FILE.memos, []);        // [{id,date,text,done,createdAt}] 备忘记事（带日期上日历）
+let wbReader = loadJson(WB_FILE.reader, {});      // { [url]: {url,source,title,pub,paras:[[src,zh]],firstAt,fetchedAt,promotedAt} }
+let wbBiblio = loadJson(WB_FILE.biblio, {});      // { [url]: {url,id,source,title,promotedAt,html,text} } 评论过的文章进 Biblioteca
 
 /* ---------------- 节假日（holiday-cn：国务院公告口径，含调休补班；jsdelivr→raw 双源） ---------------- */
 const holidaysByYear = loadJson(WB_FILE.holidays, {});   // { 2026: [{name,date,isOffDay}] }
@@ -968,6 +972,104 @@ function wbAddNote(o) {
   wbNotes.unshift(note);
   saveJson(WB_FILE.notes, wbNotes);
   return note;
+}
+
+/* ---------------- 对照阅读：抓正文 → GLM 逐段翻译 → 评论即入 Biblioteca / 3 天无评论清除 ---------------- */
+const escHtml = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+/* Anthropic 研究页正文抽取：<article>/<main> 内的 <p>，滤掉短碎导航句 */
+function extractArticleParas(html) {
+  const h = String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<(nav|footer|header|aside|form)[\s\S]*?<\/\1>/gi, " ");
+  const m = /<article[\s\S]*?<\/article>/i.exec(h) || /<main[\s\S]*?<\/main>/i.exec(h) || [h];
+  const paras = [];
+  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  let pm;
+  while ((pm = re.exec(m[0]))) {
+    const t = cleanText(pm[1].replace(/<[^>]+>/g, " "));
+    if (t.length >= 40) paras.push(t.slice(0, 2000));
+  }
+  return paras.slice(0, 60);
+}
+/* arXiv 摘要：export API 按 id 取 <entry> 里的标题+摘要 */
+async function arxivAbstract(url) {
+  const idm = /arxiv\.org\/abs\/([^?#]+)/.exec(url);
+  if (!idm) return [];
+  const xml = await httpGetText("https://export.arxiv.org/api/query?id_list=" + encodeURIComponent(idm[1]) + "&max_results=1", 30000);
+  const em = /<entry>([\s\S]*?)<\/entry>/.exec(xml);
+  if (!em) return [];
+  const tm = reFirst(em[1], /<title>([\s\S]*?)<\/title>/);
+  const sm = reFirst(em[1], /<summary>([\s\S]*?)<\/summary>/);
+  const out = [];
+  if (tm && tm[0]) out.push(cleanText(tm[0]));
+  if (sm && sm[0]) out.push(cleanText(sm[0]));
+  return out;
+}
+/* 确保文章正文+译文在缓存里（懒加载：首次点开才抓+翻译；译文全空则隔 10 分钟允许重试） */
+async function readerEnsure(url) {
+  const anth = ((wbCache.anth && wbCache.anth.items) || []).find(x => x.url === url);
+  const arx = ((wbCache.arxiv && wbCache.arxiv.items) || []).find(x => x.url === url);
+  const item = anth || arx;
+  if (!item) return wbReader[url] || null;   // 只读当前卡片里在列的文章；已不在卡片只有缓存可给
+  const old = wbReader[url];
+  if (old && Array.isArray(old.paras) && old.paras.length &&
+      !(old.needZh && Date.now() - (old.fetchedAt || 0) > 600e3)) return old;
+  const source = anth ? "anth" : "arxiv";
+  let srcs = [];
+  try {
+    if (source === "anth") srcs = extractArticleParas(await httpGetText(url, 25000));
+    else srcs = await arxivAbstract(url);
+  } catch {}
+  if (!srcs.length) return old || null;
+  let zhs = [];
+  try { zhs = await glmTranslateLines(srcs); } catch {}
+  const e = {
+    url, source, title: item.zh || item.title || url, pub: item.pub || "",
+    paras: srcs.map((s, i) => [s, keepEnglishTerms(zhs[i] || "")]),
+    firstAt: (old && old.firstAt) || Date.now(), fetchedAt: Date.now(),
+    needZh: zhs.every(z => !z),
+  };
+  wbReader[url] = e;
+  saveJson(WB_FILE.reader, wbReader);
+  return e;
+}
+/* 评论过 → 文章（中英对照）+评论 收进 Biblioteca；评论改/删时同步更新条目（文章保留） */
+async function promoteArticle(url) {
+  const e = await readerEnsure(url);
+  if (!e) return;
+  const c = wbComments[url];
+  const srcName = e.source === "arxiv" ? "arXiv 论文" : "Anthropic 研究";
+  const head = "<p><strong>来源：</strong>" + srcName + (e.pub ? " · " + e.pub : "") +
+    ' · <a href="' + escHtml(url) + '" target="_blank" rel="noopener">原文链接</a> · 收录于 ' + dstr(new Date()) + "</p>";
+  const paras = e.paras.map(pair =>
+    (pair[1] ? "<p>" + escHtml(pair[1]) + "</p>" : "") +
+    '<p style="opacity:.62;font-size:.92em">' + escHtml(pair[0]) + "</p>"
+  ).join("");
+  const cmt = c && c.text
+    ? "<h4>我的评论</h4><blockquote>" + escHtml(c.text) + "</blockquote>" : "";
+  wbBiblio[url] = {
+    url, id: "r-" + md5(url).slice(0, 10), source: e.source,
+    title: e.title, pub: e.pub || "", promotedAt: Date.now(),
+    html: head + paras + cmt,
+    text: e.paras.map(p => p[1] || p[0]).join("\n") + "\n评论：" + ((c && c.text) || ""),
+  };
+  e.promotedAt = Date.now();
+  saveJson(WB_FILE.biblio, wbBiblio);
+  saveJson(WB_FILE.reader, wbReader);
+}
+/* 3 天无评论且未晋升 → 删除正文缓存（卡片条目本身随每日抓取自然轮换） */
+function readerPurge() {
+  const cut = Date.now() - 3 * 86400e3;
+  let dirty = false;
+  for (const [url, e] of Object.entries(wbReader)) {
+    const commented = !!(wbComments[url] && wbComments[url].text);
+    if (!e.promotedAt && !commented && (e.firstAt || e.fetchedAt || 0) < cut) {
+      delete wbReader[url];
+      dirty = true;
+    }
+  }
+  if (dirty) saveJson(WB_FILE.reader, wbReader);
 }
 
 /* ---------------- 管理台占位页（证明守卫生效） ---------------- */
@@ -1202,9 +1304,12 @@ const server = http.createServer(async (req, res) => {
         const url = String(body.url || "").trim();
         if (!url) { json(res, 400, { ok: false, error: "缺少条目 URL" }); return log(400); }
         const text = String(body.text || "").trim();
+        /* anth/arxiv 的评论 = 触发收进 Biblioteca（后台执行，首次要抓正文+翻译可能要几十秒） */
+        const wantPromote = ["anth", "arxiv"].includes(body.source) || !!wbBiblio[url];
         if (!text) {
           delete wbComments[url];   // 清空文本 = 删除评论
           saveJson(WB_FILE.comments, wbComments);
+          if (wantPromote) promoteArticle(url).catch(() => {});   // 同步更新条目（文章保留）
           json(res, 200, { ok: true, removed: true });
           return log(200);
         }
@@ -1216,7 +1321,29 @@ const server = http.createServer(async (req, res) => {
           createdAt: Date.now(),
         };
         saveJson(WB_FILE.comments, wbComments);
+        if (wantPromote) promoteArticle(url).catch(() => {});
         json(res, 200, { ok: true });
+        return log(200);
+      }
+
+      if (p === "/api/workbench/article" && req.method === "GET") {
+        /* 对照阅读：懒加载抓正文 + GLM 逐段翻译（首次约 10~60 秒），缓存于 workbench-reader.json */
+        const url = String(u.searchParams.get("url") || "").trim();
+        if (!/^https?:\/\//.test(url)) { json(res, 400, { ok: false, error: "缺少文章 URL" }); return log(400); }
+        let e = null;
+        try { e = await readerEnsure(url); } catch {}
+        if (!e || !Array.isArray(e.paras) || !e.paras.length) {
+          json(res, 200, { ok: false, error: "正文抓取失败或文章已过期清除" });
+          return log(200);
+        }
+        const c = wbComments[url];
+        json(res, 200, { ok: true, article: {
+          url: e.url, source: e.source, title: e.title, pub: e.pub || "",
+          paras: e.paras, firstAt: e.firstAt, fetchedAt: e.fetchedAt,
+          promoted: !!((wbBiblio[url] || {}).promotedAt),
+          comment: (c && c.text) || "",
+          deadline: (e.firstAt || Date.now()) + 3 * 86400e3,
+        } });
         return log(200);
       }
 
@@ -1346,6 +1473,25 @@ const server = http.createServer(async (req, res) => {
         json(res, 401, { error: "unauthorized" });
         return log(401);
       }
+      /* /kb-data.js 动态下发：静态两本书基座 + 「阅读精选」第三本（评论收进 Biblioteca 的对照文章） */
+      if (p === "/kb-data.js") {
+        let kb = null;
+        try {
+          const t = fs.readFileSync(path.join(ROOT, "kb-data.js"), "utf8");
+          kb = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+        } catch { json(res, 404, { error: "not found" }); return log(404); }
+        if (!Array.isArray(kb.books)) kb.books = [];
+        const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
+        if (arts.length) kb.books.push({
+          id: "lectura", title: "阅读精选 · 对照阅读", es: "📖 Lectura",
+          desc: "Anthropic 研究与 arXiv 论文的全文中英对照。工作台里评论过的文章自动收进本书（未评论的 3 天后清除）。",
+          intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
+          chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
+        });
+        send(res, 200, "window.KB = " + JSON.stringify(kb) + ";\n",
+          { "Content-Type": "text/javascript; charset=utf-8" });
+        return log(200);
+      }
     }
 
     /* ---- 工作台（仅 admin：未登录去登录页，非 admin 明示 403） ---- */
@@ -1431,6 +1577,10 @@ setInterval(() => {
     if (!s.busy && now >= s.nextAt) wbRun(k).catch(e => console.error("[workbench]", k, e.message));
   }
 }, 15000).unref();
+
+/* 对照阅读缓存：3 天无评论且未晋升 → 清除（启动即清一次 + 每小时巡检） */
+readerPurge();
+setInterval(readerPurge, 3600e3).unref();
 
 server.listen(CFG.PORT, "0.0.0.0", () => {
   const lans = [];

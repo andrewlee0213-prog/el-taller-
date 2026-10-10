@@ -36,8 +36,12 @@ check('临时账号登录', r.json && r.json.ok === true, JSON.stringify(r.json)
 r = await req('GET', '/kb-data.js');
 check('登录后可读 kb-data', r.status === 200 && r.text.includes('agent-handbook'), r.status);
 const kb = JSON.parse(r.text.match(/window\.KB = ([\s\S]+);\n?/)[1]);
-check('2 书 22 章', kb.books.length === 2 && kb.books.reduce((n, b) => n + b.chapters.length, 0) === 22,
-  kb.books.map(b => b.chapters.length).join('+'));
+/* 基座固定 2 书 22 章；服务端可动态追加「阅读精选」（lectura）第三本——只要有章节就合法 */
+const staticBooks = kb.books.filter(b => b.id === 'agent-handbook' || b.id === 'interview-bank');
+check('基座 2 书 22 章（动态阅读精选允许）',
+  staticBooks.length === 2 && staticBooks.reduce((n, b) => n + b.chapters.length, 0) === 22 &&
+  kb.books.every(b => b.chapters.length > 0),
+  kb.books.map(b => b.id + ':' + b.chapters.length).join(' '));
 check('章节内容非空', kb.books.every(b => b.chapters.every(c => c.html.length > 200)), '');
 r = await req('GET', '/kb.html', null, 'follow');
 check('登录后 /kb.html 200 含 Biblioteca', r.status === 200 && r.text.includes('La Biblioteca'), r.status);
