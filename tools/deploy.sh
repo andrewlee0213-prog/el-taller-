@@ -11,11 +11,15 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DIR"
 
 echo "── 1/5 敏感词快扫 ──"
-if grep -rlnE '<本机敏感词表>' \
+SCAN="$(mktemp /tmp/taller-scan.XXXXXX)"
+node -e 'const w=JSON.parse(require("fs").readFileSync("tools/sanitize.local.json","utf8"));process.stdout.write(w.scan.join("\n"))' > "$SCAN" \
+  || { echo "⚠ 生成扫描词表失败（需要 node + 本机 tools/sanitize.local.json）"; exit 1; }
+if grep -rlnE -f "$SCAN" \
   index.html login.html kb.html kb-data.js works.js notes.js server.js workbench.html \
   poster-six.html about-site.html kindle-dashboard.html video-scripts.html posts/ data/kb-content.json 2>/dev/null; then
-  echo "⚠ 扫描命中上方文件，先脱敏再发布（构建产物请改 tools/build-kb.* 的 SANITIZE 后重建）"; exit 1
+  echo "⚠ 扫描命中上方文件，先脱敏再发布（构建产物请改 tools/sanitize.local.json 后重建）"; rm -f "$SCAN"; exit 1
 fi
+rm -f "$SCAN"
 # 工作台配置模板不能带真实 Key/Cookie 进包（tools/ 本就不打包，这里双保险）
 if grep -qE 'SESSDATA=[A-Za-z0-9%]{20}' tools/server-config.example.json 2>/dev/null; then
   echo "⚠ tools/server-config.example.json 里疑似有真实 Cookie，先清掉"; exit 1

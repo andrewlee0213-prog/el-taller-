@@ -4,3 +4,6 @@ data/
 tools/shots/
 *.log
 .DS_Store
+
+# 本机私有脱敏词表（词表本身即内部信息，绝不入库）
+tools/sanitize.local.json

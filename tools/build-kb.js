@@ -174,7 +174,12 @@ const total = books.reduce((n, b) => n + b.chapters.length, 0);
 
 /* ---------- 上站脱敏钩子：源文件（私人知识库）保持原样，仅在上站产物中替换。
    词表与《上站内容规划.md》敏感词表同步；新增敏感点先加这里再重建 ---------- */
-const SANITIZE = []; /* 敏感词表在本机 sanitize.local.json，不入仓库 */
+/* 敏感词表在本机 tools/sanitize.local.json（不入库——词表本身即内部信息，进公开仓库等于自曝）；缺失时拒绝构建，防漏脱敏上站 */
+const SANITIZE = (() => {
+  const p = path.join(__dirname, "sanitize.local.json");
+  if (!fs.existsSync(p)) { console.error("缺少 tools/sanitize.local.json（本机私有词表）"); process.exit(1); }
+  return JSON.parse(fs.readFileSync(p, "utf8")).pairs.map(x => [new RegExp(x.re, x.flags || "g"), x.to]);
+})();
 
 let payload = JSON.stringify({ generated: new Date().toISOString(), books }, null, 1);
 let hits = 0;

@@ -65,8 +65,12 @@ const meta = {
   cats: [...new Set(entries.map(e => e.cat))],
 };
 
-/* 上站脱敏钩子：与 tools/build-kb.js 的 SANITIZE 保持同一份词表（源文件私有，仅脱敏产物） */
-const SANITIZE = []; /* 敏感词表在本机 sanitize.local.json，不入仓库 */
+/* 上站脱敏钩子：词表与 tools/build-kb.js 共用本机 tools/sanitize.local.json（不入库——词表本身即内部信息；缺失时拒绝构建） */
+const SANITIZE = (() => {
+  const p = path.join(__dirname, "sanitize.local.json");
+  if (!fs.existsSync(p)) { console.error('缺少 tools/sanitize.local.json（本机私有词表）'); process.exit(1); }
+  return JSON.parse(fs.readFileSync(p, "utf8")).pairs.map(x => [new RegExp(x.re, x.flags || "g"), x.to]);
+})();
 let payload = JSON.stringify({ meta, entries }, null, 1);
 let hits = 0;
 for (const [re, to] of SANITIZE) { payload = payload.replace(re, () => { hits++; return to; }); }
