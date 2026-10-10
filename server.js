@@ -243,6 +243,131 @@ function loadKb() {
   return kbCache.body;
 }
 
+/* ---------------- Biblioteca 上传收录（admin 上传 PDF/MD；登录可见） ----------------
+   md = build-kb 同款「## 拆章」逻辑（复制自 tools/build-kb.js 保持自包含）；
+   pdf = 不抽文本，内嵌浏览器原生查看器；文件存 data/kb-uploads/（BLOCKED，只走 API） */
+const KB_UPLOAD_DIR = path.join(DATA, "kb-uploads");
+const KB_UPLOAD_FILE = path.join(DATA, "kb-uploads.json");
+let kbUploads = loadJson(KB_UPLOAD_FILE, {});
+const kbUploadEsc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function kbMdInline(s) {
+  let t = kbUploadEsc(s);
+  t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+  return t;
+}
+function kbMdToHtml(md) {
+  const lines = md.split(/\r?\n/);
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^```/.test(line)) {
+      const buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++;
+      out.push('<pre class="kb-pre"><code>' + kbUploadEsc(buf.join("\n")) + "</code></pre>");
+      continue;
+    }
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      const cells = row => row.trim().replace(/^\||\|$/g, "").split("|").map(c => kbMdInline(c.trim()));
+      const head = cells(line); i += 2;
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+      out.push("<table><thead><tr>" + head.map(h => "<th>" + h + "</th>").join("") + "</tr></thead><tbody>" +
+        rows.map(r => "<tr>" + r.map(c => "<td>" + c + "</td>").join("") + "</tr>").join("") + "</tbody></table>");
+      continue;
+    }
+    let m;
+    if ((m = line.match(/^(#{3,4})\s+(.+)$/))) { out.push(`<h${m[1].length + 1}>` + kbMdInline(m[2]) + `</h${m[1].length + 1}>`); i++; continue; }
+    if ((m = line.match(/^>\s?(.*)$/))) {
+      const buf = [m[1]]; i++;
+      while (i < lines.length && (m = lines[i].match(/^>\s?(.*)$/))) { buf.push(m[1]); i++; }
+      out.push("<blockquote>" + buf.map(kbMdInline).join("<br>") + "</blockquote>");
+      continue;
+    }
+    if (/^\s*-\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length) {
+        const mm = lines[i].match(/^(\s*)-\s+(.+)$/);
+        if (!mm) break;
+        items.push({ deep: mm[1].length >= 2, text: mm[2] }); i++;
+      }
+      let html = "<ul>", open = false;
+      for (const it of items) {
+        if (it.deep) { if (!open) { html += "<ul>"; open = true; } html += "<li>" + kbMdInline(it.text) + "</li>"; }
+        else { if (open) { html += "</ul>"; open = false; } html += "<li>" + kbMdInline(it.text) + "</li>"; }
+      }
+      if (open) html += "</ul>";
+      out.push(html + "</ul>");
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items = [];
+      while (i < lines.length && (m = lines[i].match(/^\s*\d+\.\s+(.+)$/))) { items.push(m[1]); i++; }
+      out.push("<ol>" + items.map(t => "<li>" + kbMdInline(t) + "</li>").join("") + "</ol>");
+      continue;
+    }
+    if (/^(-{3,}|\*{3,})\s*$/.test(line)) { out.push("<hr>"); i++; continue; }
+    if (/^\s*$/.test(line)) { i++; continue; }
+    const buf = [line]; i++;
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4}\s|>|\s*-\s+|\s*\d+\.\s+|\s*\||```|-{3,})/.test(lines[i])) { buf.push(lines[i]); i++; }
+    out.push("<p>" + buf.map(kbMdInline).join("<br>") + "</p>");
+  }
+  return out.join("\n");
+}
+/* 上传 MD 拆书：连续 H1 合并当书名（中英对照标题），> 引用进简介，## 拆章 */
+function kbSplitUploadBook(md) {
+  const lines = md.split(/\r?\n/);
+  const titles = [];
+  let intro = "", bodyStart = 0, seenBody = false;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (!seenBody && /^#\s+/.test(l) && !/^##\s/.test(l)) { titles.push(l.replace(/^#\s+/, "")); continue; }
+    if (!seenBody && /^>\s?/.test(l)) { intro += (intro ? " " : "") + l.replace(/^>\s?/, ""); continue; }
+    if (/^##\s+/.test(l)) { bodyStart = i; break; }
+    if (!/^\s*$/.test(l) && !/^(-{3,}|\*{3,})\s*$/.test(l)) { bodyStart = i; seenBody = true; continue; }
+    if (seenBody) break;
+  }
+  const chapters = [];
+  let cur = null;
+  for (let i = bodyStart; i < lines.length; i++) {
+    const m = lines[i].match(/^##\s+(.+)$/);
+    if (m) { cur = { id: "ch" + chapters.length, title: m[1].trim(), md: [] }; chapters.push(cur); }
+    else if (cur) cur.md.push(lines[i]);
+  }
+  chapters.forEach(c => { c.html = kbMdToHtml(c.md.join("\n")); c.text = c.html.replace(/<[^>]+>/g, " "); delete c.md; });
+  return { title: titles.join(" ｜ ") || "未命名文档", intro: kbMdInline(intro), chapters: chapters.filter(c => c.html.length > 0) };
+}
+function kbUploadBooks() {
+  return Object.values(kbUploads).sort((a, b) => b.at - a.at).map(u => {
+    const es = (u.title || "文档").replace(/\.(md|pdf)$/i, "").slice(0, 10);
+    if (u.type === "md") {
+      const parsed = kbSplitUploadBook(fs.readFileSync(path.join(KB_UPLOAD_DIR, u.file), "utf8"));
+      const chapters = parsed.chapters.length ? parsed.chapters
+        : [{ id: "ch0", title: u.title.replace(/\.md$/i, ""), html: kbMdToHtml(fs.readFileSync(path.join(KB_UPLOAD_DIR, u.file), "utf8")), text: "" }];   // 无 ## 节的 md 整篇成一章
+      return { id: "up-" + u.id, title: u.title.replace(/\.md$/i, ""), es, desc: "上传收录 · " + new Date(u.at).toLocaleDateString(),
+        intro: parsed.intro, chapters, uploaded: true };
+    }
+    return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: "上传收录 · PDF 原文",
+      intro: "PDF 原文内嵌查看（浏览器原生渲染）。",
+      chapters: [{ id: "pdf", title: "查看 PDF 原文",
+        html: '<iframe src="/api/kb/file/' + u.file + '" style="width:100%;height:72vh;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;background:var(--g-bg-base)"></iframe>' +
+          '<p style="margin-top:10px"><a href="/api/kb/file/' + u.file + '" target="_blank" rel="noopener">↗ 新窗口打开 / 下载</a></p>',
+        text: "" }], uploaded: true };
+  }).filter(b => b.chapters.length > 0);
+}
+/* 原始二进制 body 读取（上传用；readBody 只吃 16KB JSON） */
+function readRawBody(req, maxBytes) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    req.on("data", c => { size += c.length; if (size > maxBytes) { reject(new Error("too large")); req.destroy(); } else chunks.push(c); });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
 /* ---------------- 天气代理（Key 只存服务端：server-config.json / 环境变量，30 分钟缓存） ---------------- */
 let weatherCache = { at: 0, body: null };
 async function weatherProxy(res) {
@@ -1339,6 +1464,55 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- Biblioteca 上传收录（admin 上传；文件服务登录可见） ---- */
+    if (p === "/api/kb/upload" && (req.method === "POST" || req.method === "DELETE")) {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      if (req.method === "DELETE") {
+        const e = kbUploads[u.searchParams.get("id") || ""];
+        if (!e) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+        try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
+        delete kbUploads[e.id];
+        saveJson(KB_UPLOAD_FILE, kbUploads);
+        json(res, 200, { ok: true });
+        return log(200);
+      }
+      /* POST：raw body = 文件字节（≤25MB），x-file-name 头传 URL 编码文件名 */
+      const raw = String(req.headers["x-file-name"] || "");
+      let fname = raw;
+      try { fname = decodeURIComponent(raw); } catch {}
+      fname = fname.replace(/[\\/:*?"<>|]/g, "_").slice(0, 80).trim();
+      const ext = (/\.md$/i.test(fname)) ? ".md" : (/\.pdf$/i.test(fname)) ? ".pdf" : "";
+      if (!ext) { json(res, 400, { ok: false, error: "仅支持 .md / .pdf 文件" }); return log(400); }
+      let buf;
+      try { buf = await readRawBody(req, 25 * 1024 * 1024); }
+      catch { json(res, 413, { ok: false, error: "文件超过 25MB 上限" }); return log(413); }
+      if (!buf.length) { json(res, 400, { ok: false, error: "空文件" }); return log(400); }
+      if (!fs.existsSync(KB_UPLOAD_DIR)) fs.mkdirSync(KB_UPLOAD_DIR, { recursive: true });
+      const id = "u" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36);
+      const file = id + ext;
+      fs.writeFileSync(path.join(KB_UPLOAD_DIR, file), buf);
+      kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now() };
+      saveJson(KB_UPLOAD_FILE, kbUploads);
+      json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
+      return log(200);
+    }
+
+    if (/^\/api\/kb\/file\/[\w.-]+$/.test(p) && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
+      const file = p.slice("/api/kb/file/".length);
+      if (!Object.values(kbUploads).some(e => e.file === file)) { json(res, 404, { error: "not found" }); return log(404); }
+      const abs = path.join(KB_UPLOAD_DIR, path.basename(file));
+      if (!fs.existsSync(abs)) { json(res, 404, { error: "not found" }); return log(404); }
+      send(res, 200, fs.readFileSync(abs), {
+        "Content-Type": file.endsWith(".pdf") ? "application/pdf" : "text/markdown; charset=utf-8",
+        "Content-Disposition": "inline; filename*=UTF-8''" + encodeURIComponent(file),
+        "Cache-Control": "no-store",
+      });
+      return log(200);
+    }
+
     if (p === "/api/weather" && req.method === "GET") {
       await weatherProxy(res);
       return log(200);
@@ -1661,6 +1835,7 @@ const server = http.createServer(async (req, res) => {
           intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
           chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
         });
+        kb.books = kb.books.concat(kbUploadBooks());   /* admin 上传收录的 PDF/MD 文档 */
         send(res, 200, "window.KB = " + JSON.stringify(kb) + ";\n",
           { "Content-Type": "text/javascript; charset=utf-8" });
         return log(200);
