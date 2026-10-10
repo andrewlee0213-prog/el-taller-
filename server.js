@@ -251,6 +251,26 @@ const KB_UPLOAD_FILE = path.join(DATA, "kb-uploads.json");
 let kbUploads = loadJson(KB_UPLOAD_FILE, {});
 /* 待处理队列上线前的旧上传一律视为已看过（站主主动收的），不回灌工作台 */
 for (const u of Object.values(kbUploads)) if (!u.state) u.state = "keep";
+
+/* ---------------- 视频收集桥（Biblioteca 提交链接 → Mac openclaw 领取 → 转录回传） ----------------
+   队列存 data/kb-collect.json；pending 超 3 小时视为失败（Mac 未领取或处理卡死） */
+const KB_COLLECT_FILE = path.join(DATA, "kb-collect.json");
+let kbCollect = loadJson(KB_COLLECT_FILE, { items: [] });
+if (!Array.isArray(kbCollect.items)) kbCollect.items = [];
+function kbCollectSweep() {
+  const cutoff = Date.now() - 3 * 3600 * 1000;
+  let dirty = false;
+  for (const it of kbCollect.items) {
+    if (it.state === "pending" && it.at < cutoff) {
+      it.state = "failed";
+      it.error = "处理超时：Mac 侧 openclaw 未领取或处理卡住（超过 3 小时）";
+      it.doneAt = Date.now();
+      dirty = true;
+    }
+  }
+  if (dirty) saveJson(KB_COLLECT_FILE, kbCollect);
+}
+kbCollectSweep();
 const kbUploadEsc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function kbMdInline(s) {
   let t = kbUploadEsc(s);
@@ -364,6 +384,18 @@ function kbAllBooks() {
     desc: "Anthropic 研究与 arXiv 论文的全文中英对照。工作台里评论过的文章自动收进本书（未评论的 3 天后清除）。",
     intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
     chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
+  });
+  const col = kbCollect.items.filter(i => i.state === "done" && i.md);
+  if (col.length) books.push({
+    id: "coleccion", title: "个人收集 · 视频集", es: "🎬 Colección",
+    desc: "书架头提交 B 站视频链接，家中 openclaw + getnote 自动转录回流归档于此。",
+    intro: "收集管线：Biblioteca 提交链接 → 服务器排队 → openclaw 网关领取 → 得到大脑转录 → 回流成本书章节。",
+    chapters: col.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).map(i => ({
+      id: i.id, title: i.title || "未命名视频",
+      html: '<p style="opacity:.72;font-size:12px;margin:0 0 14px">🔗 来源：<a href="' + kbUploadEsc(i.url) + '" target="_blank" rel="noopener">' + kbUploadEsc(i.url) +
+        "</a> · 收录于 " + new Date(i.doneAt || i.at).toLocaleString() + "</p>" + kbMdToHtml(i.md),
+      text: "",
+    })),
   });
   return books.concat(kbUploadBooks());
 }
@@ -1618,6 +1650,85 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- 视频收集桥：提交/查状态/重试（admin 会话） + 领取/回传（collectToken） ---- */
+    if (p === "/api/kb/collect" && (req.method === "POST" || req.method === "GET" || req.method === "DELETE")) {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      if (req.method === "GET") {
+        kbCollectSweep();
+        json(res, 200, { ok: true, items: kbCollect.items.slice().sort((a, b) => b.at - a.at) });
+        return log(200);
+      }
+      if (req.method === "DELETE") {
+        const idx = kbCollect.items.findIndex(i => i.id === String(u.searchParams.get("id") || ""));
+        if (idx < 0) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+        kbCollect.items.splice(idx, 1);
+        saveJson(KB_COLLECT_FILE, kbCollect);
+        json(res, 200, { ok: true });
+        return log(200);
+      }
+      const body = await readJson(req);
+      const url = String(body.url || "").trim();
+      if (!/^https?:\/\/(www\.)?(bilibili\.com\/video\/|b23\.tv\/)\S*$/i.test(url)) {
+        json(res, 400, { ok: false, error: "仅支持 B 站视频链接（bilibili.com/video 或 b23.tv）" }); return log(400);
+      }
+      const dup = kbCollect.items.find(i => i.url === url && i.state !== "failed");
+      if (dup) {
+        json(res, 409, { ok: false, error: dup.state === "pending" ? "该链接已在收集队列中" : "该链接已于 " + new Date(dup.doneAt || dup.at).toLocaleString() + " 收录过" });
+        return log(409);
+      }
+      const it = { id: "c" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36), url, title: "", state: "pending", at: Date.now() };
+      kbCollect.items.push(it);
+      saveJson(KB_COLLECT_FILE, kbCollect);
+      json(res, 200, { ok: true, id: it.id });
+      return log(200);
+    }
+    if (p === "/api/kb/collect/retry" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false }); return log(s ? 403 : 401); }
+      const body = await readJson(req);
+      const it = kbCollect.items.find(i => i.id === String(body.id || ""));
+      if (!it || it.state !== "failed") { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      it.state = "pending"; it.at = Date.now(); delete it.error;
+      saveJson(KB_COLLECT_FILE, kbCollect);
+      json(res, 200, { ok: true });
+      return log(200);
+    }
+    if (p === "/api/kb/collect/pending" && req.method === "GET") {
+      const tok = String(u.searchParams.get("token") || req.headers["x-collect-token"] || "");
+      const expect = String(wbCfg.collectToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      kbCollectSweep();
+      json(res, 200, { ok: true, items: kbCollect.items.filter(i => i.state === "pending").map(i => ({ id: i.id, url: i.url })) });
+      return log(200);
+    }
+    if (p === "/api/kb/collect/done" && req.method === "POST") {
+      const tok = String(req.headers["x-collect-token"] || req.headers["x-token"] || "");
+      const expect = String(wbCfg.collectToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const body = await readJson(req);
+      const it = kbCollect.items.find(i => i.id === String(body.id || ""));
+      if (!it) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      if (it.state !== "pending") { json(res, 409, { ok: false, error: "该任务已处理过（" + it.state + "）" }); return log(409); }
+      if (body.ok) {
+        const md = String(body.md || "");
+        if (!md.trim()) { json(res, 400, { ok: false, error: "md 为空" }); return log(400); }
+        const CAP = 600 * 1024;
+        it.md = md.length > CAP ? md.slice(0, CAP) + "\n\n[内容超长已截断]" : md;
+        it.title = String(body.title || "").trim().slice(0, 120) || "未命名视频";
+        it.state = "done";
+      } else {
+        it.state = "failed";
+        it.error = String(body.error || "未知原因").slice(0, 300);
+      }
+      it.doneAt = Date.now();
+      saveJson(KB_COLLECT_FILE, kbCollect);
+      json(res, 200, { ok: true });
+      return log(200);
+    }
+
     if (/^\/api\/kb\/file\/[\w.-]+$/.test(p) && req.method === "GET") {
       const s = readSession(req);
       if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
@@ -2035,6 +2146,11 @@ wbInitSchedule();
 /* 确保 pushToken 存在（Mac launchd 上报命中率用） */
 if (!wbCfg.pushToken) {
   wbCfg.pushToken = crypto.randomBytes(16).toString("hex");
+  saveJson(WB_FILE.cfg, wbCfg);
+}
+/* 确保 collectToken 存在（Mac openclaw 收集桥领取/回传用，与 pushToken 分权） */
+if (!wbCfg.collectToken) {
+  wbCfg.collectToken = crypto.randomBytes(16).toString("hex");
   saveJson(WB_FILE.cfg, wbCfg);
 }
 setInterval(() => {

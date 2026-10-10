@@ -235,7 +235,7 @@ html[data-theme="negro"]{
     <div id="shelfView" style="display:none">
       <div class="shelf-head">
         <b id="shelfCount"></b>
-        <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，可一次多选，每份 ≤25MB">＋ 上传 PDF / MD</button></span>
+        <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，可一次多选，每份 ≤25MB">＋ 上传 PDF / MD</button><button class="book-tab upbtn" id="kbCollectBtn" style="margin-left:8px" title="提交 B 站视频链接，家中 openclaw + getnote 自动转录，收录进「个人收集 · 视频集」">＋ 收视频</button></span>
       </div>
       <div class="shelf" id="shelfGrid"></div>
     </div>
@@ -265,7 +265,7 @@ const esc = x => String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 let view = 'shelf', bookId = '', chapterIdx = 0;
 let IS_ADMIN = false;
 const chapterCache = new Map();
-const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖' };
+const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖', 'coleccion': '📼' };
 const bookIcon = b => b.uploaded ? '📄' : (ICONS[b.id] || '📚');
 const bookById = id => window.KB.books.find(b => b.id === id);
 
@@ -425,6 +425,42 @@ document.getElementById('backShelf').addEventListener('click', () => { view = 's
   });
 })();
 
+/* 视频收集桥（admin）：书架头「＋ 收视频」提交 B 站链接 → openclaw 领取转录 → 回流「个人收集」 */
+let COLLECT = [];
+async function loadCollect(){
+  try {
+    const r = await fetch('/api/kb/collect');
+    const j = await r.json();
+    if (!j.ok) return;
+    COLLECT = j.items || [];
+    const btn = document.getElementById('kbCollectBtn');
+    if (!btn) return;
+    const failed = COLLECT.filter(i => i.state === 'failed'), pending = COLLECT.filter(i => i.state === 'pending');
+    btn.style.color = '';
+    if (failed.length) { btn.textContent = '⚠ 收集失败 ' + failed.length; btn.style.color = 'var(--warn)'; }
+    else btn.textContent = pending.length ? '⏳ 收集中 ' + pending.length : '＋ 收视频';
+  } catch {}
+}
+document.getElementById('shelfView').addEventListener('click', async e => {
+  if (!e.target.closest('#kbCollectBtn')) return;
+  const failed = COLLECT.filter(i => i.state === 'failed');
+  if (failed.length) {
+    const msg = failed.map(i => '· ' + ((i.title || i.url).slice(0, 60)) + '\n  ' + (i.error || '')).join('\n');
+    if (confirm('收集失败的任务：\n' + msg + '\n\n确定 = 全部重新排队')) {
+      for (const i of failed) { try { await fetch('/api/kb/collect/retry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: i.id }) }); } catch {} }
+    }
+    loadCollect();
+    return;
+  }
+  const url = prompt('粘贴 B 站视频链接（bilibili.com/video 或 b23.tv）：');
+  if (!url) return;
+  const r = await fetch('/api/kb/collect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: url.trim() }) });
+  const j = await r.json().catch(() => ({}));
+  if (!j.ok) { alert('提交失败：' + (j.error || r.status)); return; }
+  alert('已加入收集队列。家中 openclaw 领取并转录后（几分钟到半小时），内容会出现在「个人收集 · 视频集」一书里。');
+  loadCollect();
+});
+
 /* 深链：#b=<书id>&c=<章序号>；链接被转发时 # 常被编码成 %23 混进路径 → 还原成真 hash 再定位 */
 (function restoreHash(){
   const pm = decodeURIComponent(location.pathname);
@@ -457,7 +493,7 @@ window.addEventListener('hashchange', () => {
   if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; }
   render();
 })();
-fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); }).catch(()=>{});
+fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); if (IS_ADMIN) loadCollect(); }).catch(()=>{});
 </script>
 <script>
 /* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
