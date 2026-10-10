@@ -185,6 +185,28 @@ html[data-theme="negro"]{
 .tdot:hover{transform:scale(1.18)}
 .tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
 @media (max-width:680px){ .themedots{display:none} }
+
+/* ---- 书架视图（藏书可扩展到成百上千） ---- */
+.shelf-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 2px 6px}
+.shelf-head b{font-size:14px}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px;padding:12px 0 46px}
+.bcard{border-radius:20px;padding:18px 16px;cursor:pointer;display:flex;flex-direction:column;gap:7px;min-height:128px;
+  background:linear-gradient(160deg,var(--g-card-hi),var(--g-card-lo));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+  backdrop-filter:blur(var(--g-blur)) saturate(1.6);box-shadow:0 10px 30px var(--g-drop);transition:.25s;text-align:left;font:inherit;color:var(--g-text)}
+.bcard:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--g-accent) 40%,transparent)}
+.bic{font-size:25px;line-height:1}
+.bcard b{font-size:13.5px;line-height:1.55}
+.bcard small{font-size:11.5px;color:var(--g-dim);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bmeta{font-size:11px;color:var(--g-dim);margin-top:auto}
+.sres{grid-column:1/-1;display:flex;flex-direction:column;gap:6px}
+.srow{text-align:left;border:1px dashed color-mix(in srgb,var(--ink) 14%,transparent);background:color-mix(in srgb,var(--ink) 5%,transparent);
+  border-radius:14px;padding:10px 14px;cursor:pointer;font:inherit;color:var(--g-text);display:flex;flex-direction:column;gap:3px}
+.srow:hover{border-color:color-mix(in srgb,var(--g-accent) 40%,transparent)}
+.srow small{color:var(--g-dim);font-size:11px}
+.srow span{font-size:11.5px;color:var(--g-dim);line-height:1.55}
+.back-shelf{width:100%;margin-bottom:10px;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;font:inherit;font-size:12.5px;
+  color:var(--g-dim);background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.back-shelf:hover{color:var(--g-accent-soft)}
 </style>
 </head>
 <body>
@@ -208,9 +230,17 @@ html[data-theme="negro"]{
       </label>
     </header>
 
-    <div class="layout">
+    <div id="shelfView" style="display:none">
+      <div class="shelf-head">
+        <b id="shelfCount"></b>
+        <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，收录进 Biblioteca（≤25MB）">＋ 上传 PDF / MD</button></span>
+      </div>
+      <div class="shelf" id="shelfGrid"></div>
+    </div>
+
+    <div class="layout" id="bookLayout" style="display:none">
       <aside class="sidebar g-glass">
-        <div class="book-tabs" id="bookTabs"></div>
+        <button class="back-shelf" id="backShelf">← 📚 书架</button>
         <div class="toc-head"><b id="bookTitle"></b><small id="bookDesc"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
         <ul class="toc" id="toc"></ul>
         <div class="toc-hint" id="tocHint">💡 内容为个人学习笔记，请勿外传。素材更新后经维护机制并入。</div>
@@ -223,95 +253,143 @@ html[data-theme="negro"]{
     </div>
   </div>
 </div>
-
 <script src="kb-data.js"></script>
 <script>
 const $ = s => document.querySelector(s);
-let bookIdx = 0, chapterIdx = 0;
-
-function saveState(){ try{ localStorage.setItem('kb-state', JSON.stringify({b:bookIdx,c:chapterIdx})); }catch(e){} }
-function loadState(){
-  try{
-    const s = JSON.parse(localStorage.getItem('kb-state')||'null');
-    if (s && window.KB.books[s.b] && window.KB.books[s.b].chapters[s.c]) return s;
-  }catch(e){}
-  return null;
-}
-
-function renderBookList(filter){
-  const box = $('#toc'); box.innerHTML = '';
-  const results = $('#tocHint');
-  if (filter){
-    const kw = filter.toLowerCase();
-    const hits = [];
-    window.KB.books.forEach((b,bi)=>b.chapters.forEach((c,ci)=>{
-      const inTitle = c.title.toLowerCase().includes(kw);
-      const pos = c.text.toLowerCase().indexOf(kw);
-      if (inTitle || pos >= 0){
-        let snip = '';
-        if (!inTitle && pos >= 0){
-          const start = Math.max(0, c.text.length && pos > 40 ? pos - 40 : 0);
-          snip = '…' + c.text.substr(start, 90).trim() + '…';
-        }
-        hits.push({bi, ci, title:c.title, snip, inTitle});
-      }
-    }));
-    results.innerHTML = '找到 <b>' + hits.length + '</b> 个匹配章节';
-    box.innerHTML = hits.map(h=>{
-      const b = window.KB.books[h.bi];
-      return '<li><button data-b="'+h.bi+'" data-c="'+h.ci+'"><span class="no">'+(h.bi+1)+'.'+(h.ci+1)+'</span><span><div>'+h.title+'</div>'+(h.snip?'<small style="opacity:.65;font-size:11px;line-height:1.5;display:block;margin-top:3px">'+h.snip+'</small>':'')+'</span></button></li>';
-    }).join('') || '<li class="search-results">没有匹配的章节</li>';
-  } else {
-    const b = window.KB.books[bookIdx];
-    results.textContent = '共 ' + b.chapters.length + ' 章';
-    box.innerHTML = b.chapters.map((c,ci)=>
-      '<li><button data-b="'+bookIdx+'" data-c="'+ci+'" class="'+(ci===chapterIdx?'on':'')+'"><span class="no">'+String(ci).padStart(2,'0')+'</span><span>'+c.title+'</span></button></li>'
-    ).join('');
-  }
-  box.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
-    bookIdx = +btn.dataset.b; chapterIdx = +btn.dataset.c;
-    $('#searchBox').value = ''; renderAll(); saveState();
-  }));
-}
-
-function renderChapter(){
-  const b = window.KB.books[bookIdx], c = b.chapters[chapterIdx];
-  $('#crumb').textContent = b.es + ' · ' + (chapterIdx+1) + ' / ' + b.chapters.length;
-  $('#chapterTitle').textContent = c.title;
-  $('#chapterBody').innerHTML = c.html;
-  window.scrollTo(0,0);
-}
-
-const TABS = { 'agent-handbook': '📘 Manual', 'interview-bank': '📙 Preguntas', 'video-scripts': '🎬 Guiones', 'dala-design': '🎨 Diseño' };
+const esc = x => String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* 架构：kb-data.js 只带目录（书名+章名）；正文按需 /api/kb/chapter 拉取并缓存；
+   搜索走 /api/kb/search（服务端扫全文）——藏书成百上千时页面与请求都轻 */
+let view = 'shelf', bookId = '', chapterIdx = 0;
 let IS_ADMIN = false;
-fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); renderBookTabs(); }).catch(()=>{});
+const chapterCache = new Map();
+const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖' };
+const bookIcon = b => b.uploaded ? '📄' : (ICONS[b.id] || '📚');
+const bookById = id => window.KB.books.find(b => b.id === id);
 
-function renderBookTabs(){
-  $('#bookTabs').innerHTML = window.KB.books.map((b,bi)=>
-    '<button class="book-tab'+(bi===bookIdx?' on':'')+'" data-b="'+bi+'">'+(TABS[b.id]||b.es)+'</button>').join('')
-    + (IS_ADMIN ? '<button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，收录进 Biblioteca（≤25MB）">＋</button>' : '');
-  $('#bookTabs').querySelectorAll('.book-tab[data-b]').forEach(t=>t.addEventListener('click',()=>{
-    bookIdx = +t.dataset.b; chapterIdx = 0; renderAll(); saveState();
-  }));
-  const b = window.KB.books[bookIdx];
-  $('#bookTitle').textContent = b.title;
-  $('#bookDesc').textContent = b.desc;
-  const del = $('#kbDel');
-  if (del) del.style.display = (IS_ADMIN && b.uploaded) ? '' : 'none';
+function saveState(){ try{ localStorage.setItem('kb-state', JSON.stringify({ view, b: bookId, c: chapterIdx })); }catch(e){} }
+function loadState(){ try{ return JSON.parse(localStorage.getItem('kb-state')||'null'); }catch(e){ return null; } }
+
+function render(){
+  const bl = document.getElementById('bookLayout'), sv = document.getElementById('shelfView');
+  if (view === 'book' && bookById(bookId)) {
+    sv.style.display = 'none'; bl.style.display = '';
+    renderBook();
+  } else {
+    view = 'shelf'; bl.style.display = 'none'; sv.style.display = '';
+    renderShelf();
+  }
 }
 
-/* 上传收录：admin 专用（文件读成原始字节 POST，服务端存 data/kb-uploads 并解析成书） */
+function renderShelf(){
+  const books = window.KB.books;
+  document.getElementById('shelfCount').textContent = '📚 藏书 ' + books.length + ' 本 · ' + books.reduce((n,b)=>n+b.chapters.length,0) + ' 章';
+  document.getElementById('shelfUp').style.display = IS_ADMIN ? '' : 'none';
+  document.getElementById('shelfGrid').innerHTML = books.map(b =>
+    '<button class="bcard" data-bid="' + esc(b.id) + '"><span class="bic">' + bookIcon(b) + '</span>' +
+    '<b>' + esc(b.title) + '</b><small>' + esc(b.desc || '') + '</small>' +
+    '<span class="bmeta">' + b.chapters.length + ' 章' + (b.uploaded ? ' · 上传' : '') + '</span></button>').join('');
+}
+
+function renderBook(){
+  const b = bookById(bookId);
+  document.getElementById('bookTitle').textContent = b.title;
+  document.getElementById('bookDesc').textContent = b.desc || '';
+  document.getElementById('kbDel').style.display = (IS_ADMIN && b.uploaded) ? '' : 'none';
+  const box = document.getElementById('toc');
+  box.innerHTML = b.chapters.map((c,ci) =>
+    '<li><button data-c="' + ci + '" class="' + (ci === chapterIdx ? 'on' : '') + '"><span class="no">' + String(ci).padStart(2,'0') + '</span><span>' + esc(c.title) + '</span></button></li>').join('');
+  document.getElementById('tocHint').textContent = '共 ' + b.chapters.length + ' 章';
+  loadChapter();
+}
+
+async function loadChapter(){
+  const b = bookById(bookId);
+  if (!b || !b.chapters[chapterIdx]) return;
+  const key = bookId + '|' + chapterIdx;
+  document.getElementById('crumb').textContent = (b.es || '') + ' · ' + (chapterIdx+1) + ' / ' + b.chapters.length;
+  document.getElementById('chapterTitle').textContent = b.chapters[chapterIdx].title;
+  let data = chapterCache.get(key);
+  if (!data) {
+    document.getElementById('chapterBody').innerHTML = '<p style="opacity:.6">读取中…</p>';
+    try {
+      const r = await fetch('/api/kb/chapter?b=' + encodeURIComponent(bookId) + '&c=' + chapterIdx);
+      const j = await r.json();
+      if (!j.ok) { document.getElementById('chapterBody').innerHTML = '<p style="opacity:.6">章节读取失败</p>'; return; }
+      if (chapterCache.size > 300) chapterCache.delete(chapterCache.keys().next().value);
+      chapterCache.set(key, j);
+      data = j;
+    } catch { document.getElementById('chapterBody').innerHTML = '<p style="opacity:.6">网络错误，稍后重试</p>'; return; }
+  }
+  if (bookId + '|' + chapterIdx !== key) return;   // 等待期间已切章
+  document.getElementById('crumb').textContent = (data.es || b.es || '') + ' · ' + (chapterIdx+1) + ' / ' + data.total;
+  document.getElementById('chapterTitle').textContent = data.title;
+  document.getElementById('chapterBody').innerHTML = data.html;
+  window.scrollTo(0, 0);
+}
+
+/* 全文搜索（服务端扫全部书的目录+正文），结果两视图各自呈现 */
+let searchTimer = null, searchSeq = 0;
+document.getElementById('searchBox').addEventListener('input', e => {
+  const v = e.target.value.trim();
+  clearTimeout(searchTimer);
+  if (!v) { render(); return; }
+  searchTimer = setTimeout(() => doSearch(v), 300);
+});
+async function doSearch(q){
+  const seq = ++searchSeq;
+  try {
+    const r = await fetch('/api/kb/search?q=' + encodeURIComponent(q));
+    const j = await r.json();
+    if (seq !== searchSeq) return;
+    const rows = j.results || [];
+    const head = '搜索「' + q + '」· ' + (j.total || 0) + ' 个匹配章节' + ((j.total || 0) > 80 ? '（显示前 80）' : '');
+    if (view === 'shelf') {
+      document.getElementById('shelfCount').textContent = head;
+      document.getElementById('shelfUp').style.display = 'none';
+      document.getElementById('shelfGrid').innerHTML = '<div class="sres">' + (rows.map(h =>
+        '<button class="srow" data-sb="' + esc(h.b) + '" data-sc="' + h.c + '"><b>' + esc(h.cTitle) + '</b>' +
+        '<small>' + esc(h.bTitle) + '</small>' + (h.snip ? '<span>' + esc(h.snip) + '</span>' : '') + '</button>').join('')
+        || '<span style="opacity:.6;padding:10px">没有匹配的章节</span>') + '</div>';
+    } else {
+      document.getElementById('toc').innerHTML = rows.map(h =>
+        '<li><button data-sb="' + esc(h.b) + '" data-sc="' + h.c + '"><span><div>' + esc(h.cTitle) + '</div>' +
+        '<small style="opacity:.6;font-size:11px;display:block;margin-top:2px">' + esc(h.bTitle) + '</small></span></button></li>').join('')
+        || '<li class="search-results">没有匹配的章节</li>';
+      document.getElementById('tocHint').textContent = head;
+    }
+  } catch {}
+}
+
+/* 统一事件委托：书架卡片 / 搜索结果跳章 / 书内目录 / 回书架 */
+document.getElementById('shelfGrid').addEventListener('click', e => {
+  const card = e.target.closest('[data-bid]');
+  if (card) { view = 'book'; bookId = card.dataset.bid; chapterIdx = 0; render(); saveState(); return; }
+  const row = e.target.closest('[data-sb]');
+  if (row) { view = 'book'; bookId = row.dataset.sb; chapterIdx = +row.dataset.sc; render(); saveState(); }
+});
+document.getElementById('toc').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.dataset.c != null && btn.dataset.c !== '') { chapterIdx = +btn.dataset.c; }
+  else if (btn.dataset.sb) { bookId = btn.dataset.sb; chapterIdx = +btn.dataset.sc; }
+  else return;
+  document.getElementById('searchBox').value = '';
+  renderBook(); saveState();
+});
+document.getElementById('backShelf').addEventListener('click', () => { view = 'shelf'; render(); saveState(); });
+
+/* 上传收录（admin）：书架头「＋ 上传」 */
 (function kbUploadSetup(){
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.md,.pdf'; inp.style.display = 'none';
   document.body.appendChild(inp);
-  $('#bookTabs').addEventListener('click', e => { if (e.target.id === 'kbUploadBtn') inp.click(); });
+  document.getElementById('shelfView').addEventListener('click', e => { if (e.target.closest('#kbUploadBtn')) inp.click(); });
   inp.addEventListener('change', async () => {
     const f = inp.files[0];
     if (!f) return;
     if (f.size > 25 * 1024 * 1024) { alert('文件超过 25MB 上限'); inp.value=''; return; }
-    const btn = $('#kbUploadBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    const btn = document.getElementById('kbUploadBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '上传中…'; }
     try {
       const buf = await f.arrayBuffer();
       const r = await fetch('/api/kb/upload', {
@@ -320,16 +398,15 @@ function renderBookTabs(){
         body: buf,
       });
       const j = await r.json();
-      if (!j.ok) { alert('上传失败：' + (j.error || r.status)); btn.disabled=false; btn.textContent='＋'; return; }
+      if (!j.ok) { alert('上传失败：' + (j.error || r.status)); if (btn){btn.disabled=false;btn.textContent='＋ 上传 PDF / MD';} return; }
       location.reload();
     } catch (err) {
       alert('上传失败：' + err);
-      if (btn) { btn.disabled = false; btn.textContent = '＋'; }
+      if (btn) { btn.disabled = false; btn.textContent = '＋ 上传 PDF / MD'; }
     }
   });
-  const del = $('#kbDel');
-  if (del) del.addEventListener('click', async () => {
-    const b = window.KB.books[bookIdx];
+  document.getElementById('kbDel').addEventListener('click', async () => {
+    const b = bookById(bookId);
     if (!b || !b.uploaded || !confirm('删除「' + b.title + '」？文件与目录一并移除。')) return;
     const r = await fetch('/api/kb/upload?id=' + encodeURIComponent(b.id.slice(3)), { method: 'DELETE' });
     if (r.ok) location.reload();
@@ -337,22 +414,13 @@ function renderBookTabs(){
   });
 })();
 
-function renderAll(){ renderBookTabs(); renderBookList($('#searchBox').value.trim()); renderChapter(); }
-
-$('#searchBox').addEventListener('input', e=>{
-  const v = e.target.value.trim();
-  renderBookList(v);
-  if (v) $('#chapterTitle').textContent = '搜索「'+v+'」';
-});
-
-/* 深链：#b=<书id>&c=<章序号>，如 kb.html#b=agent-handbook&c=8（站内文章可直达对应章节） */
-/* 链接被转发时 # 常被编码成 %23 混进路径（kb.html%23b=...）：还原成真 hash 再定位 */
+/* 深链：#b=<书id>&c=<章序号>；链接被转发时 # 常被编码成 %23 混进路径 → 还原成真 hash 再定位 */
 (function restoreHash(){
   const pm = decodeURIComponent(location.pathname);
-  const hx = pm.indexOf("#");
+  const hx = pm.indexOf('#');
   if (hx >= 0) {
-    const frag = pm.slice(hx + 1) + location.search.replace(/^\?/, "");
-    history.replaceState(null, "", pm.slice(0, hx) + "#" + frag);
+    const frag = pm.slice(hx + 1) + location.search.replace(/^\?/, '');
+    history.replaceState(null, '', pm.slice(0, hx) + '#' + frag);
   }
 })();
 function hashState(){
@@ -361,17 +429,31 @@ function hashState(){
   const bi = window.KB.books.findIndex(b => b.id === m[1]);
   const ci = parseInt(m[2], 10);
   if (bi < 0 || !window.KB.books[bi].chapters[ci]) return null;
-  return { b: bi, c: ci };
+  return { b: m[1], c: ci };
 }
 
-/* 未登录（kb-data.js 被 401 拦截）→ 去登录（带上 hash，登录后回到定位章节） */
-(function boot(){
-  if (!window.KB){ location.href = 'login.html?next=' + encodeURIComponent('/kb.html' + location.hash); return; }
+/* 同页面改 hash（如从文章链接返回已打开的 kb 页）是同文档导航，boot 不重跑 → 监听定位 */
+window.addEventListener('hashchange', () => {
   const h = hashState();
-  const s = h || loadState();
-  if (s){ bookIdx = s.b; chapterIdx = s.c; }
-  renderAll();
+  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; render(); saveState(); }
+});
+
+(function boot(){
+  if (!window.KB || !Array.isArray(window.KB.books) || !window.KB.books.length){
+    location.href = 'login.html?next=' + encodeURIComponent('/kb.html' + location.hash); return;
+  }
+  const h = hashState();
+  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; }
+  else {
+    const st = loadState();
+    if (st && st.view === 'book' && bookById(st.b)) {
+      const b = bookById(st.b);
+      view = 'book'; bookId = st.b; chapterIdx = Math.min(st.c || 0, b.chapters.length - 1);
+    }
+  }
+  render();
 })();
+fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); }).catch(()=>{});
 </script>
 <script>
 /* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
