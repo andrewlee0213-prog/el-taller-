@@ -220,11 +220,15 @@ html[data-theme="crepusculo"]{
 .panel h3 small{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-accent);margin-right:8px}
 textarea.big{width:100%;min-height:74px;resize:vertical;border-radius:14px;padding:11px 13px;font:inherit;font-size:12.5px;
   color:var(--g-text);background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);outline:0;line-height:1.7}
-/* Biblioteca 待处理行：评论输入 + 三种出队动作 */
-.kinrow{display:flex;gap:6px;margin-top:6px}
-.kinpt{flex:1;min-width:0;height:28px;border-radius:999px;padding:0 12px;font:inherit;font-size:11.5px;color:var(--g-text);
-  background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);outline:0}
-.kinpt:focus{border-color:var(--g-accent)}
+/* Biblioteca 待处理：评论全屏弹层（点 💬 打开） */
+.kbin-mask{position:fixed;inset:0;z-index:900;background:rgba(8,5,2,.6);backdrop-filter:blur(7px);
+  display:flex;align-items:center;justify-content:center;padding:4vh 4vw}
+.kbin-dialog{width:94vw;height:92vh;display:flex;flex-direction:column;gap:14px;padding:26px 30px;border-radius:24px}
+.kbin-dhead{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:16px}
+.kbin-dhead small{opacity:.7;font-size:12.5px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kbin-dialog textarea{flex:1;resize:none;font-size:15px;line-height:2}
+.kbin-dfoot{display:flex;align-items:center;gap:10px}
+.kbin-dfoot .dim{margin-right:auto;font-size:11.5px}
 textarea.big:focus{border-color:color-mix(in srgb,var(--g-accent) 55%,transparent)}
 textarea.big::placeholder{color:var(--g-dim)}
 input.date{height:34px;border-radius:999px;padding:0 14px;font:inherit;font-size:12.5px;color:var(--g-text);
@@ -552,6 +556,18 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
     </details>
   </div>
 </div>
+
+<!-- Biblioteca 待处理 · 评论全屏弹层 -->
+<div class="kbin-mask" id="kbinMask" style="display:none">
+  <div class="kbin-dialog g-glass">
+    <div class="kbin-dhead"><b>📝 写评论</b><small id="kbinDTitle"></small>
+      <button class="icmt" id="kbinDClose" title="关闭（Esc）">✕</button></div>
+    <textarea id="kbinDText" maxlength="500" placeholder="这份材料怎么看？写得越具体，以后翻出来越有用 —— 提交后算看过，评论会显示在这份材料的书内页顶部（站主笔记）。"></textarea>
+    <div class="kbin-dfoot"><span class="dim" id="kbinDCount">0 / 500 · ⌘/Ctrl+Enter 提交 · Esc 关闭</span>
+      <button class="bmini" id="kbinDCancel">取消</button>
+      <button class="btn btn-hot" id="kbinDGo" style="padding:8px 20px;font-size:12.5px">提交评论</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -797,34 +813,56 @@ function renderKbInbox() {
     '<div class="item"><div class="l1"><a class="it" href="kb.html#b=up-' + esc(u.id) + '&c=0" target="_blank" rel="noopener" title="去 Biblioteca 阅读">' +
     esc(u.title.replace(/\.(md|pdf)$/i, "")) + '</a>' +
     '<button class="icmt" data-kin="' + esc(u.id) + '" data-act="keep" title="要：留在 Biblioteca">✅</button>' +
-    '<button class="icmt dsl" data-kin="' + esc(u.id) + '" data-act="discard" title="不要：从 Biblioteca 删除，文件一并移除">🗑</button></div>' +
-    '<span class="imeta">' + (u.type === "pdf" ? "PDF 原文" : "MD · " + u.chapters + " 章") + " · 上传于 " + hm(u.at) + "</span>" +
-    '<div class="kinrow"><input class="kinpt" type="text" data-kinnote="' + esc(u.id) + '" placeholder="写一句评论（回车提交，算看过）" maxlength="200">' +
-    '<button class="bmini" data-kin="' + esc(u.id) + '" data-act="note" title="保存评论并出队">💬</button></div></div>').join("");
+    '<button class="icmt dsl" data-kin="' + esc(u.id) + '" data-act="discard" title="不要：从 Biblioteca 删除，文件一并移除">🗑</button>' +
+    '<button class="icmt" data-kin="' + esc(u.id) + '" data-act="note" title="写评论（全屏输入框，提交即算看过，显示为站主笔记）">💬</button></div>' +
+    '<span class="imeta">' + (u.type === "pdf" ? "PDF 原文" : "MD · " + u.chapters + " 章") + " · 上传于 " + hm(u.at) + "</span></div>").join("");
 }
 async function kbTriage(btn) {
   const id = btn.dataset.kin, act = btn.dataset.act;
-  let note = "";
-  if (act === "note") {
-    const inp = btn.closest(".kinrow").querySelector("input");
-    note = inp ? inp.value.trim() : "";
-    if (!note) { toast("评论内容为空"); if (inp) inp.focus(); return; }
-  }
   if (act === "discard" && !confirm("不要这份材料？将从 Biblioteca 删除，文件一并移除。")) return;
   btn.disabled = true;
-  const r = await api("POST", "/api/kb/triage", { id, act, note });
+  const r = await api("POST", "/api/kb/triage", { id, act });
   btn.disabled = false;
   if (!r.ok) { toast(r.error || "操作失败"); return; }
   INBOX = INBOX.filter(u => u.id !== id);
   renderKbInbox();
 }
+/* 评论全屏弹层：点 💬 打开 → 大输入框 → 提交（⌘/Ctrl+Enter）或 Esc 取消 */
+let kbinTarget = null;
+function kbinOpenNote(id) {
+  const u = INBOX.find(x => x.id === id);
+  if (!u) return;
+  kbinTarget = id;
+  $("#kbinDTitle").textContent = u.title.replace(/\.(md|pdf)$/i, "");
+  $("#kbinDText").value = "";
+  $("#kbinDCount").textContent = "0 / 500";
+  $("#kbinMask").style.display = "flex";
+  setTimeout(() => $("#kbinDText").focus(), 60);
+}
+function kbinClose() { $("#kbinMask").style.display = "none"; kbinTarget = null; }
+$("#kbinDText").addEventListener("input", () => { $("#kbinDCount").textContent = $("#kbinDText").value.length + " / 500"; });
+$("#kbinDCancel").addEventListener("click", kbinClose);
+$("#kbinDClose").addEventListener("click", kbinClose);
+$("#kbinMask").addEventListener("click", e => { if (e.target.id === "kbinMask") kbinClose(); });
+$("#kbinDGo").addEventListener("click", async () => {
+  const note = $("#kbinDText").value.trim();
+  if (!note) { toast("评论内容为空"); return; }
+  const id = kbinTarget;
+  if (!id) return;
+  const btn = $("#kbinDGo");
+  btn.disabled = true;
+  const r = await api("POST", "/api/kb/triage", { id, act: "note", note });
+  btn.disabled = false;
+  if (!r.ok) { toast(r.error || "提交失败"); return; }
+  kbinClose();
+  INBOX = INBOX.filter(u => u.id !== id);
+  renderKbInbox();
+});
 document.addEventListener("keydown", e => {
-  if (e.key !== "Enter") return;
-  const inp = e.target;
-  if (inp && inp.matches && inp.matches("input[data-kinnote]")) {
-    const btn = inp.closest(".kinrow").querySelector("[data-act=note]");
-    if (btn) btn.click();
-  }
+  const open = $("#kbinMask").style.display !== "none";
+  if (!open) return;
+  if (e.key === "Escape") kbinClose();
+  else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("#kbinDGo").click();
 });
 
 function renderPanelHint() {
@@ -869,7 +907,11 @@ function renderWeekly() {
 /* ================= 评论框交互（事件委托） ================= */
 document.addEventListener("click", async e => {
   const tg = e.target.closest("[data-cmt],[data-csave],[data-cnote],[data-del],[data-dis],[data-kin]");
-  if (tg && tg.hasAttribute("data-kin")) { kbTriage(tg); return; }
+  if (tg && tg.hasAttribute("data-kin")) {
+    if (tg.dataset.act === "note") kbinOpenNote(tg.dataset.kin);
+    else kbTriage(tg);
+    return;
+  }
   if (!tg) return;
   if (tg.hasAttribute("data-dis")) {
     const url = tg.dataset.url;
