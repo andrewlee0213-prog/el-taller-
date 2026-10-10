@@ -330,6 +330,14 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 .setgrid input::placeholder,.setgrid textarea::placeholder{color:var(--g-dim)}
 .setnote{grid-column:1/-1;font-size:11px;color:var(--g-dim);line-height:1.7}
 
+/* ---- 油价卡四标号 chips（95# 高亮） ---- */
+.oilgrades{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
+.ogchip{font-size:11px;padding:2px 9px;border-radius:999px;color:var(--g-dim);
+  background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}
+.ogchip b{font-weight:600;margin-right:3px}
+.ogchip.on{color:var(--g-accent);border-color:color-mix(in srgb,var(--g-accent) 45%,transparent);
+  background:color-mix(in srgb,var(--g-accent) 12%,transparent)}
+
 .banner{display:none;border-radius:16px;padding:12px 18px;margin-bottom:16px;font-size:12.5px;line-height:1.7;
   border:1px solid color-mix(in srgb,var(--g-accent) 40%,transparent);
   background:color-mix(in srgb,var(--g-tint) 8%,transparent);color:color-mix(in srgb,var(--g-text) 88%,transparent)}
@@ -662,6 +670,8 @@ function renderOil() {
   upd.textContent = (d.error ? hm(d.at) + " · 旧值" : hm(d.at) + " 更新");
   body.innerHTML =
     '<div><span class="oilprice">' + esc(d.price) + '</span><span class="oilunit">元/升 · 95#</span></div>' +
+    (d.prices && d.prices.length ? '<div class="oilgrades">' + d.prices.map(p =>
+      '<span class="ogchip' + (p.g === "95#" ? " on" : "") + '" title="' + esc(p.g) + '"><b>' + esc(p.g) + "</b>" + esc(p.v) + "</span>").join("") + "</div>" : "") +
     oilSparkHtml(d.hist) +
     (d.note ? '<span class="dim">' + esc(d.note) + "</span>" : "") +
     (d.next ? '<span class="okline">' + esc(d.next) + "</span>" : "") +
