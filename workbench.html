@@ -871,12 +871,20 @@ async function openReader(url, title) {
   const m = $("#readerModal");
   $("#rTitle").textContent = title || url;
   $("#rMeta").textContent = "";
-  $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">抓取正文与翻译中…首次约 10~60 秒，已缓存则立即打开。</p>';
+  const loading = '<p class="dim" id="rLoading" style="padding:24px 0">抓取正文与翻译中（首次约 20~60 秒，完成后缓存秒开，请勿重复点击）…</p>';
+  $("#rBody").innerHTML = loading;
   m.classList.add("on");
+  const t0 = Date.now();
+  const timer = setInterval(() => {
+    const el = document.getElementById("rLoading");
+    if (el) el.textContent = "抓取正文与翻译中…已等 " + Math.round((Date.now() - t0) / 1000) +
+      " 秒（首次约 20~60 秒，正在后台抓取与翻译，勿关闭弹窗）";
+  }, 1000);
   try {
     const r = await api("GET", "/api/workbench/article?url=" + encodeURIComponent(url));
     if (!r.ok || !r.article) {
-      $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">' + esc(r.error || "读取失败") + "</p>";
+      $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">' + esc(r.error || "读取失败") +
+        '<br>境外源偶发抖动，稍等几秒再点一次 📄 通常就好。</p>';
       return;
     }
     const a = r.article;
@@ -893,6 +901,8 @@ async function openReader(url, title) {
       (a.comment ? '<div class="rcmt"><b>我的评论</b><p>' + esc(a.comment) + "</p></div>" : "");
   } catch (err) {
     $("#rBody").innerHTML = '<p class="dim" style="padding:24px 0">读取失败：' + esc(String(err && err.message || err)) + "</p>";
+  } finally {
+    clearInterval(timer);
   }
 }
 $("#rClose").addEventListener("click", () => $("#readerModal").classList.remove("on"));

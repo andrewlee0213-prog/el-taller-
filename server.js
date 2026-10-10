@@ -1006,8 +1006,25 @@ async function arxivAbstract(url) {
   if (sm && sm[0]) out.push(cleanText(sm[0]));
   return out;
 }
-/* 确保文章正文+译文在缓存里（懒加载：首次点开才抓+翻译；译文全空则隔 10 分钟允许重试） */
+/* 分块并行翻译：长文一次请求要 40~60 秒，按 8 段一块并行降到 ~20 秒 */
+async function glmTranslateLinesFast(lines) {
+  if (!lines.length) return [];
+  if (lines.length <= 8) return glmTranslateLines(lines);
+  const chunks = [];
+  for (let i = 0; i < lines.length; i += 8) chunks.push(lines.slice(i, i + 8));
+  const outs = await Promise.all(chunks.map(c => glmTranslateLines(c)));
+  return outs.flat();
+}
+/* 确保文章正文+译文在缓存里（懒加载：首次点开才抓+翻译；译文全空则隔 10 分钟允许重试）
+   readerBusy 去重：弹窗连点/多人同时开同一篇只触发一次抓取+翻译 */
+const readerBusy = new Map();
 async function readerEnsure(url) {
+  if (readerBusy.has(url)) return readerBusy.get(url);
+  const p = readerEnsureInner(url).finally(() => readerBusy.delete(url));
+  readerBusy.set(url, p);
+  return p;
+}
+async function readerEnsureInner(url) {
   const anth = ((wbCache.anth && wbCache.anth.items) || []).find(x => x.url === url);
   const arx = ((wbCache.arxiv && wbCache.arxiv.items) || []).find(x => x.url === url);
   const item = anth || arx;
@@ -1016,14 +1033,19 @@ async function readerEnsure(url) {
   if (old && Array.isArray(old.paras) && old.paras.length &&
       !(old.needZh && Date.now() - (old.fetchedAt || 0) > 600e3)) return old;
   const source = anth ? "anth" : "arxiv";
+  /* 境外源直连偶发抖动：失败隔 4 秒重试，最多 3 次 */
   let srcs = [];
-  try {
-    if (source === "anth") srcs = extractArticleParas(await httpGetText(url, 25000));
-    else srcs = await arxivAbstract(url);
-  } catch {}
+  for (let tries = 2; tries >= 0; tries--) {
+    try {
+      if (source === "anth") srcs = extractArticleParas(await httpGetText(url, 25000));
+      else srcs = await arxivAbstract(url);
+    } catch {}
+    if (srcs.length) break;
+    if (tries > 0) await new Promise(rs => setTimeout(rs, 4000));
+  }
   if (!srcs.length) return old || null;
   let zhs = [];
-  try { zhs = await glmTranslateLines(srcs); } catch {}
+  try { zhs = await glmTranslateLinesFast(srcs); } catch {}
   const e = {
     url, source, title: item.zh || item.title || url, pub: item.pub || "",
     paras: srcs.map((s, i) => [s, keepEnglishTerms(zhs[i] || "")]),
