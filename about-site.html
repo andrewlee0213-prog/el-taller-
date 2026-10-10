@@ -183,6 +183,7 @@ html[data-theme="negro"]{
         <button class="tdot" type="button" data-theme-dot="blanco" style="--dot:#ffffff" title="纸白 · Blanco" aria-label="纸白主题"></button>
         <button class="tdot" type="button" data-theme-dot="negro" style="--dot:#181818" title="玄黑 · Negro" aria-label="玄黑主题"></button>
       </div>
+      <a class="btn-ghost" href="https://github.com/andrewlee0213-prog/el-taller-" target="_blank" rel="noreferrer">源码 ↗</a>
       <a class="btn-ghost" href="index.html">← 回工坊</a>
     </header>
 
@@ -233,12 +234,13 @@ html[data-theme="negro"]{
         <div class="ti"><span class="td">2026-09-28</span><b>首屏改版</b><p>双 CTA、能力条、贴弧轮播带上线——平移与弧线变换由同一 rAF 同帧驱动；7 张作品卡封面换设计版（HTML 排版→浏览器截图产线）。</p></div>
         <div class="ti fix"><span class="td">2026-09-28 · Bug 修复</span><b>轮播带点击全部失效</b><p>根因两层：setPointerCapture 把 click 重定向到舞台（卡片监听永远收不到），且 pointerup 先清了拖拽状态、click 到达时卡片记录已丢。修为 pointerdown 记卡 + 舞台委托消费，沉淀为轮播「第五条不变量」。</p></div>
         <div class="ti"><span class="td">2026-09-30</span><b>上公网</b><p>腾讯云轻量部署：systemd 守护 + nginx 限速反代；上线终扫拦下 KB 数据中的内部信息 → 构建脚本内置 SANITIZE 脱敏钩子；发布收敛为 deploy.sh 一条命令。</p></div>
+        <div class="ti"><span class="td">2026-10-10</span><b>开源</b><p>全站源码公开到 GitHub：推送前对提交历史做了两轮清洗——曾硬编码的和风天气 Key 与构建脚本里的内部脱敏词表尽数抹除，词表外置为本机私有文件。鉴权、可见性、发布管线，完整可查。</p></div>
       </div>
 
       <blockquote><p>选型逻辑：个人站点要的不是技术栈的先进，是<b>十年后还能一键跑起来</b>。原生标准、零依赖、数据是自己的，就没有会过期框架的焦虑。</p></blockquote>
     </article>
 
-    <div class="endnote"><a href="index.html">← 回工坊</a> · El Taller de Andres</div>
+    <div class="endnote"><a href="index.html">← 回工坊</a> · 源码开源 <a href="https://github.com/andrewlee0213-prog/el-taller-" target="_blank" rel="noreferrer">github.com/andrewlee0213-prog/el-taller-</a> · El Taller de Andres</div>
   </div>
 </div>
 <script>
