@@ -93,7 +93,9 @@
 - 名字/标签/简介/链接/备案号：`index.html` 底部 `<script>` 里的 `CONFIG`。
 - 头像：替换 `tools/avatar-216.jpg` 后重跑 `tools/make-avatar.ps1` +
   `node tools\inject-avatar.js`（或在 index.html 里直接换 `__AVATAR_B64__` 已注入的 img src）。
-- 天气城市/Key：`server.js` 顶部 `CFG`（和风天气专属 Host + Key + location）。
+- 天气城市/Host：`server.js` 顶部 `CFG`（和风专属 Host + location）。**Key 不进源码**：
+  填 `data/server-config.json` 的 `qwKey` 字段（见 `tools/server-config.example.json`），
+  或用环境变量 `TALLER_QW_KEY` 覆盖；未配置时天气卡降级为「未配置天气 Key」。
 
 ## 上线：B 方案 · 境内正规部署（已定，按步执行）
 
@@ -125,7 +127,7 @@
 - 远程：`git@github.com:andrewlee0213-prog/el-taller.git`（**私有仓**，main 分支）
 - **`data/` 整目录不入库**（users.db / session-secret / server-config.json 含密钥与 Cookie / 运行时缓存），新机器部署时按 deploy/DEPLOY.md 第 7 节单独创建
 - `data/kb-content.json` 与 `tools/shots/`（60MB 截图存档）同样不入库；kb-content 用 `tools/build-kb.*` 重建
-- ⚠ 若仓库将来转公开：`tools/deploy.sh`、`tools/build-kb.*` 内含脱敏词表（功能必需），`server.js` 内含和风天气 Key，`deploy/DEPLOY.md` 内含服务器 IP——先清理再公开
+- ⚠ 若仓库将来转公开：`tools/deploy.sh`、`tools/build-kb.*` 内含脱敏词表（功能必需），`deploy/DEPLOY.md` 内含服务器 IP——先清理再公开。和风天气 Key 已于 2026-10-10 移出源码（改存 server-config.json），但**早前两次提交的 git 历史里仍有旧 Key**：在和风控制台轮换作废即可，无需重写历史
 - 日常发布不走 git（服务器按 deploy.sh 的 tar 包更新），git 仅作版本管理与异地备份
 
 ## 目录结构

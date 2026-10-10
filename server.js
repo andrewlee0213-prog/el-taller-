@@ -21,8 +21,8 @@ const CFG = {
   WEATHER_CACHE_MS: 30 * 60 * 1000,          // 天气缓存 30 分钟
   WEATHER_TIMEOUT_MS: 6000,
   QW_HOST: "m53mdbgg6c.re.qweatherapi.com",  // 和风专属 API Host
-  QW_KEY:  "e1f99b62d8134a6f9a1de75e7b0b9cd5",
   QW_LOCATION: "101020100",                  // 上海
+  /* 天气 Key 不进源码：data/server-config.json 的 qwKey 字段，环境变量 TALLER_QW_KEY 可覆盖 */
 };
 
 const ROOT = __dirname;
@@ -75,10 +75,15 @@ if (db.prepare("SELECT COUNT(*) AS n FROM users").get().n === 0) {
 
 /* ---------------- 会话（HMAC 签名 Cookie，无服务端存储） ---------------- */
 const SECRET_FILE = path.join(DATA, "session-secret.key");
-if (!fs.existsSync(SECRET_FILE)) {
+function makeSessionSecret() {
   fs.writeFileSync(SECRET_FILE, crypto.randomBytes(32).toString("hex"), "utf8");
+  return Buffer.from(fs.readFileSync(SECRET_FILE, "utf8").trim(), "hex");
 }
-const SECRET = Buffer.from(fs.readFileSync(SECRET_FILE, "utf8").trim(), "hex");
+/* let：改密成功会调 rotateSessionSecret() 重建密钥，所有旧 Cookie 验签立即失败（= 全站踢下线重登） */
+let SECRET = fs.existsSync(SECRET_FILE)
+  ? Buffer.from(fs.readFileSync(SECRET_FILE, "utf8").trim(), "hex")
+  : makeSessionSecret();
+function rotateSessionSecret() { SECRET = makeSessionSecret(); }
 const COOKIE = "taller_sid";
 
 const b64u = buf => Buffer.from(buf).toString("base64url");
@@ -120,9 +125,12 @@ function loginLocked(key) {
   return f && f.lockUntil > Date.now() ? f.lockUntil : 0;
 }
 function recordFail(key) {
+  const now = Date.now();
+  /* 顺手清掉锁早已过期且无剩余计数的条目，防长期运行 Map 无限增长 */
+  for (const [k, f] of fails) if (f.n === 0 && f.lockUntil < now - 24 * 3600e3) fails.delete(k);
   const f = fails.get(key) || { n: 0, lockUntil: 0 };
   f.n += 1;
-  if (f.n >= CFG.LOGIN_MAX_FAILS) { f.lockUntil = Date.now() + CFG.LOCK_MS; f.n = 0; }
+  if (f.n >= CFG.LOGIN_MAX_FAILS) { f.lockUntil = now + CFG.LOCK_MS; f.n = 0; }
   fails.set(key, f);
 }
 
@@ -158,12 +166,13 @@ const MIME = {
   ".mp4": "video/mp4", ".webm": "video/webm", ".m4v": "video/mp4",
   ".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BLOCKED_DIRS = ["data", "tools", "node_modules"]; // 永不对外
+const BLOCKED_DIRS = ["data", "tools", "node_modules", ".git", "deploy"]; // 永不对外
 function serveStatic(req, res, urlPath) {
   let rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
   if (rel === "") rel = "index.html";
   const abs = path.normalize(path.join(ROOT, rel));
-  if (!abs.startsWith(ROOT)) return json(res, 403, { error: "forbidden" });
+  /* 必须带路径分隔符：不带则 /opt/taller-xxx 等同前缀兄弟目录也能通过检查 */
+  if (abs !== ROOT && !abs.startsWith(ROOT + path.sep)) return json(res, 403, { error: "forbidden" });
   const relCheck = path.relative(ROOT, abs);
   if (BLOCKED_DIRS.includes(relCheck.split(path.sep)[0])) return json(res, 404, { error: "not found" });
   if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) return json(res, 404, { error: "not found" });
@@ -196,13 +205,19 @@ function serveStatic(req, res, urlPath) {
 }
 
 /* ---------------- 作品下发（按角色过滤 visibility） ---------------- */
+/* works.js / notes.js 都是「注释 + window.XXX=[...]」格式：截取首个 [ 到最后一个 ] 求值 */
+function loadJsArray(file) {
+  try {
+    const text = fs.readFileSync(file, "utf8");
+    const start = text.indexOf("[");
+    const end = text.lastIndexOf("]");
+    if (start < 0 || end <= start) return null;
+    const arr = new Function(`return ${text.slice(start, end + 1)}`)();
+    return Array.isArray(arr) ? arr : null;
+  } catch { return null; }
+}
 function loadWorks() {
-  const text = fs.readFileSync(path.join(ROOT, "works.js"), "utf8");
-  const start = text.indexOf("[");
-  const end = text.lastIndexOf("]");
-  if (start < 0 || end <= start) return [];
-  try { return new Function(`return ${text.slice(start, end + 1)}`)(); }
-  catch { return []; }
+  return loadJsArray(path.join(ROOT, "works.js")) || [];
 }
 function filterWorks(works, session) {
   const authed = !!session, admin = authed && session.r === "admin";
@@ -226,16 +241,18 @@ function loadKb() {
   return kbCache.body;
 }
 
-/* ---------------- 天气代理（服务端持 Key，30 分钟缓存） ---------------- */
+/* ---------------- 天气代理（Key 只存服务端：server-config.json / 环境变量，30 分钟缓存） ---------------- */
 let weatherCache = { at: 0, body: null };
 async function weatherProxy(res) {
   if (Date.now() - weatherCache.at < CFG.WEATHER_CACHE_MS && weatherCache.body) {
     return json(res, 200, weatherCache.body);
   }
+  const qwKey = process.env.TALLER_QW_KEY || wbCfg.qwKey;
+  if (!qwKey) return json(res, 200, { ok: false, error: "未配置天气 Key" });
   try {
     const url = `https://${CFG.QW_HOST}/v7/weather/now?location=${CFG.QW_LOCATION}&lang=zh`;
     const r = await fetch(url, {
-      headers: { "X-QW-Api-Key": CFG.QW_KEY },
+      headers: { "X-QW-Api-Key": qwKey },
       signal: AbortSignal.timeout(CFG.WEATHER_TIMEOUT_MS),
     });
     const j = await r.json();
@@ -978,7 +995,13 @@ document.getElementById('out').textContent=JSON.stringify(j)}catch(e){document.g
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   const p = u.pathname;
-  const ip = (req.socket.remoteAddress || "?").replace("::ffff:", "");
+  /* 限速认的真实客户端 IP：经 Nginx 反代（来源是本机回环）时用 X-Real-IP，
+     否则用 socket 地址——防止直连者伪造 X-Real-IP 绕过限速 */
+  const ra = req.socket.remoteAddress || "?";
+  const ip = (ra === "127.0.0.1" || ra === "::1" || ra === "::ffff:127.0.0.1"
+    ? String(req.headers["x-real-ip"] || ra)
+    : ra
+  ).replace("::ffff:", "");
   const log = (status) => console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${p} → ${status}`);
 
   try {
@@ -1023,17 +1046,30 @@ const server = http.createServer(async (req, res) => {
     if (p === "/api/password" && req.method === "POST") {
       const s = readSession(req);
       if (!s) { json(res, 401, { ok: false, error: "请先登录。" }); return log(401); }
+      /* 改密入口同样受防爆破锁定保护（与登录共用 fails 计数） */
+      const key = ip + "|" + s.u;
+      const lockUntil = loginLocked(key);
+      if (lockUntil) {
+        const mins = Math.ceil((lockUntil - Date.now()) / 60000);
+        json(res, 429, { ok: false, error: `尝试次数过多，请 ${mins} 分钟后再试。` });
+        return log(429);
+      }
       const body = await readJson(req);
       const next = String(body.next || "");
       if (next.length < 8) { json(res, 400, { ok: false, error: "新密码至少 8 位。" }); return log(400); }
       const row = db.prepare("SELECT * FROM users WHERE username=?").get(s.u);
       if (!row || !verifyPassword(String(body.current || ""), row.salt, row.pwhash)) {
+        recordFail(key);
         json(res, 401, { ok: false, error: "当前密码不正确。" });
         return log(401);
       }
       const salt = makeSalt();
       db.prepare("UPDATE users SET pwhash=?, salt=?, must_change=0 WHERE username=?")
         .run(hashPassword(next, salt), salt, s.u);
+      fails.delete(key);
+      /* 改密 = 全站所有旧会话作废：重建 HMAC 密钥后旧 Cookie 验签全部失败，
+         所有已登录者（含本账号其他设备）需重新登录。单人站可接受的语义。 */
+      rotateSessionSecret();
       const payload = { u: s.u, r: s.r, mc: false, e: Date.now() + CFG.SESSION_TTL_MS };
       json(res, 200, { ok: true }, { "Set-Cookie": sessionCookie(payload, isSecureReq(req)) });
       return log(200);
@@ -1113,8 +1149,8 @@ const server = http.createServer(async (req, res) => {
         const body = await readJson(req);
         const sec = String(body.section || "");
         if (!WB_INTERVALS[sec]) { json(res, 400, { ok: false, error: "unknown section" }); return log(400); }
-        const started = wbRun(sec);
-        json(res, 200, { ok: true, started });
+        wbRun(sec).catch(e => console.error("[workbench]", sec, e.message));   // 后台执行，不 await
+        json(res, 200, { ok: true, started: true });
         return log(200);
       }
 
@@ -1346,6 +1382,18 @@ const server = http.createServer(async (req, res) => {
       const s = readSession(req);
       if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
       json(res, 200, { ok: true, role: s.r, user: s.u, ts: Date.now() });
+      return log(200);
+    }
+
+    /* ---- works.js / notes.js 动态下发：按会话过滤 visibility（防匿名直读未过滤的原始数据） ----
+       前端零改动：输出仍是 window.WORKS/window.NOTES；file:// 直开不受影响 */
+    if (req.method === "GET" && (p === "/works.js" || p === "/notes.js")) {
+      const arr = loadJsArray(path.join(ROOT, p));
+      if (!arr) { json(res, 404, { error: "not found" }); return log(404); }
+      const filtered = filterWorks(arr, readSession(req));
+      const name = p === "/works.js" ? "WORKS" : "NOTES";
+      send(res, 200, `window.${name}=${JSON.stringify(filtered)};`,
+        { "Content-Type": "text/javascript; charset=utf-8" });
       return log(200);
     }
 

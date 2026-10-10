@@ -1,8 +1,11 @@
 /* El Taller 认证与权限流程自动测试（需服务已启动）
-   用法: node tools/test-auth.mjs
+   用法: node tools/test-auth.mjs（默认打 localhost:8891 的真实实例）
+   隔离用法: TALLER_DATA_DIR=$(mktemp -d) TALLER_PORT=9877 node server.js &
+             TALLER_PORT=9877 TALLER_DATA_DIR=<同一目录> node tools/test-auth.mjs
    流程: 未登录探测 → 错误密码 → 初始密码登录 → 改密守卫 → 改密 →
          管理台/ping → 作品可见性过滤 → 限速锁定 → 登出 */
-const BASE = 'http://localhost:8891';
+const PORT = process.env.TALLER_PORT || '8891';
+const BASE = 'http://localhost:' + PORT;
 let cookie = '';
 let pass = 0, fail = 0;
 
@@ -23,6 +26,7 @@ async function req(method, path, body) {
   return { status: r.status, json: j, text };
 }
 const fs = await import('node:fs');
+const DATA_DIR = process.env.TALLER_DATA_DIR || new URL('../data', import.meta.url).pathname;
 
 console.log('== 1. 未登录 ==');
 let r = await req('GET', '/api/me');
@@ -41,7 +45,7 @@ r = await req('POST', '/api/login', { username: 'admin', password: 'wrong-pass' 
 check('错误密码 401', r.status === 401, r.status);
 
 console.log('== 3. 初始密码登录 ==');
-const credTxt = fs.readFileSync(new URL('../data/admin-initial-password.txt', import.meta.url), 'utf8');
+const credTxt = fs.readFileSync(DATA_DIR + '/admin-initial-password.txt', 'utf8');
 const initPwd = credTxt.match(/初始密码: (\S+)/)[1];
 r = await req('POST', '/api/login', { username: 'admin', password: initPwd });
 check('初始密码登录成功', r.json && r.json.ok === true, JSON.stringify(r.json));
@@ -81,9 +85,16 @@ const cookieAdmin = cookie;
 cookie = '';
 r = await req('GET', '/api/works');
 check('未登录只见公开(2)', r.json.works.length === 2 && r.json.works.every(w => w.visibility !== 'private'), JSON.stringify(r.json.works.map(w => w.id)));
+r = await req('GET', '/works.js');
+check('匿名 /works.js 只含公开条目', r.status === 200 && r.text.includes('公开作品')
+  && !r.text.includes('私密作品') && !r.text.includes('好友作品'), r.text.slice(0, 100));
+r = await req('GET', '/notes.js');
+check('匿名 /notes.js 为过滤版 JS', r.status === 200 && r.text.startsWith('window.NOTES='), r.status);
 cookie = cookieAdmin;
 r = await req('GET', '/api/works');
 check('admin 见全部(4)', r.json.works.length === 4, 'got ' + r.json.works.length);
+r = await req('GET', '/works.js');
+check('admin /works.js 含私密条目', r.status === 200 && r.text.includes('私密作品'), r.status);
 
 console.log('== 8. 限速锁定（用一次性用户名，不影响 admin） ==');
 cookie = '';
