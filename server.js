@@ -754,7 +754,16 @@ async function wbFetchArxiv() {
   };
 }
 
-/* ---------------- 抓取器 · F1 赛程（Jolpica = Ergast 官方继任者，只取正赛 + 冲刺赛） ---------------- */
+/* ---------------- 抓取器 · F1 赛程（Jolpica = Ergast 官方继任者，正赛+冲刺赛；开赛时间换算为北京时间） ---------------- */
+const BJ_OFFSET_MS = 8 * 3600e3;
+/* API 时间是 UTC（"07:00:00Z"）→ 北京日期 + HH:MM（跨日自动进位，如拉斯维加斯站凌晨场） */
+function f1Beijing(dateUtc, timeUtc) {
+  if (!dateUtc || !/^\d{2}:\d{2}:\d{2}Z?$/.test(timeUtc || "")) return null;
+  const d = new Date(dateUtc + "T" + timeUtc.replace(/Z?$/, "Z"));
+  if (isNaN(d)) return null;
+  const iso = new Date(d.getTime() + BJ_OFFSET_MS).toISOString();
+  return { date: iso.slice(0, 10), hm: iso.slice(11, 16) };
+}
 async function wbFetchF1() {
   const txt = await httpGetText("https://api.jolpi.ca/ergast/f1/current.json", 30000);
   let j = null; try { j = JSON.parse(txt); } catch {}
@@ -762,11 +771,18 @@ async function wbFetchF1() {
   if (!Array.isArray(races) || !races.length) return { ok: false, error: "赛程为空" };
   return {
     ok: true, at: Date.now(),
-    races: races.filter(r => r.date).map(r => ({
-      round: r.round, raceName: r.raceName, date: r.date,
-      sprint: (r.Sprint && r.Sprint.date) || null,
-      locality: (r.Circuit && r.Circuit.Location && r.Circuit.Location.locality) || "",
-    })),
+    races: races.filter(r => r.date).map(r => {
+      const race = f1Beijing(r.date, r.time);
+      const sp = r.Sprint && f1Beijing(r.Sprint.date, r.Sprint.time);
+      return {
+        round: r.round, raceName: r.raceName,
+        date: race ? race.date : r.date,                 // 有开赛时间时 date 也用北京日期（跨日会对）
+        time: race ? race.hm : null,
+        sprint: sp ? sp.date : ((r.Sprint && r.Sprint.date) || null),
+        sprintTime: sp ? sp.hm : null,
+        locality: (r.Circuit && r.Circuit.Location && r.Circuit.Location.locality) || "",
+      };
+    }),
   };
 }
 
@@ -782,6 +798,10 @@ const WB_INTERVALS = {
 let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
 let wbSched = {};
 function wbInitSchedule() {
+  /* 旧格式 F1 缓存无北京时间字段 → 丢弃，让调度立即重抓 */
+  if (wbCache.f1 && Array.isArray(wbCache.f1.races) && wbCache.f1.races.some(r => r.time === undefined)) {
+    wbCache.f1 = null;
+  }
   const now = Date.now();
   for (const k of Object.keys(WB_INTERVALS)) {
     const last = (wbCache[k] && wbCache[k].at) || 0;
@@ -915,12 +935,31 @@ function buildCalendarICS() {
       "SUMMARY:" + icsEscape(summary),
       "END:VEVENT");
   };
+  /* 定时事件（HH:MM 为北京时间；浮动时间写法 = 订阅端按本地时区解读，国内手机即北京时间） */
+  const addTimed = (ds, hm, durMin, summary) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ds || "") || !/^\d{2}:\d{2}$/.test(hm || "")) return;
+    const start = new Date(ds + "T" + hm + ":00");
+    const end = new Date(start.getTime() + durMin * 60000);
+    const fmt = d => d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + "T" + pad2(d.getHours()) + pad2(d.getMinutes()) + "00";
+    ev.push("BEGIN:VEVENT",
+      "UID:" + md5(ds + "|" + hm + "|" + summary).slice(0, 20) + "@taller",
+      "DTSTAMP:" + stamp,
+      "DTSTART:" + fmt(start),
+      "DTEND:" + fmt(end),
+      "SUMMARY:" + icsEscape(summary),
+      "END:VEVENT");
+  };
   wbLog.forEach(e => addDay(e.date, "工作：" + e.text));
   wbMemos.forEach(m => addDay(m.date, (m.done ? "✅ " : "备忘：") + m.text));
   const races = (wbCache.f1 && wbCache.f1.races) || [];
   races.forEach(r => {
-    addDay(r.date, "🏎 F1 " + r.raceName + (r.locality ? " · " + r.locality : ""));
-    if (r.sprint) addDay(r.sprint, "🏎 F1 冲刺赛 · " + r.raceName);
+    const label = "🏎 F1 " + r.raceName + (r.locality ? " · " + r.locality : "");
+    if (r.time) addTimed(r.date, r.time, 120, label + " 正赛 " + r.time + " 开赛");
+    else addDay(r.date, label);
+    if (r.sprint) {
+      if (r.sprintTime) addTimed(r.sprint, r.sprintTime, 60, "🏎 F1 冲刺赛 · " + r.raceName + " " + r.sprintTime + " 开赛");
+      else addDay(r.sprint, "🏎 F1 冲刺赛 · " + r.raceName);
+    }
   });
   const lines = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//El Taller//Workbench//CN",
