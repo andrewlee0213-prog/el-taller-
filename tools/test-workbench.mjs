@@ -262,6 +262,55 @@ try {
   r = await req("POST", "/api/kb/triage", { id: idA, act: "note", note: "   " });
   check("空评论 → 400", r.status === 400, r.status);
 
+  /* ---- 视频收集桥（提交 → token 领取 → 回传 → 个人收集书；含失败/重试） ---- */
+  cookie = "";
+  r = await req("POST", "/api/kb/collect", { url: "https://www.bilibili.com/video/BV1test0001" });
+  check("匿名提交收集 → 401", r.status === 401, r.status);
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  r = await req("POST", "/api/kb/collect", { url: "https://www.bilibili.com/video/BV1test0001" });
+  check("提交 B 站链接", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("POST", "/api/kb/collect", { url: "https://www.bilibili.com/video/BV1test0001" });
+  check("重复提交 → 409", r.status === 409, r.status);
+  r = await req("POST", "/api/kb/collect", { url: "https://youtube.com/watch?v=x" });
+  check("非 B 站链接 → 400", r.status === 400, r.status);
+  const cfgAll = JSON.parse(fs.readFileSync(path.join(tmpData, "server-config.json"), "utf8"));
+  const ct = cfgAll.collectToken;
+  check("boot 已生成 collectToken", /^[0-9a-f]{32}$/.test(ct || ""), String(ct));
+  let pr = await fetch(BASE + "/api/kb/collect/pending");
+  check("无 token 领取 → 401", pr.status === 401, pr.status);
+  pr = await fetch(BASE + "/api/kb/collect/pending?token=" + ct);
+  const pj = await pr.json();
+  check("领取队列含 1 条", pj.ok && pj.items.length === 1 && pj.items[0].url.includes("BV1test0001"), JSON.stringify(pj));
+  const cid = pj.items[0].id;
+  let dr = await fetch(BASE + "/api/kb/collect/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-collect-token": ct },
+    body: JSON.stringify({ id: cid, ok: true, title: "测试视频标题", md: "# 测试视频\n\n## 第一节\n\n转录内容一。<script>alert(1)</script>\n" }),
+  });
+  check("回传转录内容", (await dr.json()).ok === true);
+  r = await req("GET", "/kb-data.js");
+  check("目录含个人收集书", (r.text || "").includes("coleccion") && (r.text || "").includes("测试视频标题"));
+  r = await req("GET", "/api/kb/chapter?b=coleccion&c=0");
+  check("收集章节可读且转义", r.json && r.json.ok && r.json.html.includes("&lt;script&gt;"), JSON.stringify(r.json).slice(0, 140));
+  dr = await fetch(BASE + "/api/kb/collect/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-collect-token": ct },
+    body: JSON.stringify({ id: cid, ok: true, title: "again", md: "# x\n" }),
+  });
+  check("重复回传 → 409", dr.status === 409, dr.status);
+  r = await req("POST", "/api/kb/collect", { url: "https://b23.tv/abc123" });
+  const fid = r.json && r.json.id;
+  check("提交短链", !!fid);
+  dr = await fetch(BASE + "/api/kb/collect/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-collect-token": ct },
+    body: JSON.stringify({ id: fid, ok: false, error: "保存失败：视频不存在" }),
+  });
+  check("回传失败状态", (await dr.json()).ok === true);
+  r = await req("GET", "/api/kb/collect");
+  check("状态列表含失败项", (r.json.items || []).some(i => i.id === fid && i.state === "failed"), JSON.stringify(r.json).slice(0, 140));
+  r = await req("POST", "/api/kb/collect/retry", { id: fid });
+  check("失败重试 → 重新排队", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("DELETE", "/api/kb/collect?id=" + fid);
+  check("删除收集条目", r.json && r.json.ok === true, JSON.stringify(r.json));
+
   /* ---- BLOCKED 目录 ---- */
   cookie = "";
   r = await req("GET", "/data/server-config.json");
