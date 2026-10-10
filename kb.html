@@ -300,10 +300,21 @@ $('#searchBox').addEventListener('input', e=>{
   if (v) $('#chapterTitle').textContent = '搜索「'+v+'」';
 });
 
-/* 未登录（kb-data.js 被 401 拦截）→ 去登录 */
+/* 深链：#b=<书id>&c=<章序号>，如 kb.html#b=agent-handbook&c=8（站内文章可直达对应章节） */
+function hashState(){
+  const m = /^#b=([\w-]+)&c=(\d+)$/.exec(location.hash);
+  if (!m) return null;
+  const bi = window.KB.books.findIndex(b => b.id === m[1]);
+  const ci = parseInt(m[2], 10);
+  if (bi < 0 || !window.KB.books[bi].chapters[ci]) return null;
+  return { b: bi, c: ci };
+}
+
+/* 未登录（kb-data.js 被 401 拦截）→ 去登录（带上 hash，登录后回到定位章节） */
 (function boot(){
-  if (!window.KB){ location.href = 'login.html?next=%2Fkb.html'; return; }
-  const s = loadState();
+  if (!window.KB){ location.href = 'login.html?next=' + encodeURIComponent('/kb.html' + location.hash); return; }
+  const h = hashState();
+  const s = h || loadState();
   if (s){ bookIdx = s.b; chapterIdx = s.c; }
   renderAll();
 })();

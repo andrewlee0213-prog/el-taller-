@@ -59,6 +59,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .article h3{font-size:16px;font-weight:600;margin:24px 0 10px;color:var(--g-accent-soft)}
 .article p{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:10px 0}
 .article b{color:var(--g-accent-soft);font-weight:600}
+.article a{color:var(--g-accent-soft);text-decoration:none;border-bottom:1px dashed color-mix(in srgb,var(--g-accent) 45%,transparent);transition:border-color .2s}
+.article a:hover{border-bottom-style:solid;border-bottom-color:var(--g-accent)}
 .article ul,.article ol{margin:10px 0 10px 22px}
 .article li{font-size:14.5px;line-height:1.95;color:color-mix(in srgb,var(--g-text) 82%,transparent);margin:4px 0}
 .article blockquote{border-left:3px solid color-mix(in srgb,var(--g-accent) 50%,transparent);background:color-mix(in srgb,var(--g-tint) 6%,transparent);padding:14px 20px;border-radius:14px;margin:16px 0}
@@ -207,7 +209,7 @@ html[data-theme="negro"]{
 
       <h2>一、最大的坑：第一版只读了前 1/7</h2>
       <p>第一版手册做完时自我感觉良好。直到做了一次<b>覆盖度核查</b>：对原文做全文重扫——12,238 行，而首次抓取只拿到 1,093 行。也就是说，<b>手册只基于原文前约 1/7 编写</b>，剩下六分之五的内容根本没进过脑子。</p>
-      <p>深段重扫的结果印证了担忧：新发现 <b>7 块此前完全缺失的知识</b>——Token 经济学与缓存策略、Vibe Coding 方法论、AGENTS.md 实证研究（自动生成的 context file 使成功率 -3%、成本 +20%）、Agent 场景设计题的固定骨架方法论、LLM-as-a-Judge 的 Rubric 锚点法、记忆/压缩/权限架构细节、Agent Teams 的「协调税」选型。其中 6 块是通用知识，全部补入了手册。</p>
+      <p>深段重扫的结果印证了担忧：新发现 <b>7 块此前完全缺失的知识</b>——<a href="../kb.html#b=agent-handbook&amp;c=9">Token 经济学与缓存策略</a>、Vibe Coding 方法论、<a href="../kb.html#b=agent-handbook&amp;c=12">AGENTS.md 实证研究</a>（自动生成的 context file 使成功率 -3%、成本 +20%）、<a href="../kb.html#b=interview-bank&amp;c=3">Agent 场景设计题的固定骨架方法论</a>、<a href="../kb.html#b=agent-handbook&amp;c=8">LLM-as-a-Judge 的 Rubric 锚点法</a>、<a href="../kb.html#b=agent-handbook&amp;c=5">记忆/压缩/权限架构细节</a>、<a href="../kb.html#b=agent-handbook&amp;c=6">Agent Teams 的「协调税」选型</a>。其中 6 块是通用知识，全部补入了手册——<b>点带下划线的术语可直达 Biblioteca 对应章节</b>（登录可见）。</p>
       <blockquote><p>教训：AI 读长文档时，「感觉读完了」和「读完了」是两回事。体量探测必须是第一步，覆盖率必须可量化。</p></blockquote>
 
       <h2>二、机制：五阶段入库流水线</h2>
@@ -245,8 +247,8 @@ html[data-theme="negro"]{
       <h2>四、一源多形态：同一套知识的六种打开方式</h2>
       <div class="tw"><table>
         <tr><th>形态</th><th>给谁用</th></tr>
-        <tr><td>知识手册（13 章）</td><td>知识本体，唯一权威源</td></tr>
-        <tr><td>面试题库（含三档评分）</td><td>求职演练，题库与手册双向引用</td></tr>
+        <tr><td><a href="../kb.html#b=agent-handbook&amp;c=0">知识手册（13 章）</a></td><td>知识本体，唯一权威源</td></tr>
+        <tr><td><a href="../kb.html#b=interview-bank&amp;c=0">面试题库（含三档评分）</a></td><td>求职演练，题库与手册双向引用</td></tr>
         <tr><td>桌面版（深色阅读）</td><td>日常自习的主界面</td></tr>
         <tr><td>便携版（base64 单文件）</td><td>发微信、存手机，离线 whole-book</td></tr>
         <tr><td>白话版</td><td>给非技术伙伴——管家/烹饪比喻逐章重讲同一套知识，附黑话对照表</td></tr>
@@ -265,7 +267,7 @@ html[data-theme="negro"]{
 
       <h2>六、回头看</h2>
       <p>这套机制的本质，是把「读过」从一种感觉变成一种<b>可审计的状态</b>：覆盖率可量化、每条知识有证据强度、每次变更留台账、每篇成品过门禁。AI 时代的知识管理，瓶颈从来不是「获取内容」，而是「消化内容的纪律」。</p>
-      <p>手册本体放在本站的 La Biblioteca（登录可见）。如果你也在建自己的知识库，欢迎从 GitHub 找到我聊聊。</p>
+      <p>手册本体放在本站的 <a href="../kb.html#b=agent-handbook&amp;c=0">La Biblioteca</a>（登录可见）。如果你也在建自己的知识库，欢迎从 GitHub 找到我聊聊。</p>
     </article>
 
     <div class="endnote"><a href="../index.html#cuaderno">← 回工坊日志</a> · El Taller de Andres</div>
