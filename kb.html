@@ -51,10 +51,12 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 
 .layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:22px;align-items:start;padding-bottom:40px}
 .sidebar{border-radius:28px;padding:16px 14px;position:sticky;top:20px;max-height:calc(100vh - 44px);overflow-y:auto;min-width:0}
-.book-tabs{display:flex;gap:6px;padding:5px;border-radius:999px;background:color-mix(in srgb,var(--ink) 7%,transparent);margin-bottom:14px}
-.book-tab{flex:1;padding:9px 6px;border-radius:999px;border:0;background:transparent;color:var(--g-dim);
-  font-family:inherit;font-size:12.5px;cursor:pointer;transition:.25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.book-tabs{display:flex;gap:6px;padding:5px;border-radius:999px;background:color-mix(in srgb,var(--ink) 7%,transparent);margin-bottom:14px;
+  overflow-x:auto;scrollbar-width:thin;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+.book-tab{flex:1 0 auto;padding:9px 14px;border-radius:999px;border:0;background:transparent;color:var(--g-dim);
+  font-family:inherit;font-size:12.5px;cursor:pointer;transition:.25s;white-space:nowrap}
 .book-tab.on{background:var(--g-pillactive);color:var(--g-text);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.book-tab.upbtn{flex:0 0 auto;color:var(--g-accent);border:1px dashed color-mix(in srgb,var(--g-accent) 45%,transparent);padding:9px 13px}
 .toc-head{padding:6px 10px 10px;border-bottom:1px solid color-mix(in srgb,var(--ink) 10%,transparent);margin-bottom:8px}
 .toc-head b{font-size:13.5px;display:block;line-height:1.5}
 .toc-head small{font-size:11px;color:var(--g-dim);line-height:1.6;display:block;margin-top:3px}
@@ -209,7 +211,7 @@ html[data-theme="negro"]{
     <div class="layout">
       <aside class="sidebar g-glass">
         <div class="book-tabs" id="bookTabs"></div>
-        <div class="toc-head"><b id="bookTitle"></b><small id="bookDesc"></small></div>
+        <div class="toc-head"><b id="bookTitle"></b><small id="bookDesc"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
         <ul class="toc" id="toc"></ul>
         <div class="toc-hint" id="tocHint">💡 内容为个人学习笔记，请勿外传。素材更新后经维护机制并入。</div>
       </aside>
@@ -281,16 +283,59 @@ function renderChapter(){
 }
 
 const TABS = { 'agent-handbook': '📘 Manual', 'interview-bank': '📙 Preguntas', 'video-scripts': '🎬 Guiones', 'dala-design': '🎨 Diseño' };
+let IS_ADMIN = false;
+fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); renderBookTabs(); }).catch(()=>{});
+
 function renderBookTabs(){
   $('#bookTabs').innerHTML = window.KB.books.map((b,bi)=>
-    '<button class="book-tab'+(bi===bookIdx?' on':'')+'" data-b="'+bi+'">'+(TABS[b.id]||b.es)+'</button>').join('');
-  $('#bookTabs').querySelectorAll('.book-tab').forEach(t=>t.addEventListener('click',()=>{
+    '<button class="book-tab'+(bi===bookIdx?' on':'')+'" data-b="'+bi+'">'+(TABS[b.id]||b.es)+'</button>').join('')
+    + (IS_ADMIN ? '<button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，收录进 Biblioteca（≤25MB）">＋</button>' : '');
+  $('#bookTabs').querySelectorAll('.book-tab[data-b]').forEach(t=>t.addEventListener('click',()=>{
     bookIdx = +t.dataset.b; chapterIdx = 0; renderAll(); saveState();
   }));
   const b = window.KB.books[bookIdx];
   $('#bookTitle').textContent = b.title;
   $('#bookDesc').textContent = b.desc;
+  const del = $('#kbDel');
+  if (del) del.style.display = (IS_ADMIN && b.uploaded) ? '' : 'none';
 }
+
+/* 上传收录：admin 专用（文件读成原始字节 POST，服务端存 data/kb-uploads 并解析成书） */
+(function kbUploadSetup(){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.md,.pdf'; inp.style.display = 'none';
+  document.body.appendChild(inp);
+  $('#bookTabs').addEventListener('click', e => { if (e.target.id === 'kbUploadBtn') inp.click(); });
+  inp.addEventListener('change', async () => {
+    const f = inp.files[0];
+    if (!f) return;
+    if (f.size > 25 * 1024 * 1024) { alert('文件超过 25MB 上限'); inp.value=''; return; }
+    const btn = $('#kbUploadBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const buf = await f.arrayBuffer();
+      const r = await fetch('/api/kb/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', 'x-file-name': encodeURIComponent(f.name) },
+        body: buf,
+      });
+      const j = await r.json();
+      if (!j.ok) { alert('上传失败：' + (j.error || r.status)); btn.disabled=false; btn.textContent='＋'; return; }
+      location.reload();
+    } catch (err) {
+      alert('上传失败：' + err);
+      if (btn) { btn.disabled = false; btn.textContent = '＋'; }
+    }
+  });
+  const del = $('#kbDel');
+  if (del) del.addEventListener('click', async () => {
+    const b = window.KB.books[bookIdx];
+    if (!b || !b.uploaded || !confirm('删除「' + b.title + '」？文件与目录一并移除。')) return;
+    const r = await fetch('/api/kb/upload?id=' + encodeURIComponent(b.id.slice(3)), { method: 'DELETE' });
+    if (r.ok) location.reload();
+    else alert('删除失败');
+  });
+})();
 
 function renderAll(){ renderBookTabs(); renderBookList($('#searchBox').value.trim()); renderChapter(); }
 
