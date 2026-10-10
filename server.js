@@ -455,21 +455,39 @@ function oilForecast(dirn, amt, range) {
   if (!dirn) return "";
   let f = "预计" + (dirn === "上调" ? "涨" : dirn === "下调" ? "跌" : "搁浅");
   if (range && ((dirn === "上调" && range[0] === "上涨") || (dirn === "下调" && range[0] === "下跌"))) {
-    f += range[1] + "~" + range[2];
+    f += range[1] + "~" + range[2] + "元/升";
   } else {
     const a = parseFloat(amt);
-    if (a > 0) f += String(Math.round(a / 1350 * 100) / 100);
+    if (a > 0) f += String(Math.round(a / 1350 * 100) / 100) + "元/升";
   }
   return f;
 }
+/* 主表按表头对齐取四标号：免疫单元格渲染差异导致的列错位（89# 格偶发非纯数字会让连续正则从 92# 列吃起） */
+function parseOilTable(html) {
+  const ti = html.indexOf("hq_table1");
+  if (ti < 0) return null;
+  const tbl = html.slice(ti, ti + 1600);
+  const heads = [...tbl.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map(m => cleanText(m[1]));
+  const datas = [...tbl.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(m => cleanText(m[1]));
+  if (heads.length < 4 || datas.length < 4) return null;
+  const by = {};
+  for (const k of ["89", "92", "95", "0"]) {
+    const i = heads.findIndex(h => h.replace("#", "").replace("汽油", "").replace("柴油", "").startsWith(k));
+    const v = i >= 0 && i < datas.length && /^\d+(\.\d+)?$/.test(datas[i]) ? datas[i] : null;
+    by[k] = v;
+  }
+  return by;
+}
 async function wbFetchOil() {
   const html = await httpGetText("https://www.cngold.org/crude/shanghai.html", 12000);
-  const ti = html.indexOf("hq_table1");
-  if (ti < 0) return { ok: false, error: "页面改版" };
-  const seg = html.slice(ti, ti + 1000);
-  const m = reFirst(seg, /<td>([\d.]+)<\/td>\s*<td>([\d.]+)<\/td>\s*<td>([\d.]+)<\/td>\s*<td>([\d.]+)<\/td>/);
-  if (!m) return { ok: false, error: "取价失败" };
-  const info = { ok: true, at: Date.now(), price: m[2], note: "", next: "", expired: false, hist: [] };   // 列序固定 89#/92#/95#/0# → 第3列 = 95#（与 Mac 挂件一致）
+  const grades = parseOilTable(html);
+  if (!grades || !grades["95"]) return { ok: false, error: "取价失败" };
+  const info = {
+    ok: true, at: Date.now(), price: grades["95"],   // 95# 为主价（与 Mac 挂件一致）
+    prices: ["89", "92", "95", "0"].filter(k => grades[k])
+      .map(k => ({ g: k + "#", v: grades[k] })),
+    note: "", next: "", expired: false, hist: [],
+  };
   const dd = reFirst(html, /class="data">\s*(\d{4}-\d{2}-\d{2})/);
   if (dd) info.note += dd[0].slice(5) + "起";
   /* 调价历史表：每行 = 生效日期 + 四个标号价，取 95#（第3列）攒走势 */
@@ -492,7 +510,7 @@ async function wbFetchOil() {
   try {
     const h2 = await httpGetText("https://energy.cngold.org/", 12000);
     let dirn = "", amt = "", win2 = "", range = null;
-    const mm = reFirst(h2, /今日\d{1,2}月\d{1,2}日油价预计(上调|下调|搁浅)(\d+)?元\/吨/);
+    const mm = reFirst(h2, /今日\(?\d{1,2}月\d{1,2}日\)?油价预计(上调|下调|搁浅)(\d+)?(?:元\/吨)?/);   // 页面文案日期带不带括号都吃；搁浅可能不带单位
     if (mm) { dirn = mm[0]; amt = mm[1] || ""; }
     const ma = reFirst(h2, /<a href="([^"]+)"[^>]*title="油价调整最新消息/);
     if (ma && /^https?:\/\//.test(ma[0])) {
