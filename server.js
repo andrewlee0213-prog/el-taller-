@@ -946,6 +946,15 @@ function f1Beijing(dateUtc, timeUtc) {
   const iso = new Date(d.getTime() + BJ_OFFSET_MS).toISOString();
   return { date: iso.slice(0, 10), hm: iso.slice(11, 16) };
 }
+/* 各节次 → 短码/中文标签（正赛 R 在 date/time 上，其余在此枚举） */
+const F1_SESSIONS = [
+  ["FirstPractice", "P1", "一练"],
+  ["SecondPractice", "P2", "二练"],
+  ["ThirdPractice", "P3", "三练"],
+  ["SprintQualifying", "SQ", "冲刺排位"],
+  ["Sprint", "S", "冲刺赛"],
+  ["Qualifying", "Q", "排位赛"],
+];
 async function wbFetchF1() {
   const txt = await httpGetText("https://api.jolpi.ca/ergast/f1/current.json", 30000);
   let j = null; try { j = JSON.parse(txt); } catch {}
@@ -954,15 +963,22 @@ async function wbFetchF1() {
   return {
     ok: true, at: Date.now(),
     races: races.filter(r => r.date).map(r => {
+      const sessions = [];
+      for (const [key, k, label] of F1_SESSIONS) {
+        const s = r[key] && f1Beijing(r[key].date, r[key].time);
+        if (s) sessions.push({ k, label, date: s.date, hm: s.hm });
+      }
       const race = f1Beijing(r.date, r.time);
-      const sp = r.Sprint && f1Beijing(r.Sprint.date, r.Sprint.time);
+      if (race) sessions.push({ k: "R", label: "正赛", date: race.date, hm: race.hm });
+      sessions.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.hm < b.hm ? -1 : 1));
+      const sp = sessions.find(s => s.k === "S") || {};
       return {
         round: r.round, raceName: r.raceName,
-        date: race ? race.date : r.date,                 // 有开赛时间时 date 也用北京日期（跨日会对）
+        date: race ? race.date : r.date,                 // 正赛（北京日期，兼容旧消费方）
         time: race ? race.hm : null,
-        sprint: sp ? sp.date : ((r.Sprint && r.Sprint.date) || null),
-        sprintTime: sp ? sp.hm : null,
+        sprint: sp.date || null, sprintTime: sp.hm || null,
         locality: (r.Circuit && r.Circuit.Location && r.Circuit.Location.locality) || "",
+        sessions,                                        // 全节次：P1/P2/P3/SQ/S/Q/R（含北京日期+时刻）
       };
     }),
   };
@@ -980,8 +996,9 @@ const WB_INTERVALS = {
 let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
 let wbSched = {};
 function wbInitSchedule() {
-  /* 旧格式 F1 缓存无北京时间字段 → 丢弃，让调度立即重抓 */
-  if (wbCache.f1 && Array.isArray(wbCache.f1.races) && wbCache.f1.races.some(r => r.time === undefined)) {
+  /* 旧格式 F1 缓存（无北京时间/无全节次 sessions）→ 丢弃，让调度立即重抓 */
+  if (wbCache.f1 && Array.isArray(wbCache.f1.races) &&
+      (wbCache.f1.races.some(r => r.time === undefined) || !wbCache.f1.races.some(r => r.sessions))) {
     wbCache.f1 = null;
   }
   const now = Date.now();
@@ -1136,12 +1153,13 @@ function buildCalendarICS() {
   const races = (wbCache.f1 && wbCache.f1.races) || [];
   races.forEach(r => {
     const label = "🏎 F1 " + r.raceName + (r.locality ? " · " + r.locality : "");
-    if (r.time) addTimed(r.date, r.time, 120, label + " 正赛 " + r.time + " 开赛");
+    if (Array.isArray(r.sessions) && r.sessions.length) {
+      r.sessions.forEach(ss => {
+        if (ss.hm) addTimed(ss.date, ss.hm, ss.k === "R" ? 120 : 60, label + " " + ss.label + " " + ss.hm + " 开赛");
+        else addDay(ss.date, label + " " + ss.label);
+      });
+    } else if (r.time) addTimed(r.date, r.time, 120, label + " 正赛 " + r.time + " 开赛");
     else addDay(r.date, label);
-    if (r.sprint) {
-      if (r.sprintTime) addTimed(r.sprint, r.sprintTime, 60, "🏎 F1 冲刺赛 · " + r.raceName + " " + r.sprintTime + " 开赛");
-      else addDay(r.sprint, "🏎 F1 冲刺赛 · " + r.raceName);
-    }
   });
   const lines = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//El Taller//Workbench//CN",
