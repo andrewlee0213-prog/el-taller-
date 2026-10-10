@@ -388,18 +388,27 @@ function kbAllBooks() {
     intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
     chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
   });
-  const col = kbCollect.items.filter(i => i.state === "done" && i.md);
-  if (col.length) books.push({
-    id: "coleccion", title: "个人收集 · 视频集", es: "🎬 Colección",
-    desc: "书架头提交 B 站视频链接，家中 openclaw + getnote 自动转录回流归档于此。",
-    intro: "收集管线：Biblioteca 提交链接 → 服务器排队 → openclaw 网关领取 → 得到大脑转录 → 回流成本书章节。",
-    chapters: col.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)).map(i => ({
-      id: i.id, title: i.title || "未命名视频",
-      html: '<p style="opacity:.72;font-size:12px;margin:0 0 14px">🔗 来源：<a href="' + kbUploadEsc(i.url) + '" target="_blank" rel="noopener">' + kbUploadEsc(i.url) +
-        "</a> · 收录于 " + new Date(i.doneAt || i.at).toLocaleString() + "</p>" + kbMdToHtml(i.md),
-      text: "",
-    })),
-  });
+  /* 一个视频一本书：md 的 ## 节拆成章（多分P 每节一章；单P 一章） */
+  const colDone = kbCollect.items.filter(i => i.state === "done" && i.md).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  for (const it of colDone) {
+    const body = String(it.md).replace(/^#\s+[^\n]+\n*/, "").replace(/(^\s*>[^\n]*\n*)+/, "");
+    const frags = body.split(/\n(?=##\s)/);
+    const chapters = [];
+    for (const s of frags) {
+      const m = s.match(/^##\s+([^\n]+)/);
+      if (m) chapters.push({ id: "p" + chapters.length, title: m[1].trim().slice(0, 60), html: kbMdToHtml(s.replace(/^##\s+[^\n]+\n?/, "")), text: "" });
+      else if (s.trim().length > 20) chapters.push({ id: "p" + chapters.length, title: "开场", html: kbMdToHtml(s), text: "" });
+    }
+    if (!chapters.length) chapters.push({ id: "p0", title: it.title || "视频内容", html: kbMdToHtml(body), text: "" });
+    chapters[0].html = '<p style="opacity:.72;font-size:12px;margin:0 0 14px">📼 个人收集 · 🔗 来源：<a href="' + kbUploadEsc(it.url) + '" target="_blank" rel="noopener">' + kbUploadEsc(it.url) +
+      "</a> · 收录于 " + new Date(it.doneAt || it.at).toLocaleString() + "</p>" + chapters[0].html;
+    books.push({
+      id: "col-" + it.id, title: it.title || "未命名视频", es: "📼 " + (it.title || "视频").slice(0, 10),
+      desc: "个人收集 · B 站视频转录 · " + new Date(it.doneAt || it.at).toLocaleDateString() + " · " + chapters.length + " 节",
+      intro: "由 openclaw + getnote 自动转录收录；每节对应一个分P。",
+      chapters, collected: true, note: "",
+    });
+  }
   return books.concat(kbUploadBooks());
 }
 function kbUploadBooks() {
@@ -428,7 +437,7 @@ function kbUploadBooks() {
 /* 目录（不含正文）：藏书成百上千时 kb-data.js 也只有几十 KB；正文按需 /api/kb/chapter */
 function kbCatalog() {
   return kbAllBooks().map(b => ({
-    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, note: b.note || "",
+    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, collected: !!b.collected, note: b.note || "",
     chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
   }));
 }

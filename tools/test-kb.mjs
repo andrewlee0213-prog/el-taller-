@@ -23,7 +23,7 @@ async function req(method, path, body, redirect = 'manual') {
 const dbPath = await import('node:url').then(u => u.fileURLToPath(new URL('../data/users.db', import.meta.url)));
 const db = new DatabaseSync(dbPath);
 const salt = crypto.randomBytes(16).toString('hex');
-db.prepare('INSERT INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,0)')
+db.prepare('INSERT OR REPLACE INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,0)')
   .run('kbtest-tmp', crypto.scryptSync('kbtest-pass-2026', salt, 64).toString('hex'), salt, 'user');
 
 let r = await req('GET', '/kb.html');
