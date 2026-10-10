@@ -1008,11 +1008,16 @@ function renderCalendar() {
   document.querySelectorAll("#calChips .calchip").forEach(c => c.classList.toggle("on", c.dataset.calf === calFilter));
   const today = dstr(new Date());
   const map = {};
-  if (calShowLogs()) LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }).log++; });
-  MEMOS.forEach(m => { if (!calShowMemo(m)) return; const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); c.memo++; if (!m.done) c.memoOpen++; });
+  if (calShowLogs()) LOG.forEach(e => { (map[e.date] = map[e.date] || { log: 0, memo: 0, memoOpen: 0, f1s: [] }).log++; });
+  MEMOS.forEach(m => { if (!calShowMemo(m)) return; const c = (map[m.date] = map[m.date] || { log: 0, memo: 0, memoOpen: 0, f1s: [] }); c.memo++; if (!m.done) c.memoOpen++; });
   if (calShowF1()) (WB.f1 && WB.f1.races || []).forEach(r => {
-    if (r.date) { const c = (map[r.date] = map[r.date] || { log: 0, memo: 0, memoOpen: 0, f1: null }); if (!c.f1) c.f1 = { name: r.raceName, sprint: false, hm: r.time || "" }; }
-    if (r.sprint) { const c = (map[r.sprint] = map[r.sprint] || { log: 0, memo: 0, memoOpen: 0, f1: null }); if (!c.f1) c.f1 = { name: r.raceName, sprint: true, hm: r.sprintTime || "" }; }
+    const push = (ds, label, hm) => {
+      if (!ds) return;
+      const c = (map[ds] = map[ds] || { log: 0, memo: 0, memoOpen: 0, f1s: [] });
+      if (!c.f1s.some(x => x.name === r.raceName && x.label === label)) c.f1s.push({ name: r.raceName, label, hm: hm || "" });
+    };
+    if (Array.isArray(r.sessions) && r.sessions.length) r.sessions.forEach(ss => push(ss.date, ss.label, ss.hm));
+    else { push(r.date, "正赛", r.time); push(r.sprint, "冲刺赛", r.sprintTime); }   // 旧缓存兜底
   });
   const first = new Date(calY, calM, 1);
   const offset = (first.getDay() + 6) % 7;             // 周一为第一列
@@ -1033,7 +1038,7 @@ function renderCalendar() {
       dots = '<span class="caldots">' +
         (c.log ? '<i class="cdot log"></i>' : "") +
         (c.memo ? '<i class="cdot ' + (c.memoOpen ? "memo" : "memodone") + '"></i>' : "") +
-        (c.f1 ? '<i class="cdot f1" title="F1 ' + esc(c.f1.name) + (c.f1.sprint ? " 冲刺赛" : " 正赛") + (c.f1.hm ? " · " + c.f1.hm + " 开赛（北京时间）" : "") + '"></i>' : "") + "</span>";
+        (c.f1s && c.f1s.length ? '<i class="cdot f1" title="' + esc(c.f1s.map(x => "F1 " + x.name + " " + x.label + (x.hm ? " · " + x.hm : "")).join("\n")) + '"></i>' : "") + "</span>";
     }
     html += '<button type="button" class="calday' + (out ? " out" : "") + (ds === today ? " today" : "") +
       (ds === calSel ? " sel" : "") + (hol && hol.isOffDay ? " off" : "") + '" data-calday="' + ds + '">' +
@@ -1048,20 +1053,24 @@ function renderCalDetail() {
   const logs = calShowLogs() ? LOG.filter(e => e.date === calSel) : [];
   const memos = MEMOS.filter(m => m.date === calSel && calShowMemo(m));
   const races = (WB.f1 && WB.f1.races) || [];
-  const f1Today = races.filter(r => r.date === calSel || r.sprint === calSel);
+  const f1Today = [];
+  races.forEach(r => {
+    if (Array.isArray(r.sessions)) r.sessions.forEach(ss => { if (ss.date === calSel) f1Today.push({ name: r.raceName, label: ss.label, hm: ss.hm, locality: r.locality }); });
+    else {
+      if (r.date === calSel) f1Today.push({ name: r.raceName, label: "正赛", hm: r.time, locality: r.locality });
+      if (r.sprint === calSel) f1Today.push({ name: r.raceName, label: "冲刺赛", hm: r.sprintTime, locality: r.locality });
+    }
+  });
+  f1Today.sort((a, b) => (a.hm || "").localeCompare(b.hm || ""));
   let html = "<h4>" + (dObj.getMonth() + 1) + "月" + dObj.getDate() + "日 · 星期" + wd + (calSel === dstr(new Date()) ? " · 今天" : "") + "</h4>";
   const hol = holidayMap(calY)[calSel];
   if (hol) html += '<div class="dim small">' + (hol.isOffDay ? "节假日：" : "调休补班：") + esc(hol.name) + "</div>";
   if (calShowF1() && f1Today.length) {
     html += '<div class="dsec">F1 赛历</div>';
-    html += f1Today.map(r => {
-      const isSprint = r.sprint === calSel && r.date !== calSel;
-      const hm = isSprint ? r.sprintTime : r.time;
-      return '<div class="drow"><i class="cdot f1"></i><span>🏎 ' + esc(r.raceName) +
-        (isSprint ? " · 冲刺赛" : " · 正赛") +
-        (hm ? ' · <b>' + hm + "</b> 开赛（北京时间）" : "") +
-        (r.locality ? " · " + esc(r.locality) : "") + "</span></div>";
-    }).join("");
+    html += f1Today.map(x =>
+      '<div class="drow"><i class="cdot f1"></i><span>🏎 ' + esc(x.name) + " · " + esc(x.label) +
+      (x.hm ? ' · <b>' + x.hm + "</b> 开赛（北京时间）" : "") +
+      (x.locality ? " · " + esc(x.locality) : "") + "</span></div>").join("");
   }
   if (calShowLogs()) {
     html += '<div class="dsec">已完成的工作</div>';
