@@ -298,8 +298,8 @@ try {
   });
   check("回传转录内容", (await dr.json()).ok === true);
   r = await req("GET", "/kb-data.js");
-  check("目录含个人收集书", (r.text || "").includes("coleccion") && (r.text || "").includes("测试视频标题"));
-  r = await req("GET", "/api/kb/chapter?b=coleccion&c=0");
+  check("收集成书（一个视频一本）", (r.text || "").includes("col-" + cid) && (r.text || "").includes("测试视频标题") && (r.text || "").includes("collected"), (r.text || "").slice(0, 80));
+  r = await req("GET", "/api/kb/chapter?b=col-" + cid + "&c=0");
   check("收集章节可读且转义", r.json && r.json.ok && r.json.html.includes("&lt;script&gt;"), JSON.stringify(r.json).slice(0, 140));
   dr = await fetch(BASE + "/api/kb/collect/done", {
     method: "POST", headers: { "Content-Type": "application/json", "x-collect-token": ct },
