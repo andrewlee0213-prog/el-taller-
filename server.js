@@ -302,7 +302,7 @@ function kbMdToHtml(md) {
       continue;
     }
     let m;
-    if ((m = line.match(/^(#{3,4})\s+(.+)$/))) { out.push(`<h${m[1].length + 1}>` + kbMdInline(m[2]) + `</h${m[1].length + 1}>`); i++; continue; }
+    if ((m = line.match(/^(#{1,4})\s+(.+)$/))) { out.push(`<h${m[1].length + 1}>` + kbMdInline(m[2]) + `</h${m[1].length + 1}>`); i++; continue; }
     if ((m = line.match(/^>\s?(.*)$/))) {
       const buf = [m[1]]; i++;
       while (i < lines.length && (m = lines[i].match(/^>\s?(.*)$/))) { buf.push(m[1]); i++; }
