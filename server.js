@@ -992,11 +992,21 @@ function extractArticleParas(html) {
   }
   return paras.slice(0, 60);
 }
-/* arXiv 摘要：export API 按 id 取 <entry> 里的标题+摘要 */
+/* arXiv 摘要：优先 abs 网页（网页端无 API 限流），export API 兜底（连续查会 429） */
 async function arxivAbstract(url) {
   const idm = /arxiv\.org\/abs\/([^?#]+)/.exec(url);
   if (!idm) return [];
-  const xml = await httpGetText("https://export.arxiv.org/api/query?id_list=" + encodeURIComponent(idm[1]) + "&max_results=1", 30000);
+  const id = idm[1];
+  try {
+    const html = await httpGetText("https://arxiv.org/abs/" + id, 25000);
+    const tm = reFirst(html, /<h1 class="title[^"]*">[\s\S]*?<span[^>]*>Title:<\/span>\s*([\s\S]*?)<\/h1>/);
+    const sm = reFirst(html, /<blockquote class="abstract[^"]*">[\s\S]*?<span[^>]*>Abstract:<\/span>\s*([\s\S]*?)<\/blockquote>/);
+    const out = [];
+    if (tm && tm[0]) out.push(cleanText(tm[0]));
+    if (sm && sm[0]) out.push(cleanText(sm[0]));
+    if (out.length) return out;
+  } catch {}
+  const xml = await httpGetText("https://export.arxiv.org/api/query?id_list=" + encodeURIComponent(id) + "&max_results=1", 30000);
   const em = /<entry>([\s\S]*?)<\/entry>/.exec(xml);
   if (!em) return [];
   const tm = reFirst(em[1], /<title>([\s\S]*?)<\/title>/);
@@ -1033,7 +1043,8 @@ async function readerEnsureInner(url) {
   if (old && Array.isArray(old.paras) && old.paras.length &&
       !(old.needZh && Date.now() - (old.fetchedAt || 0) > 600e3)) return old;
   const source = anth ? "anth" : "arxiv";
-  /* 境外源直连偶发抖动：失败隔 4 秒重试，最多 3 次 */
+  /* 境外源直连偶发抖动：失败重试，最多 3 次（arXiv 限流 429 退避要长） */
+  const gapMs = source === "arxiv" ? 12000 : 4000;
   let srcs = [];
   for (let tries = 2; tries >= 0; tries--) {
     try {
@@ -1041,7 +1052,7 @@ async function readerEnsureInner(url) {
       else srcs = await arxivAbstract(url);
     } catch {}
     if (srcs.length) break;
-    if (tries > 0) await new Promise(rs => setTimeout(rs, 4000));
+    if (tries > 0) await new Promise(rs => setTimeout(rs, gapMs));
   }
   if (!srcs.length) return old || null;
   let zhs = [];
@@ -1100,12 +1111,16 @@ function readerPrefetch(section) {
   const items = ((wbCache[section] || {}).items) || [];
   if (!items.length) return;
   readerPrefetching[section] = true;
+  const gap = section === "arxiv" ? 10000 : 3000;   // arXiv 对连续请求限流(429)，间隔拉大
   (async () => {
     for (const it of items) {
       const e = wbReader[it.url];
-      if (e && Array.isArray(e.paras) && e.paras.length) continue;   // 已备好
+      const ready = e && Array.isArray(e.paras) && e.paras.length &&
+        (!e.needZh || Date.now() - (e.fetchedAt || 0) <= 600e3);   // 译文全空的隔 10 分钟重试
+      if (ready) continue;
+      console.log("[workbench] 预取 " + section + ": " + String(it.zh || it.url).slice(0, 44));
       try { await readerEnsure(it.url); } catch {}
-      await new Promise(rs => setTimeout(rs, 3000));   // 温和间隔，不与抓取/翻译抢
+      await new Promise(rs => setTimeout(rs, gap));
     }
   })().catch(() => {}).finally(() => { readerPrefetching[section] = false; });
 }
