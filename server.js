@@ -500,6 +500,7 @@ const WB_FILE = {
   reader:   path.join(DATA, "workbench-reader.json"),   // 对照阅读的文章正文缓存（3 天无评论自动清除）
   biblio:   path.join(DATA, "biblioteca-articles.json"),// 评论过 → 收进 Biblioteca 的文章（永久）
   dislikes: path.join(DATA, "workbench-dislikes.json"), // 不感兴趣：强降权 + 永不进 Biblioteca
+  hw:       path.join(DATA, "workbench-hw.json"),       // 智能硬件·每日情报（Mac 收集任务推送，留 7 天）
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -523,6 +524,38 @@ const WB_DEFAULTS = {
 };
 const wbCfg = Object.assign({}, WB_DEFAULTS, loadJson(WB_FILE.cfg, {}));
 if (!Array.isArray(wbCfg.biliUps)) wbCfg.biliUps = [];
+
+/* ---------------- 智能硬件·每日情报（Mac openclaw「taller-硬件情报站」每日推送；服务器只存取，不抓外网） ----------------
+   data/workbench-hw.json = { days:[{date,at,summary,links,prices,sources}], watch:[保值观察机型] }
+   watch = 动态基线清单（done 可增量回写，去重、留最新 30 个）；days 保留 7 天 */
+const HW_WATCH_SEED = ["雷鸟 Air3", "XREAL One", "Meta Ray-Ban Display", "Oura Ring 4", "Galaxy Ring",
+  "魅族 StarV Ring2", "AirPods Pro 2", "Bose QC 消噪耳塞 Ultra", "Sony WH-1000XM6"];
+let hwStore = loadJson(WB_FILE.hw, null);
+if (!hwStore || !Array.isArray(hwStore.days)) hwStore = { days: [] };
+if (!Array.isArray(hwStore.watch) || !hwStore.watch.length) hwStore.watch = HW_WATCH_SEED.slice();
+const hwDateStr = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const hwToday = () => hwDateStr(new Date());
+const hwYesterday = () => hwDateStr(new Date(Date.now() - 86400e3));
+function hwPrune() {
+  hwStore.days.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  if (hwStore.days.length > 7) hwStore.days = hwStore.days.slice(0, 7);
+}
+hwPrune();
+const hwLatest = () => (hwStore.days.length ? hwStore.days[0] : null);
+/* 长度/形状收敛（XSS 转义在前端 esc()；这里只保证字段短、URL 是 http(s)） */
+function hwSanitize(body, date) {
+  const str = (v, n) => String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n);
+  const entry = { date, at: Date.now(), summary: str(body.summary, 2000) };
+  entry.links = (Array.isArray(body.links) ? body.links : []).slice(0, 60).map(l => ({
+    t: str(l && l.t, 160), u: str(l && l.u, 500), s: str(l && l.s, 30), cat: str(l && l.cat, 16), n: str(l && l.n, 120),
+  })).filter(l => l.t && /^https?:\/\//i.test(l.u));
+  entry.prices = (Array.isArray(body.prices) ? body.prices : []).slice(0, 40).map(x => ({
+    m: str(x && x.m, 60), p: str(x && x.p, 40), src: str(x && x.src, 30),
+  })).filter(x => x.m && x.p);
+  entry.sources = {};
+  for (const [k, v] of Object.entries(body.sources || {})) entry.sources[str(k, 20)] = str(v, 60);
+  return entry;
+}
 
 const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const md5 = s => crypto.createHash("md5").update(s, "utf8").digest("hex");
@@ -1123,22 +1156,26 @@ async function ensureHolidays(year) {
   if (holidaysByYear[year]) return holidaysByYear[year];
   if (holidaysPending[year]) return holidaysPending[year];
   holidaysPending[year] = (async () => {
+    /* jsdelivr 主源偶发空响应（2026-10 实测），加 fastly 镜像 + 重试一轮；raw.github 国内常不可达仅兜底 */
     const sources = [
       "https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/" + year + ".json",
+      "https://fastly.jsdelivr.net/gh/NateScarlet/holiday-cn@master/" + year + ".json",
       "https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/" + year + ".json",
     ];
-    for (const src of sources) {
-      try {
-        const r = await fetch(src, { signal: AbortSignal.timeout(15000) });
-        if (!r.ok) continue;
-        const j = await r.json();
-        if (Array.isArray(j.days) && j.days.length) {
-          holidaysByYear[year] = j.days.map(d => ({ name: String(d.name || ""), date: d.date, isOffDay: !!d.isOffDay }));
-          saveJson(WB_FILE.holidays, holidaysByYear);
-          delete holidaysPending[year];
-          return holidaysByYear[year];
-        }
-      } catch {}
+    for (let round = 0; round < 2; round++) {
+      for (const src of sources) {
+        try {
+          const r = await fetch(src, { signal: AbortSignal.timeout(9000) });
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (Array.isArray(j.days) && j.days.length) {
+            holidaysByYear[year] = j.days.map(d => ({ name: String(d.name || ""), date: d.date, isOffDay: !!d.isOffDay }));
+            saveJson(WB_FILE.holidays, holidaysByYear);
+            delete holidaysPending[year];
+            return holidaysByYear[year];
+          }
+        } catch {}
+      }
     }
     delete holidaysPending[year];
     return null;
@@ -1797,6 +1834,58 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- 智能硬件·每日情报（Mac openclaw「taller-硬件情报站」领取/回传，hwToken 鉴权；必须在 admin 守卫之前） ---- */
+    if (p === "/api/workbench/hw/pending" && req.method === "GET") {
+      const tok = String(u.searchParams.get("token") || "");
+      const expect = String(wbCfg.hwToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        json(res, 401, { ok: false, error: "unauthorized" });
+        return log(401);
+      }
+      const latest = hwLatest();
+      const recentUrls = [];
+      for (const d of hwStore.days.slice(0, 3)) for (const l of d.links || []) recentUrls.push(l.u);
+      json(res, 200, {
+        ok: true, need: !(latest && latest.date === hwToday()), date: hwToday(),
+        ups: wbCfg.biliUps, watch: hwStore.watch, recentUrls,
+      });
+      return log(200);
+    }
+    if (p === "/api/workbench/hw/done" && req.method === "POST") {
+      const tok = String(req.headers["x-hw-token"] || "");
+      const expect = String(wbCfg.hwToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        json(res, 401, { ok: false, error: "unauthorized" });
+        return log(401);
+      }
+      let body;
+      try { body = JSON.parse((await readRawBody(req, 300 * 1024)).toString("utf8")); }
+      catch (e) { json(res, 400, { ok: false, error: e && e.message === "too large" ? "body 超过 300KB" : "bad json" }); return log(400); }
+      const date = String(body.date || "");
+      if (date !== hwToday() && date !== hwYesterday()) {
+        json(res, 400, { ok: false, error: "date 需为今日或昨日（以 /pending 返回的 date 为准）" });
+        return log(400);
+      }
+      const entry = hwSanitize(body, date);
+      if (!entry.summary && !entry.links.length) { json(res, 400, { ok: false, error: "summary 与 links 至少要有一项" }); return log(400); }
+      hwStore.days = hwStore.days.filter(d => d.date !== date);
+      hwStore.days.push(entry);
+      if (Array.isArray(body.watch)) {   /* 动态基线：增量合并观察机型，留最新 30 个 */
+        const seen = new Set(hwStore.watch.map(s => String(s).toLowerCase()));
+        for (const m of body.watch) {
+          const v = String(m || "").replace(/\s+/g, " ").trim().slice(0, 60);
+          if (v && !seen.has(v.toLowerCase())) { hwStore.watch.push(v); seen.add(v.toLowerCase()); }
+        }
+        hwStore.watch = hwStore.watch.slice(-30);
+      }
+      hwPrune();
+      saveJson(WB_FILE.hw, hwStore);
+      json(res, 200, { ok: true, date: entry.date, links: entry.links.length, watch: hwStore.watch.length });
+      return log(200);
+    }
+
     /* ---- 工作台 API（仅 admin） ---- */
     if (p.startsWith("/api/workbench/")) {
       const ws = readSession(req);
@@ -1809,6 +1898,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 200, {
           cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
           data: wbCache,
+          hw: hwLatest(),
           dislikes: wbDislikes,
           kbInbox: Object.values(kbUploads).filter(u => u.state === "new").sort((a, b) => a.at - b.at).map(u => {
             const b = upBooks.find(x => x.id === "up-" + u.id);
@@ -2166,6 +2256,11 @@ if (!wbCfg.pushToken) {
 /* 确保 collectToken 存在（Mac openclaw 收集桥领取/回传用，与 pushToken 分权） */
 if (!wbCfg.collectToken) {
   wbCfg.collectToken = crypto.randomBytes(16).toString("hex");
+  saveJson(WB_FILE.cfg, wbCfg);
+}
+/* 确保 hwToken 存在（Mac openclaw 硬件情报站领取/回传用，三 token 分权） */
+if (!wbCfg.hwToken) {
+  wbCfg.hwToken = crypto.randomBytes(16).toString("hex");
   saveJson(WB_FILE.cfg, wbCfg);
 }
 setInterval(() => {

@@ -144,6 +144,27 @@ html[data-theme="crepusculo"]{
 /* arXiv 卡横跨两列：右缘与第一行 B站卡对齐（手机档还原单列） */
 #card-arxiv{grid-column:span 2}
 #card-kbin{grid-column:1/-1}   /* 待处理块通栏：右缘与 arXiv（占两列到网格右缘）上下对齐 */
+#card-hw{grid-column:span 2}   /* 硬件情报横跨两列，与 arXiv 同宽 */
+/* ---- 智能硬件·每日情报 ---- */
+.hw-sum{border-radius:14px;padding:12px 14px;line-height:1.85;font-size:12.5px;color:var(--g-text);
+  background:color-mix(in srgb,var(--g-accent) 9%,transparent);border-left:3px solid var(--g-accent)}
+.hw-cat{margin-top:5px;font-size:11px;font-weight:600;color:var(--g-accent-soft);letter-spacing:.4px}
+.hw-link{display:flex;align-items:baseline;gap:8px;min-width:0;padding:3px 0;
+  border-bottom:1px dashed color-mix(in srgb,var(--ink) 7%,transparent)}
+.hw-link:last-child{border-bottom:0}
+.hw-src{flex:none;font-size:10px;color:var(--g-dim);background:color-mix(in srgb,var(--ink) 8%,transparent);
+  border-radius:6px;padding:1px 7px;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hw-t{color:var(--g-text);text-decoration:none;font-size:12.5px;line-height:1.5;min-width:0;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.hw-t:hover{color:var(--g-accent-soft)}
+.hw-n{flex:none;max-width:40%;font-size:10.5px;color:var(--g-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hw-prices{display:flex;flex-wrap:wrap;gap:6px}
+.hw-pill{font-size:10.5px;color:var(--g-dim);background:color-mix(in srgb,var(--ink) 8%,transparent);border-radius:999px;padding:3px 10px}
+.hw-health{margin-top:3px;font-size:10px;color:var(--g-dim);line-height:1.7}
+.hw-h-ok{color:var(--ok)}
+.hw-h-warn{color:var(--warn)}
+.hw-h-miss{opacity:.75}
+.hw-empty{color:var(--g-dim);font-size:12px;line-height:1.7}
 .chead{display:flex;align-items:center;gap:10px}
 .chead .cbar{width:8px;height:26px;border-radius:2px;flex:none;background:var(--c,#ff9d2e)}
 .chead b{font-size:14.5px;font-weight:600}
@@ -382,6 +403,7 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
   .themedots{display:none}
   .wbgrid{grid-template-columns:1fr}
   #card-arxiv{grid-column:auto}
+  #card-hw{grid-column:auto}
   .xgrid{grid-template-columns:1fr;grid-template-rows:auto;grid-auto-flow:row}
   .section-head{flex-wrap:wrap;row-gap:4px}
   .section-head h2{font-size:20px}
@@ -459,6 +481,13 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
           <span class="upd" id="arxivUpd"></span>
           <button class="rfbtn" data-sec="arxiv" title="重新选文（五段漏斗，约 1 分钟）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody ilist" id="arxivBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-hw" style="--c:#f59e0b">
+        <div class="chead"><span class="cbar"></span><b>智能硬件 · 每日情报</b>
+          <span class="upd" id="hwUpd"></span>
+          <button class="rfbtn" data-sec="hw" title="重新拉取（情报由 Mac 收集任务生成，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="hwBody"><span class="dim">等待首份情报…</span></div>
       </div>
 
       <div class="g-card wbcard" id="card-kbin" style="--c:#8b7cf6">
@@ -977,8 +1006,8 @@ document.addEventListener("click", async e => {
   }
 });
 
-/* ================= 刷新按钮：触发 + 轮询 ================= */
-document.querySelectorAll(".rfbtn").forEach(btn => btn.addEventListener("click", async () => {
+/* ================= 刷新按钮：触发 + 轮询（hw 除外——它的数据由 Mac 收集任务推送，↻ 只重拉展示） ================= */
+document.querySelectorAll('.rfbtn:not([data-sec="hw"])').forEach(btn => btn.addEventListener("click", async () => {
   if (btn.disabled) return;
   const sec = btn.dataset.sec;
   btn.disabled = true;
@@ -995,6 +1024,22 @@ document.querySelectorAll(".rfbtn").forEach(btn => btn.addEventListener("click",
   btn.disabled = false;
   btn.classList.remove("spin");
 }));
+
+/* 硬件情报 ↻：重拉 /data 并重渲染（收集任务在 Mac 侧，服务器无可触发抓取） */
+$("#card-hw .rfbtn").addEventListener("click", async function () {
+  if (this.disabled) return;
+  this.disabled = true;
+  this.classList.add("spin");
+  try {
+    const d = await api("GET", "/api/workbench/data");
+    HW = d.hw || null;
+    renderHw();
+    toast(HW ? "已重拉：" + HW.date : "今日尚未生成");
+  } catch (_) {}
+  await sleep(600);
+  this.disabled = false;
+  this.classList.remove("spin");
+});
 
 /* ================= Registro / Resumen / Ajustes 交互 ================= */
 $("#logSave").addEventListener("click", async () => {
@@ -1293,11 +1338,50 @@ document.addEventListener("click", async e => {
   try { if (localStorage.getItem("taller-wb-panel") === "1") applyFold(true); } catch (_) {}
 })();
 
+/* ================= 智能硬件 · 每日情报（Mac 收集任务推送：一段整合文字 + 原始链接） ================= */
+let HW = null;
+const HW_CATS = [["众筹源头","🚀"],["测评口碑","🧪"],["二手保值","💹"],["海外口碑","🌐"],["展会新品","🎪"],["行业数据","📊"]];
+function renderHw() {
+  const body = $("#hwBody");
+  if (!body) return;
+  if (!HW || (!HW.summary && !(HW.links || []).length)) {
+    $("#hwUpd").textContent = "";
+    body.innerHTML = '<span class="hw-empty">今日尚未生成 —— 情报由 Mac 上的收集任务（openclaw「taller-硬件情报站」）每天推送，Mac 离线当天缺席，最近一次见右上年月日</span>';
+    return;
+  }
+  $("#hwUpd").textContent = HW.date + " · " + (HW.links || []).length + " 条";
+  const by = new Map();
+  for (const l of HW.links || []) {
+    if (!by.has(l.cat)) by.set(l.cat, []);
+    by.get(l.cat).push(l);
+  }
+  let html = "";
+  if (HW.summary) html += '<div class="hw-sum">' + esc(HW.summary) + "</div>";
+  const catHtml = (cat, ico, ls) => '<div class="hw-cat">' + ico + " " + esc(cat) + "</div>" + ls.map(l =>
+    '<div class="hw-link"><span class="hw-src">' + esc(l.s || "") + '</span>' +
+    '<a class="hw-t" href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + "</a>" +
+    (l.n ? '<span class="hw-n">' + esc(l.n) + "</span>" : "") + "</div>").join("");
+  for (const [cat, ico] of HW_CATS) {
+    const ls = by.get(cat);
+    if (ls && ls.length) { html += catHtml(cat, ico, ls); by.delete(cat); }
+  }
+  for (const [cat, ls] of by) if (ls.length) html += catHtml(cat, "📎", ls);   /* 未知分组兜底，不丢链接 */
+  const pr = (HW.prices || []).slice(0, 12);
+  if (pr.length) html += '<div class="hw-cat">💹 保值样本</div><div class="hw-prices">' +
+    pr.map(x => '<span class="hw-pill">' + esc(x.m + " · " + x.p + (x.src ? " · " + x.src : "")) + "</span>").join("") + "</div>";
+  const hs = Object.entries(HW.sources || {});
+  if (hs.length) html += '<div class="hw-health">数据源 · ' + hs.map(([k, v]) => {
+    const cls = String(v).includes("原生") ? "hw-h-ok" : (String(v).includes("降") ? "hw-h-warn" : "hw-h-miss");
+    return '<b class="' + cls + '">' + esc(k) + "</b> " + esc(v);
+  }).join(" · ") + "</div>";
+  body.innerHTML = html;
+}
+
 function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
 }
 function renderAll() {
-  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderKbInbox();
+  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderHw(); renderKbInbox();
   renderLog(); renderWeekly(); renderPanelHint();
   renderCalendar(); renderMemos();
 }
@@ -1311,6 +1395,7 @@ async function loadAll() {
   ]);
   CFG = d.cfg; WB = d.data; SCHED = d.sched; DIS = d.dislikes || {};
   INBOX = d.kbInbox || [];
+  HW = d.hw || null;
   LOG = log.items || [];
   CMT = {};
   (cmt.items || []).forEach(c => { CMT[c.url] = c; });

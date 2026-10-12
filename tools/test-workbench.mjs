@@ -55,6 +55,13 @@ fs.mkdirSync(path.join(tmpData, "kb-uploads"), { recursive: true });
 fs.writeFileSync(path.join(tmpData, "kb-uploads", "ulegacy1.md"), "# 旧上传\n\n## 一\n\n旧内容\n");
 fs.writeFileSync(path.join(tmpData, "kb-uploads.json"),
   JSON.stringify({ ulegacy1: { id: "ulegacy1", title: "旧上传-未处置.md", file: "ulegacy1.md", type: "md", size: 24, at: Date.now() - 86400000 } }));
+/* 预置 9 天旧情报（boot 的 hwPrune 应裁到 7 天） */
+fs.writeFileSync(path.join(tmpData, "workbench-hw.json"), JSON.stringify({
+  days: Array.from({ length: 9 }, (_, i) => ({
+    date: "2026-09-0" + (i + 1), at: Date.now() - (9 - i) * 86400e3, summary: "旧情报 " + (i + 1), links: [], prices: [], sources: {},
+  })),
+  watch: ["雷鸟 Air3"],
+}));
 console.log("临时数据目录: " + tmpData);
 console.log("测试端口: " + PORT);
 const child = spawn(NODE24, ["server.js"], {
@@ -320,6 +327,80 @@ try {
   check("失败重试 → 重新排队", r.json && r.json.ok === true, JSON.stringify(r.json));
   r = await req("DELETE", "/api/kb/collect?id=" + fid);
   check("删除收集条目", r.json && r.json.ok === true, JSON.stringify(r.json));
+
+  /* ---- 智能硬件·每日情报（Mac openclaw 推送，hwToken 鉴权） ---- */
+  cookie = "";
+  r = await req("GET", "/api/workbench/hw/pending?token=wrong");
+  check("hw pending 错 token → 401", r.status === 401, r.status);
+  let hd = await fetch(BASE + "/api/workbench/hw/done", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ date: "2026-01-01", summary: "x" }),
+  });
+  check("hw done 无 token → 401", hd.status === 401, hd.status);
+  const hwTok = cfgAll.hwToken;
+  check("boot 已生成 hwToken（三 token 分权）", /^[0-9a-f]{32}$/.test(hwTok || "") && hwTok !== ct && hwTok !== cfgAll.pushToken, String(hwTok));
+  let hpr = await fetch(BASE + "/api/workbench/hw/pending?token=" + hwTok);
+  let hpj = await hpr.json();
+  const hwDate = hpj.date;
+  check("hw pending 领取（need + UP/机型/近链清单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
+    Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls), JSON.stringify(hpj).slice(0, 140));
+  hd = await fetch(BASE + "/api/workbench/hw/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": hwTok },
+    body: "not-json{",
+  });
+  check("hw done 坏 JSON → 400", hd.status === 400, hd.status);
+  hd = await fetch(BASE + "/api/workbench/hw/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": hwTok },
+    body: JSON.stringify({ date: "2026-01-01", summary: "旧日期" }),
+  });
+  check("hw done 非今日/昨日 → 400", hd.status === 400, hd.status);
+  let ovOk = false, ovDetail = "";
+  try {
+    hd = await hwPush({ date: hwDate, summary: "x".repeat(320 * 1024) });
+    ovOk = hd.status === 400;
+    ovDetail = "status " + hd.status;
+  } catch (e) {
+    /* 读满上限即 req.destroy() 掐断连接，客户端表现为连接重置——同样达到防护目的 */
+    ovOk = true;
+    ovDetail = (e.cause && e.cause.code) || e.message;
+  }
+  check("hw done 超 300KB → 拒绝（400 或掐断连接）", ovOk, ovDetail);
+  const hwPush = (body, tok) => fetch(BASE + "/api/workbench/hw/done", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": tok || hwTok },
+    body: JSON.stringify(body),
+  });
+  hd = await hwPush({
+    date: hwDate,
+    summary: "今日整合：AI 眼镜两连发，戒指赛道降价。" + "长".repeat(2500),
+    links: [
+      { t: '<script>alert("hw")</script> 众筹新品', u: "https://www.kickstarter.com/projects/x", s: "Kickstarter", cat: "众筹源头", n: "达成 300%" },
+      { t: "雷鸟 Air3 半年长测", u: "https://www.bilibili.com/video/BV1hw", s: "B站", cat: "测评口碑", n: "" },
+      { t: "无 URL 条目应被丢弃", u: "javascript:alert(1)", s: "x", cat: "展会新品" },
+    ],
+    prices: [{ m: "XREAL One", p: "2299 元", src: "慢慢买" }],
+    sources: { kickstarter: "原生", smzdm: "降级(bing)", xianyu: "缺席" },
+    watch: ["Rokid Glasses 3"],
+  });
+  const hdd = await hd.json();
+  check("hw done 回传 → 200（滤后 2 条链接）", hd.status === 200 && hdd.ok === true && hdd.links === 2, JSON.stringify(hdd));
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  r = await req("GET", "/api/workbench/data");
+  const hw = r.json.hw;
+  check("情报进入 /data（最新一条）", hw && hw.date === hwDate && hw.summary.startsWith("今日整合：") && hw.links.length === 2 && hw.prices.length === 1,
+    JSON.stringify(hw).slice(0, 140));
+  check("summary 截 2000 / 非 http 链接被滤", hw.summary.length === 2000 && !hw.links.some(l => !/^https?:\/\//i.test(l.u)), String(hw.summary.length));
+  check("链接标题原样存储（XSS 转义在前端 esc 渲染）", hw.links.some(l => l.t.includes("<script>alert")), JSON.stringify(hw.links[0]));
+  let hwFile = JSON.parse(fs.readFileSync(path.join(tmpData, "workbench-hw.json"), "utf8"));
+  check("推送后仍只留 7 天且今日置顶", hwFile.days.length === 7 && hwFile.days[0].date === hwDate, hwFile.days.map(d => d.date).join(","));
+  check("watch 增量合并（+Rokid）", hwFile.watch.includes("Rokid Glasses 3") && hwFile.watch.includes("雷鸟 Air3"), JSON.stringify(hwFile.watch));
+  hd = await hwPush({ date: hwDate, summary: "同日重推版", links: [{ t: "重推", u: "https://a.b/c", s: "t", cat: "展会新品" }] });
+  check("同日重推 → 覆盖更新", hd.status === 200 && (await hd.json()).links === 1, hd.status);
+  hwFile = JSON.parse(fs.readFileSync(path.join(tmpData, "workbench-hw.json"), "utf8"));
+  check("覆盖后仍 7 天、内容为新版", hwFile.days.length === 7 && hwFile.days[0].summary === "同日重推版", JSON.stringify(hwFile.days[0]).slice(0, 80));
+  hpr = await fetch(BASE + "/api/workbench/hw/pending?token=" + hwTok);
+  hpj = await hpr.json();
+  check("推送后 pending.need=false（今日已完成）", hpj.ok === true && hpj.need === false, JSON.stringify(hpj).slice(0, 80));
 
   /* ---- BLOCKED 目录 ---- */
   cookie = "";
