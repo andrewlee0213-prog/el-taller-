@@ -53,6 +53,11 @@ function verifyPassword(pwd, salt, expectHex) {
   const exp = Buffer.from(expectHex, "hex");
   return got.length === exp.length && crypto.timingSafeEqual(got, exp);
 }
+/* 管理台可建角色（guest 不是账号，是未登录态） */
+const ROLES_CREATABLE = ["user", "family", "admin"];
+function countAdmins() {
+  return db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='admin'").get().n;
+}
 
 /* 首次启动：生成种子管理员，初始密码写入 data/admin-initial-password.txt */
 if (db.prepare("SELECT COUNT(*) AS n FROM users").get().n === 0) {
@@ -221,14 +226,16 @@ function loadJsArray(file) {
 function loadWorks() {
   return loadJsArray(path.join(ROOT, "works.js")) || [];
 }
+/* 四级可见性链 public < friends < family < private；角色档位 guest(0) < user朋友(1) < family家人(2) < admin(3)。
+   未知 visibility 一律隐藏（与服务端过滤口径一致）。 */
+const VIS_LEVEL = { public: 0, friends: 1, family: 2, private: 3 };
+const ROLE_LEVEL = { user: 1, family: 2, admin: 3 };
+const roleLevel = s => (s && ROLE_LEVEL[s.r]) || 0;
 function filterWorks(works, session) {
-  const authed = !!session, admin = authed && session.r === "admin";
+  const lvl = roleLevel(session);
   return works.filter(w => {
-    const v = w.visibility || "public";
-    if (v === "public") return true;
-    if (v === "friends") return authed;
-    if (v === "private") return admin;
-    return false;
+    const need = VIS_LEVEL[w.visibility || "public"];
+    return need != null && need <= lvl;
   });
 }
 
@@ -651,12 +658,14 @@ function hwMergeDevices(list, date, watchPrices) {
       const s = String(raw.shows || "").trim().slice(0, 60); if (s) dev.shows = s;
       const st = String(raw.status || "").trim().slice(0, 12); if (st) dev.status = st;
       const u = String(raw.url || "").trim().slice(0, 500); if (/^https?:\/\//i.test(u)) dev.url = u;
+      const w = String(raw.wear || "").trim(); if (HW_WEARS.includes(w)) dev.wear = w;
     } else {
       dev = { name, brand: String((raw && raw.brand) || "").trim().slice(0, 40), cat: cat || "未分类", lens,
         collects: String((raw && raw.collects) || "").trim().slice(0, 60), shows: String((raw && raw.shows) || "").trim().slice(0, 60),
         status: String((raw && raw.status) || "传闻").trim().slice(0, 12), firstSeen: date, lastSeen: date, heat: 1,
         url: /^https?:\/\//i.test(String((raw && raw.url) || "")) ? String(raw.url).trim().slice(0, 500) : "",
-        src: String((raw && raw.src) || "").trim().slice(0, 30), prices: [] };
+        src: String((raw && raw.src) || "").trim().slice(0, 30),
+        wear: hwWearOf(String((raw && raw.wear) || "").trim()), prices: [] };
       byName.set(name.toLowerCase(), dev);
       hwDevices.devices.push(dev);
     }
@@ -675,16 +684,19 @@ function hwMergeDevices(list, date, watchPrices) {
 /* 图鉴书章正文：品类内的设备表（kbMdToHtml 的 table 样式复用） */
 function hwAtlasTable(list) {
   const tag = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
-  let h = "<table><thead><tr><th>设备</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>热度</th></tr></thead><tbody>";
+  let h = "<table><thead><tr><th>设备</th><th>部位</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>热度</th></tr></thead><tbody>";
   for (const d of list) {
     const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
     const price = d.prices && d.prices.length ? d.prices[d.prices.length - 1].p : "";
     h += "<tr><td>" + (d.url ? '<a href="' + kbUploadEsc(d.url) + '" target="_blank" rel="noopener">' + kbUploadEsc(d.name) + "</a>" : kbUploadEsc(d.name)) +
-      "</td><td>" + tag(d.lens) + "</td><td>" + kbUploadEsc(cs || "—") + "</td><td>" + kbUploadEsc(d.status || "") +
+      "</td><td>" + kbUploadEsc(d.wear || "其他") + "</td><td>" + tag(d.lens) + "</td><td>" + kbUploadEsc(cs || "—") + "</td><td>" + kbUploadEsc(d.status || "") +
       "</td><td>" + kbUploadEsc(price) + "</td><td>" + (d.heat || 1) + "</td></tr>";
   }
   return h + "</tbody></table>";
 }
+/* 佩戴/测量部位白名单：优先佩戴位置，无佩戴用核心测量数据所在的身体部位；环境/家居/宠物单列 */
+const HW_WEARS = ["头部", "眼部", "耳部", "颈部", "胸口", "上臂", "手腕", "手指", "腰部", "腿脚", "环境家居", "宠物", "其他"];
+const hwWearOf = w => HW_WEARS.includes(w) ? w : "其他";
 
 const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 const md5 = s => crypto.createHash("md5").update(s, "utf8").digest("hex");
@@ -1425,7 +1437,7 @@ function wbAddNote(o) {
     tags: [srcTag],
     summary: String(o.text || "").slice(0, 80),
     body: String(o.text || "") + (o.sourceUrl ? "\n\n原文：" + o.sourceUrl : ""),
-    visibility: ["public", "friends", "private"].includes(o.visibility) ? o.visibility : "private",
+    visibility: ["public", "friends", "family", "private"].includes(o.visibility) ? o.visibility : "private",
     sourceUrl: o.sourceUrl || "", source: o.source || "", createdAt: Date.now(),
   };
   wbNotes.unshift(note);
@@ -1611,25 +1623,152 @@ function readerPrefetch(section) {
   })().catch(() => {}).finally(() => { readerPrefetching[section] = false; });
 }
 
-/* ---------------- 管理台占位页（证明守卫生效） ---------------- */
+/* ---------------- 管理台：账号管理页（建号 / 改角色 / 重置密码 / 删除，仅 admin） ---------------- */
 const ADMIN_PAGE = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>管理台 · El Taller</title>
-<style>body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:#241006;color:#fff6ec;
-min-height:100vh;display:grid;place-items:center;margin:0}
-.box{max-width:520px;padding:40px;border-radius:26px;text-align:center;
-background:linear-gradient(150deg,rgba(185,128,82,.38),rgba(115,70,40,.32));border:1px solid rgba(255,255,255,.15)}
-h1{font-size:22px;margin-bottom:10px}p{color:rgba(255,240,228,.6);font-size:13.5px;line-height:1.8}
-code{background:rgba(255,255,255,.1);padding:2px 8px;border-radius:6px;font-size:12.5px}
-#ping{margin-top:18px;padding:10px 22px;border-radius:999px;border:0;cursor:pointer;font:inherit;font-size:13.5px;
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>账号与权限 · El Taller</title>
+<style>
+body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#241006;color:#fff6ec;
+min-height:100vh;display:grid;place-items:center;margin:0;padding:24px}
+.box{width:min(760px,96vw);padding:34px;border-radius:26px;
+background:linear-gradient(150deg,rgba(185,128,82,.38),rgba(115,70,40,.32));border:1px solid rgba(255,255,255,.15);
+box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 34px 90px rgba(0,0,0,.45);
+-webkit-backdrop-filter:blur(40px) saturate(1.5);backdrop-filter:blur(40px) saturate(1.5)}
+h1{font-size:20px;margin:0 0 8px;text-align:center;font-weight:650}
+.sub{color:rgba(255,240,228,.62);font-size:12.5px;line-height:1.9;text-align:center;margin:0 0 24px}
+.sub b{font-weight:600}
+.r-user{color:#a9ddff}.r-family{color:#8fe9bd}.r-admin{color:#ffd9a3}
+form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;justify-content:center;margin:0 0 24px;padding:16px;
+border:1px dashed rgba(255,255,255,.2);border-radius:16px}
+label{display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:rgba(255,240,228,.62)}
+label.chk{flex-direction:row;align-items:center;gap:7px;padding-bottom:9px}
+label.chk input{width:auto;margin:0}
+input,select{font:inherit;font-size:13px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+background:rgba(255,255,255,.08);color:#fff6ec;padding:8px 10px;outline:0;min-width:0}
+input:focus,select:focus{border-color:rgba(255,157,46,.6)}
+button{font:inherit;font-size:12.5px;border:0;border-radius:10px;cursor:pointer;padding:9px 14px;transition:.2s;
 background:linear-gradient(140deg,#ff9d2e,#d97c14);color:#2a1505;font-weight:600}
-#out{margin-top:14px;font-size:12.5px;color:#8fe9bd;min-height:18px}</style></head>
-<body><div class="box"><h1>El Taller · 管理台</h1>
-<p>权限守卫已生效：你能看到本页，说明当前会话角色为 <code>admin</code>。<br>
-作品管理界面为后续版本预留；当前可用 <code>/api/admin/ping</code> 验证鉴权。</p>
-<button id="ping">测试 /api/admin/ping</button><div id="out"></div>
-<p style="margin-top:22px"><a href="/" style="color:#ffd9a3">← 返回主页</a></p></div>
-<script>document.getElementById('ping').onclick=async()=>{try{const r=await fetch('/api/admin/ping');const j=await r.json();
-document.getElementById('out').textContent=JSON.stringify(j)}catch(e){document.getElementById('out').textContent='请求失败'}}</script>
+button:hover{filter:brightness(1.08)}
+button.ghost{background:rgba(255,255,255,.12);color:#fff6ec;font-weight:400}
+button.danger{background:rgba(200,70,50,.78);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:rgba(255,240,228,.55);font-weight:500;text-align:left;padding:8px 10px;font-size:11.5px;
+border-bottom:1px solid rgba(255,255,255,.16);letter-spacing:.5px}
+td{padding:10px;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:middle}
+td.u{font-weight:600}
+td.op{text-align:right;white-space:nowrap}
+td.op button{padding:6px 10px;font-size:12px}
+.mut{color:rgba(255,240,228,.5);font-size:11.5px}
+#msg{min-height:18px;text-align:center;font-size:12.5px;margin:16px 0 0}
+.ok{color:#8fe9bd}.err{color:#ffb3a3}
+.back{display:block;text-align:center;margin-top:18px;font-size:12.5px;color:rgba(255,240,228,.62);text-decoration:none}
+.back:hover{color:#fff6ec}
+select.tr{font-size:12px;padding:5px 8px}
+.ptable{margin:0 auto 26px;max-width:620px}
+.ptable td,.ptable th{text-align:left;font-size:12px;padding:7px 10px}
+</style></head>
+<body><div class="box">
+<h1>El Taller · 账号与权限</h1>
+<p class="sub">注册始终关闭，账号只在这里创建；账号的权限=其角色，内容的可见档位在 works.js / 工作台收日志时选择。<br>
+<span class="mut">改密 / 改角色 / 删除账号后，全站会话作废，所有人（含管理员）需重新登录。</span></p>
+
+<table class="ptable">
+<thead><tr><th>角色</th><th>能看什么</th><th>能做什么</th></tr></thead>
+<tbody>
+<tr><td class="mut">未登录<br><span style="font-size:11px">路人 / 同事 / 面试官</span></td><td>public 公开内容</td><td class="mut">只读浏览</td></tr>
+<tr><td class="r-user">user · 朋友</td><td>＋ friends 好友内容</td><td class="mut">只读浏览</td></tr>
+<tr><td class="r-family">family · 家人</td><td>＋ family 家庭内容</td><td class="mut">只读浏览</td></tr>
+<tr><td class="r-admin">admin · 管理员</td><td>全部（含 private）</td><td>管理台 + 工作台 + 全部写操作</td></tr>
+</tbody></table>
+
+<form id="createForm">
+  <label>用户名<input id="nu" maxlength="24" placeholder="2~24 位字母数字"></label>
+  <label>初始密码（≥6 位）<input id="np" type="text" autocomplete="off" placeholder="线下传达给对方"></label>
+  <label>角色<select id="nr">
+    <option value="family" selected>family · 家人</option>
+    <option value="user">user · 朋友</option>
+    <option value="admin">admin · 管理员</option>
+  </select></label>
+  <label class="chk"><input id="nmc" type="checkbox" checked>首次登录须改密</label>
+  <button type="submit" id="cbtn">建号</button>
+</form>
+
+<table><thead><tr><th>用户名</th><th>角色</th><th>首登改密</th><th>创建时间</th><th style="text-align:right">操作</th></tr></thead>
+<tbody id="rows"><tr><td colspan="5" class="mut" style="text-align:center;padding:24px">加载中…</td></tr></tbody></table>
+<div id="msg"></div>
+<a class="back" href="/">← 返回主页</a>
+</div>
+<script>
+var $=function(s){return document.querySelector(s)};
+var LOGIN='/login.html?next=%2Fadmin%2F';
+function say(t,cls){var m=$('#msg');m.textContent=t||'';m.className=cls||''}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function kicked(){say('已生效——全站会话作废，即将去登录页重新登录…','ok');
+  setTimeout(function(){location.href=LOGIN},1500)}
+function api(method,path,body){
+  return fetch(path,{method:method,headers:{'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined}).then(function(r){
+      if(r.status===401){kicked();throw new Error('unauthorized')}
+      return r.json().catch(function(){return{}});
+    });
+}
+var ROLE_TXT={user:'user · 朋友',family:'family · 家人',admin:'admin · 管理员'};
+function roleOptions(cur){var h='';['user','family','admin'].forEach(function(k){
+  h+='<option value="'+k+'"'+(k===cur?' selected':'')+'>'+ROLE_TXT[k]+'</option>'});return h}
+function load(){
+  return api('GET','/api/admin/users').then(function(j){
+    var rows=(j.users||[]).map(function(u){
+      return '<tr><td class="u">'+esc(u.username)+'</td>'+
+        '<td><select class="tr" data-role="'+esc(u.username)+'">'+roleOptions(u.role)+'</select></td>'+
+        '<td><input type="checkbox" data-mc="'+esc(u.username)+'"'+(u.must_change?' checked':'')+' title="勾选=下次登录强制改密"></td>'+
+        '<td class="mut">'+esc(String(u.created||'').slice(0,16).replace('T',' '))+'</td>'+
+        '<td class="op"><button class="ghost" data-pwd="'+esc(u.username)+'">重置密码</button> '+
+        '<button class="danger" data-del="'+esc(u.username)+'">删除</button></td></tr>';
+    }).join('');
+    $('#rows').innerHTML=rows||'<tr><td colspan="5" class="mut" style="text-align:center;padding:24px">暂无账号</td></tr>';
+  }).catch(function(){});
+}
+$('#createForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  var username=$('#nu').value.trim(),password=$('#np').value;
+  if(!username||password.length<6){say('用户名必填，初始密码至少 6 位','err');return}
+  $('#cbtn').disabled=true;
+  api('POST','/api/admin/users',{username:username,password:password,role:$('#nr').value,mustChange:$('#nmc').checked})
+    .then(function(j){
+      if(j.ok){say('已创建 '+username+'（初始密码记得线下传达）','ok');$('#nu').value='';$('#np').value='';load()}
+      else say(j.error||'创建失败','err');
+    }).catch(function(){}).then(function(){$('#cbtn').disabled=false});
+});
+$('#rows').addEventListener('change',function(e){
+  var t=e.target;
+  if(t.dataset.role){
+    api('PUT','/api/admin/users',{username:t.dataset.role,role:t.value}).then(function(j){
+      if(j.ok){if(j.rotated)kicked();else{say('角色已更新','ok');load()}}
+      else say(j.error||'失败','err');
+    }).catch(function(){});
+  }else if(t.dataset.mc){
+    api('PUT','/api/admin/users',{username:t.dataset.mc,mustChange:t.checked}).then(function(j){
+      say(j.ok?(t.checked?'下次登录须改密':'允许沿用当前密码'):(j.error||'失败'),j.ok?'ok':'err');
+    }).catch(function(){});
+  }
+});
+$('#rows').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.pwd){
+    var pwd=prompt('给 '+b.dataset.pwd+' 设的新密码（≥6 位；默认要求其下次登录改密，可在行内取消勾选）：');
+    if(pwd==null)return;
+    if(pwd.length<6){say('新密码至少 6 位','err');return}
+    api('PUT','/api/admin/users',{username:b.dataset.pwd,password:pwd,mustChange:true}).then(function(j){
+      if(j.ok)kicked();else say(j.error||'失败','err');
+    }).catch(function(){});
+  }else if(b.dataset.del){
+    if(!confirm('删除账号 '+b.dataset.del+'？不可恢复，其会话立即失效。'))return;
+    api('DELETE','/api/admin/users?username='+encodeURIComponent(b.dataset.del)).then(function(j){
+      if(j.ok)kicked();else say(j.error||'失败','err');
+    }).catch(function(){});
+  }
+});
+load();
+</script>
 </body></html>`;
 
 /* ---------------- 路由 ---------------- */
@@ -2326,16 +2465,13 @@ const server = http.createServer(async (req, res) => {
         return log(200);
       }
 
-      /* ---- 收进日志的笔记：公开条目所有人可见，登录后含 friends，admin 含全部 ---- */
+      /* ---- 收进日志的笔记：按四级可见性链过滤（同 filterWorks 口径） ---- */
     if (p === "/api/notes-extra" && req.method === "GET") {
       const s = readSession(req);
-      const admin = s && s.r === "admin";
-      const authed = !!s;
+      const lvl = roleLevel(s);
       const items = wbNotes.filter(n => {
-        const v = n.visibility || "public";
-        if (v === "public") return true;
-        if (v === "friends") return authed;
-        return admin;
+        const need = VIS_LEVEL[n.visibility || "public"];
+        return need != null && need <= lvl;
       }).sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.createdAt - a.createdAt);
       json(res, 200, { items });
       return log(200);
@@ -2402,6 +2538,74 @@ const server = http.createServer(async (req, res) => {
       if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
       json(res, 200, { ok: true, role: s.r, user: s.u, ts: Date.now() });
       return log(200);
+    }
+
+    /* ---- 账号管理（admin）：列表 / 建号 / 改角色·重置密码 / 删除。
+       注册始终关闭，账号只由此处创建。改密、改角色、删除会轮换会话密钥：
+       会话无服务端存储，旧 Cookie 只能整体作废（= 全员重新登录，含正在操作的管理员） ---- */
+    if (p === "/api/admin/users") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      if (req.method === "GET") {
+        json(res, 200, { ok: true, users: db.prepare("SELECT id, username, role, must_change, created FROM users ORDER BY id").all() });
+        return log(200);
+      }
+      if (req.method === "POST") {
+        const body = await readJson(req);
+        const username = String(body.username || "").trim();
+        const password = String(body.password || "");
+        const role = String(body.role || "");
+        if (!/^[a-zA-Z0-9_-]{2,24}$/.test(username)) { json(res, 400, { ok: false, error: "用户名需 2~24 位字母/数字/下划线/连字符" }); return log(400); }
+        if (!ROLES_CREATABLE.includes(role)) { json(res, 400, { ok: false, error: "角色只能是 user / family / admin" }); return log(400); }
+        if (password.length < 6) { json(res, 400, { ok: false, error: "初始密码至少 6 位" }); return log(400); }
+        if (db.prepare("SELECT 1 FROM users WHERE username=?").get(username)) { json(res, 409, { ok: false, error: "用户名已存在" }); return log(409); }
+        const salt = makeSalt();
+        db.prepare("INSERT INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,?)")
+          .run(username, hashPassword(password, salt), salt, role, body.mustChange ? 1 : 0);
+        json(res, 200, { ok: true, username, role });
+        return log(200);
+      }
+      if (req.method === "PUT") {
+        const body = await readJson(req);
+        const username = String(body.username || "").trim();
+        const row = db.prepare("SELECT * FROM users WHERE username=?").get(username);
+        if (!row) { json(res, 404, { ok: false, error: "账号不存在" }); return log(404); }
+        let rotated = false;
+        if (body.password != null) {
+          const pwd = String(body.password || "");
+          if (pwd.length < 6) { json(res, 400, { ok: false, error: "新密码至少 6 位" }); return log(400); }
+          const salt = makeSalt();
+          db.prepare("UPDATE users SET pwhash=?, salt=? WHERE username=?").run(hashPassword(pwd, salt), salt, username);
+          rotated = true;
+        }
+        if (body.role != null) {
+          const role = String(body.role);
+          if (!ROLES_CREATABLE.includes(role)) { json(res, 400, { ok: false, error: "角色只能是 user / family / admin" }); return log(400); }
+          if (row.role === "admin" && role !== "admin" && countAdmins() <= 1) { json(res, 400, { ok: false, error: "不能降级最后一个管理员" }); return log(400); }
+          if (role !== row.role) {
+            db.prepare("UPDATE users SET role=? WHERE username=?").run(role, username);
+            rotated = true;
+          }
+        }
+        if (body.mustChange != null) {
+          db.prepare("UPDATE users SET must_change=? WHERE username=?").run(body.mustChange ? 1 : 0, username);
+        }
+        if (rotated) rotateSessionSecret();
+        json(res, 200, { ok: true, rotated });
+        return log(200);
+      }
+      if (req.method === "DELETE") {
+        const username = String(u.searchParams.get("username") || "").trim();
+        const row = db.prepare("SELECT * FROM users WHERE username=?").get(username);
+        if (!row) { json(res, 404, { ok: false, error: "账号不存在" }); return log(404); }
+        if (row.role === "admin" && countAdmins() <= 1) { json(res, 400, { ok: false, error: "不能删除最后一个管理员" }); return log(400); }
+        db.prepare("DELETE FROM users WHERE username=?").run(username);
+        rotateSessionSecret();
+        json(res, 200, { ok: true, rotated: true });
+        return log(200);
+      }
+      json(res, 405, { ok: false, error: "method not allowed" });
+      return log(405);
     }
 
     /* ---- works.js / notes.js 动态下发：按会话过滤 visibility（防匿名直读未过滤的原始数据） ----

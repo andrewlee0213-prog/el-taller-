@@ -391,6 +391,7 @@ html[data-theme="negro"]{
         <span class="avatar-dot" id="whoDot">A</span>
         <span id="whoName"></span>
         <span class="role-chip" id="whoRole"></span>
+        <a class="btn btn-ghost" id="adminBtn" href="/admin/" style="display:none;padding:8px 16px;font-size:12.5px;text-decoration:none;color:inherit">管理台</a>
         <button class="btn btn-ghost" id="logoutBtn" style="padding:8px 16px;font-size:12.5px">退出</button>
       </span>
     </header>
@@ -586,7 +587,7 @@ const STATUS = {
   'terminado':['已完成','terminado'],
   'pausado':  ['已暂停','pausado'],
 };
-const VIS = { friends:'Friends', private:'Private' };
+const VIS = { friends:'Friends', family:'Family', private:'Private' };
 
 function renderWorks(works, me){
   const grid = $('#workgrid');
@@ -594,6 +595,7 @@ function renderWorks(works, me){
     const v = w.visibility || 'public';
     if (v === 'public')  return true;
     if (v === 'friends') return !!(me && me.authenticated);
+    if (v === 'family')  return !!(me && me.authenticated && (me.role === 'family' || me.role === 'admin'));
     if (v === 'private') return !!(me && me.authenticated && me.role === 'admin');
     return true;
   });
@@ -742,6 +744,7 @@ function renderNotes(notes, me){
     const v = n.visibility || 'public';
     if (v === 'public')  return true;
     if (v === 'friends') return !!(me && me.authenticated);
+    if (v === 'family')  return !!(me && me.authenticated && (me.role === 'family' || me.role === 'admin'));
     if (v === 'private') return !!(me && me.authenticated && me.role === 'admin');
     return true;
   });
@@ -794,7 +797,8 @@ async function boot(){
     loginBtn.style.display='none';
     whoami.classList.add('on');
     $('#whoName').textContent = me.username;
-    $('#whoRole').textContent = me.role==='admin' ? '管理员' : '成员';
+    $('#whoRole').textContent = me.role==='admin' ? '管理员' : me.role==='family' ? '家人' : '成员';
+    if (me.role === 'admin') $('#adminBtn').style.display = '';
     $('#logoutBtn').onclick = async ()=>{ try{ await fetch('/api/logout',{method:'POST'}); }catch(e){} location.reload(); };
   }
 

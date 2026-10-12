@@ -396,9 +396,9 @@ try {
       { m: "Oura Ring 4", p: "$249（黑五常价 $299）", src: "Reddit 讨论样本" },
     ],
     devices: [
-      { name: "XREAL One", brand: "XREAL", cat: "AI眼镜", lens: 3, collects: "第一视角视频", shows: "AR 信息叠加", status: "已发售", url: "https://www.xreal.com/one", price: "2299 元", priceSrc: "慢慢买" },
-      { name: "Oura Ring 4", brand: "Oura", cat: "智能戒指", lens: 2, collects: "HRV/皮温/睡眠分期", status: "已发售", url: "https://ouraring.com/4" },
-      { name: "非法透镜机", cat: "手表", lens: 9, status: "传闻" },
+      { name: "XREAL One", brand: "XREAL", cat: "AI眼镜", lens: 3, wear: "眼部", collects: "第一视角视频", shows: "AR 信息叠加", status: "已发售", url: "https://www.xreal.com/one", price: "2299 元", priceSrc: "慢慢买" },
+      { name: "Oura Ring 4", brand: "Oura", cat: "智能戒指", lens: 2, wear: "手指", collects: "HRV/皮温/睡眠分期", status: "已发售", url: "https://ouraring.com/4" },
+      { name: "非法透镜机", cat: "手表", lens: 9, wear: "鼻子", status: "传闻" },
       { name: "种子设备001", status: "已发售", price: "99 元" },
     ],
     sources: { kickstarter: "原生", smzdm: "降级(bing)", xianyu: "缺席" },
@@ -432,6 +432,9 @@ try {
     (dx.prices || []).length === 1 && dx.prices[0].p === "2299 元" && (dO.prices || [])[0] && dO.prices[0].p.includes("249") &&
     !devs.some(d => d.name === "Galaxy Ring"),   /* 保值组机型不凭空造设备 */
     JSON.stringify({ dx: dx.prices, dO: dO.prices }));
+  check("部位收敛：wear 白名单外归「其他」", dx.wear === "眼部" && (dO.wear === "手指") &&
+    (devs.find(d => d.name === "非法透镜机") || {}).wear === "其他",
+    JSON.stringify({ dx: dx.wear, dO: dO.wear, bad: (devs.find(d => d.name === "非法透镜机") || {}).wear }));
   check("图鉴 500 上限冷淘汰（505 种子 + 3 新 → 挤掉 8 台最冷）",
     devs.length === 500 && devs.filter(d => d.name.startsWith("种子设备")).length === 497, devs.length);
   r = await req("GET", "/kb-data.js");
@@ -443,6 +446,7 @@ try {
   r = await req("GET", "/api/kb/chapter?b=hw-devices&c=" + aiIdx);
   check("图鉴章渲染品类表格", aiIdx >= 0 && r.json && r.json.ok && r.json.html.includes("<table") && r.json.html.includes("XREAL One"),
     "aiIdx=" + aiIdx + " " + JSON.stringify(r.json).slice(0, 100));
+  check("图鉴表格含部位列", r.json && r.json.ok && r.json.html.includes("部位") && r.json.html.includes("眼部"), (r.json && r.json.html || "").slice(0, 80));
   let hwFile = JSON.parse(fs.readFileSync(path.join(tmpData, "workbench-hw.json"), "utf8"));
   check("推送后仍只留 7 天且今日置顶", hwFile.days.length === 7 && hwFile.days[0].date === hwDate, hwFile.days.map(d => d.date).join(","));
   check("watch 增量合并（+Rokid）", hwFile.watch.includes("Rokid Glasses 3") && hwFile.watch.includes("雷鸟 Air3"), JSON.stringify(hwFile.watch));

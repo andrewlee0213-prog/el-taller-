@@ -196,6 +196,28 @@ html[data-theme="crepusculo"]{
 .atl-table a{color:var(--g-text);text-decoration:none}
 .atl-table a:hover{color:var(--g-accent-soft)}
 .atl-empty{padding:40px;text-align:center;color:var(--g-dim);font-size:12.5px;line-height:1.8}
+/* ---- 身体图视图 ---- */
+.atl-views{display:flex;gap:6px;margin-left:auto}
+.atl-mapwrap{display:flex;gap:20px;min-height:0;flex:1}
+.atl-map{flex:none;width:236px;display:flex;flex-direction:column;gap:10px}
+.atl-map svg{width:100%;height:auto;max-height:100%;display:block}
+.bpart{cursor:pointer}
+.bpart .shape{fill:color-mix(in srgb,var(--ink) 6%,transparent);stroke:color-mix(in srgb,var(--ink) 24%,transparent);stroke-width:1.5;transition:.2s}
+.bpart:hover .shape{fill:color-mix(in srgb,var(--g-accent) 18%,transparent);stroke:var(--g-accent)}
+.bpart.on .shape{fill:color-mix(in srgb,var(--g-accent) 32%,transparent);stroke:var(--g-accent);
+  filter:drop-shadow(0 0 7px color-mix(in srgb,var(--g-accent) 60%,transparent))}
+.bpart.empty{opacity:.55}
+.bcount{pointer-events:none}
+.bcount circle{fill:var(--g-accent)}
+.bcount text{fill:#fff;font-size:10.5px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+.bcount.zero{display:none}
+.atl-mapchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.atl-list{flex:1;min-width:0;overflow:auto;padding-right:4px}
+.atl-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:8px 6px;border-bottom:1px dashed color-mix(in srgb,var(--ink) 8%,transparent)}
+.atl-row>a{color:var(--g-text);text-decoration:none;font-size:12.5px;font-weight:600}
+.atl-row>a:hover{color:var(--g-accent-soft)}
+.atl-row .rdim{font-size:10.5px;color:var(--g-dim)}
+@media (max-width:680px){.atl-mapwrap{flex-direction:column}.atl-map{width:200px;margin:0 auto}}
 .chead{display:flex;align-items:center;gap:10px}
 .chead .cbar{width:8px;height:26px;border-radius:2px;flex:none;background:var(--c,#ff9d2e)}
 .chead b{font-size:14.5px;font-weight:600}
@@ -634,7 +656,11 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 <div class="atl-mask" id="atlMask">
   <div class="atl-dialog g-glass">
     <div class="atl-head"><b>📔 智能硬件图鉴</b><span class="atl-stats" id="atlStats"></span>
-      <button class="icmt" id="atlClose" title="关闭（Esc）" style="margin-left:auto;font-size:14px">✕</button></div>
+      <span class="atl-views">
+        <button class="atl-chip on" id="atlViewBody" title="按人体佩戴/测量部位浏览">🧍 身体图</button>
+        <button class="atl-chip" id="atlViewTable" title="全量表格">表格</button>
+      </span>
+      <button class="icmt" id="atlClose" title="关闭（Esc）" style="font-size:14px">✕</button></div>
     <div class="atl-filters">
       <button class="atl-chip on" data-lf="all">全部</button>
       <button class="atl-chip" data-lf="1">透镜① 数据可见</button>
@@ -808,7 +834,7 @@ function cboxHtml(url, title) {
   return '<div class="cbox" data-cbox="' + esc(url) + '">' +
     '<textarea placeholder="观后感：有用 / 没用 / 想追问什么…（arXiv 评论会反馈给后续选文）">' + esc(c.text || "") + "</textarea>" +
     '<div class="crow"><input class="ctitle" placeholder="日志标题（收进日志时用）" value="读「' + esc((c.title || title || "").slice(0, 24)) + '」">' +
-    '<select class="cvis"><option value="private">仅自己</option><option value="friends">登录可见</option><option value="public">公开</option></select></div>' +
+    '<select class="cvis"><option value="private">仅自己</option><option value="family">家人可见</option><option value="friends">登录可见</option><option value="public">公开</option></select></div>' +
     '<div class="crow"><button class="bmini" data-csave="' + esc(url) + '">存评论</button>' +
     '<button class="bmini hot" data-cnote="' + esc(url) + '">收进日志</button><span class="csaved"></span></div></div>';
 }
@@ -1430,7 +1456,8 @@ function renderHw() {
 }
 
 /* ================= 硬件图鉴弹窗（每日情报自动沉淀的累积目录，筛选全在客户端） ================= */
-let ATLAS = { devices: [], filter: "all", cat: "", q: "" };
+let ATLAS = { devices: [], filter: "all", cat: "", q: "", view: "body", wear: null };
+const HW_WEARS_UI = ["头部", "眼部", "耳部", "颈部", "胸口", "上臂", "手腕", "手指", "腰部", "腿脚", "环境家居", "宠物", "其他"];
 async function atlasOpen() {
   $("#atlMask").classList.add("on");
   $("#atlBody").innerHTML = '<div class="atl-empty">加载中…</div>';
@@ -1443,41 +1470,103 @@ async function atlasOpen() {
   atlasRender();
 }
 function atlasClose() { $("#atlMask").classList.remove("on"); }
-function atlasRender() {
-  const dev = ATLAS.devices;
-  const l1 = dev.filter(d => d.lens === 1 || d.lens === 3).length;
-  const l2 = dev.filter(d => d.lens === 2 || d.lens === 3).length;
-  const mz = dev.filter(d => String(d.firstSeen || "").startsWith(new Date().toISOString().slice(0, 7))).length;
-  $("#atlStats").textContent = "共 " + dev.length + " 件 · 透镜① " + l1 + " · 透镜② " + l2 + " · 本月新增 " + mz;
+function atlasFiltered() {
   const q = ATLAS.q.trim().toLowerCase();
-  const rows = dev.filter(d => {
+  return ATLAS.devices.filter(d => {
     if (ATLAS.filter === "1" && !(d.lens === 1 || d.lens === 3)) return false;
     if (ATLAS.filter === "2" && !(d.lens === 2 || d.lens === 3)) return false;
     if (ATLAS.cat && d.cat !== ATLAS.cat) return false;
     if (q && !((d.name + " " + (d.brand || "") + " " + (d.collects || "") + " " + (d.shows || "")).toLowerCase().includes(q))) return false;
     return true;
   });
-  const tag = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
-  $("#atlBody").innerHTML = rows.length
-    ? '<table class="atl-table"><thead><tr><th>设备</th><th>品类</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>首现</th><th>热度</th></tr></thead><tbody>' +
-      rows.map(d => {
-        const ps = d.prices || [];
-        const last = ps[ps.length - 1];
-        const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
-        return "<tr>" +
-          "<td>" + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + "</a>" : esc(d.name)) + "</td>" +
-          "<td>" + esc(d.cat) + "</td><td>" + tag(d.lens) + "</td>" +
-          "<td>" + esc(cs || "—") + "</td><td>" + esc(d.status || "") + "</td>" +
-          "<td" + (ps.length ? ' title="' + esc(ps.map(p => p.d + " " + p.p).join("\n")) + '"' : "") + ">" + esc(last ? last.p : "") + "</td>" +
-          "<td>" + esc(d.firstSeen || "") + "</td><td>" + (d.heat || 1) + "</td></tr>";
-      }).join("") + "</tbody></table>"
-    : '<div class="atl-empty">图鉴还是空的 —— Mac 收集任务每日推送后自动累积<br>透镜① = 让以往无法展现的数据可见 · 透镜② = 让以往无法收集的数据可持续收集</div>';
+}
+/* 人体佩戴图：正身剪影，部位可点（左右对称部位合并计数）；部位定义与 server HW_WEARS 同表
+   比例按真人：窄腰、上臂渐细、手腕比上臂窄；徽标统一贴轮廓外缘 */
+const HW_BODY_PARTS = [
+  ["头部", '<ellipse class="shape" cx="110" cy="45" rx="24" ry="27"/>', 148, 28],
+  ["眼部", '<rect class="shape" x="88" y="38" width="44" height="12" rx="6"/>', 56, 40],
+  ["耳部", '<ellipse class="shape" cx="84" cy="49" rx="5" ry="8"/><ellipse class="shape" cx="136" cy="49" rx="5" ry="8"/>', 170, 49],
+  ["颈部", '<rect class="shape" x="102" y="73" width="16" height="11" rx="4"/>', 56, 76],
+  ["胸口", '<path class="shape" d="M84 96 Q110 88 136 96 L132 176 Q110 184 88 176 Z"/>', 178, 134],
+  ["上臂", '<path class="shape" d="M80 100 Q69 102 66 112 L58 152 Q58 160 66 160 Q73 160 74 152 L82 118 Z"/><path class="shape" d="M140 100 Q151 102 154 112 L162 152 Q162 160 154 160 Q147 160 146 152 L138 118 Z"/>', 40, 130],
+  ["手腕", '<rect class="shape" x="59" y="163" width="14" height="18" rx="6"/><rect class="shape" x="147" y="163" width="14" height="18" rx="6"/>', 186, 170],
+  ["手指", '<circle class="shape" cx="66" cy="190" r="6"/><circle class="shape" cx="154" cy="190" r="6"/>', 46, 196],
+  ["腰部", '<path class="shape" d="M88 180 Q110 188 132 180 L130 200 Q110 207 90 200 Z"/>', 56, 202],
+  ["腿脚", '<path class="shape" d="M90 205 L109 210 L110 300 Q110 309 101 309 Q93 309 93 300 L88 214 Z"/><path class="shape" d="M130 205 L111 210 L110 300 Q110 309 119 309 Q127 309 127 300 L132 214 Z"/>', 42, 262],
+];
+function atlasBodySvg(counts, sel) {
+  const parts = HW_BODY_PARTS.map(([wear, shapes, bx, by]) => {
+    const n = counts[wear] || 0;
+    return '<g class="bpart' + (sel === wear ? " on" : "") + (n ? "" : " empty") + '" data-wear="' + esc(wear) + '" tabindex="0">' + shapes +
+      '<g class="bcount' + (n ? "" : " zero") + '"><circle cx="' + bx + '" cy="' + by + '" r="8.5"/><text x="' + bx + '" y="' + by + '">' + n + "</text></g></g>";
+  }).join("");
+  return '<svg viewBox="0 0 220 318" role="img" aria-label="人体佩戴部位图">' + parts + "</svg>";
+}
+const lensTagS = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
+function atlasRows(list) {
+  return list.map(d => {
+    const ps = d.prices || [];
+    const last = ps[ps.length - 1];
+    const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
+    return '<div class="atl-row">' +
+      (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + "</a>" : "<b>" + esc(d.name) + "</b>") +
+      (d.lens ? ' <span class="hw-lens">' + lensTagS(d.lens) + "</span>" : "") +
+      (cs ? '<span class="rdim">' + esc(cs) + "</span>" : "") +
+      '<span class="rdim">' + esc(d.status || "") + (last ? " · " + esc(last.p) : "") + " · 热" + (d.heat || 1) + " · " + esc(d.firstSeen || "") + "</span></div>";
+  }).join("");
+}
+function atlasRender() {
+  const dev = ATLAS.devices;
+  const l1 = dev.filter(d => d.lens === 1 || d.lens === 3).length;
+  const l2 = dev.filter(d => d.lens === 2 || d.lens === 3).length;
+  const mz = dev.filter(d => String(d.firstSeen || "").startsWith(new Date().toISOString().slice(0, 7))).length;
+  $("#atlStats").textContent = "共 " + dev.length + " 件 · 透镜① " + l1 + " · 透镜② " + l2 + " · 本月新增 " + mz;
+  $("#atlViewBody").classList.toggle("on", ATLAS.view === "body");
+  $("#atlViewTable").classList.toggle("on", ATLAS.view === "table");
+  const rows = atlasFiltered();
+  const body = $("#atlBody");
+  if (ATLAS.view === "table") {
+    const tag = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
+    body.innerHTML = rows.length
+      ? '<table class="atl-table"><thead><tr><th>设备</th><th>部位</th><th>品类</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>首现</th><th>热度</th></tr></thead><tbody>' +
+        rows.map(d => {
+          const ps = d.prices || [];
+          const last = ps[ps.length - 1];
+          const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
+          return "<tr>" +
+            "<td>" + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + "</a>" : esc(d.name)) + "</td>" +
+            "<td>" + esc(d.wear || "其他") + "</td><td>" + esc(d.cat) + "</td><td>" + tag(d.lens) + "</td>" +
+            "<td>" + esc(cs || "—") + "</td><td>" + esc(d.status || "") + "</td>" +
+            "<td" + (ps.length ? ' title="' + esc(ps.map(p => p.d + " " + p.p).join("\n")) + '"' : "") + ">" + esc(last ? last.p : "") + "</td>" +
+            "<td>" + esc(d.firstSeen || "") + "</td><td>" + (d.heat || 1) + "</td></tr>";
+        }).join("") + "</tbody></table>"
+      : '<div class="atl-empty">图鉴还是空的 —— Mac 收集任务每日推送后自动累积<br>透镜① = 让以往无法展现的数据可见 · 透镜② = 让以往无法收集的数据可持续收集</div>';
+    return;
+  }
+  /* 身体图：筛选作用于部位计数与右侧列表；非穿戴部位做补充 chips */
+  const counts = {};
+  for (const d of rows) { const w = d.wear || "其他"; counts[w] = (counts[w] || 0) + 1; }
+  const shown = ATLAS.wear ? rows.filter(d => (d.wear || "其他") === ATLAS.wear) : rows;
+  const side = ["环境家居", "宠物", "其他"].map(w =>
+    '<button class="atl-chip' + (ATLAS.wear === w ? " on" : "") + '" data-wearchip="' + esc(w) + '">' + (w === "环境家居" ? "🏠 " : w === "宠物" ? "🐾 " : "📎 ") + w + " " + (counts[w] || 0) + "</button>").join("");
+  body.innerHTML = '<div class="atl-mapwrap"><div class="atl-map">' + atlasBodySvg(counts, ATLAS.wear) +
+    '<div class="atl-mapchips"><button class="atl-chip' + (ATLAS.wear ? "" : " on") + '" data-wearchip="__all">全部 ' + rows.length + "</button>" + side + "</div></div>" +
+    '<div class="atl-list">' + (shown.length ? atlasRows(shown) :
+      '<div class="atl-empty">' + (ATLAS.wear ? "这个部位暂时没有设备" : "图鉴还是空的 —— 每日情报自动累积") + "</div>") + "</div></div>";
 }
 $("#hwAtlasBtn").addEventListener("click", atlasOpen);
 $("#atlClose").addEventListener("click", atlasClose);
 $("#atlMask").addEventListener("click", e => { if (e.target.id === "atlMask") atlasClose(); });
-document.querySelectorAll(".atl-chip").forEach(c => c.addEventListener("click", () => {
-  document.querySelectorAll(".atl-chip").forEach(x => x.classList.remove("on"));
+$("#atlViewBody").addEventListener("click", () => { ATLAS.view = "body"; atlasRender(); });
+$("#atlViewTable").addEventListener("click", () => { ATLAS.view = "table"; atlasRender(); });
+$("#atlBody").addEventListener("click", e => {
+  const part = e.target.closest(".bpart");
+  if (part) { ATLAS.wear = ATLAS.wear === part.dataset.wear ? null : part.dataset.wear; atlasRender(); return; }
+  const chip = e.target.closest("[data-wearchip]");
+  if (chip) { ATLAS.wear = chip.dataset.wearchip === "__all" ? null : chip.dataset.wearchip; atlasRender(); }
+});
+document.querySelectorAll(".atl-chip[data-lf]").forEach(c => c.addEventListener("click", () => {
+  document.querySelectorAll(".atl-chip[data-lf]").forEach(x => x.classList.remove("on"));
   c.classList.add("on");
   ATLAS.filter = c.dataset.lf;
   atlasRender();

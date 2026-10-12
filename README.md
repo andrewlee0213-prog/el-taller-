@@ -41,19 +41,22 @@
 - 首次启动 `server.js` 会自动创建管理员 `admin` 并生成随机初始密码，
   存放在 `data\admin-initial-password.txt`（改完密码后可删除该文件）。
 - 首次登录会强制修改初始密码；改密入口也在登录页。
-- 注册功能默认关闭；新用户由管理员后续手工建（见下）。
-- 管理台占位页：`/admin/`（仅 admin 角色可见，验证守卫用）。
+- 注册功能默认关闭；新用户由管理员在管理台创建（见下）。
+- 管理台：`/admin/` 账号管理（列表 / 建号 / 改角色 / 重置密码 / 删除，仅 admin）。
 
-### 角色与可见性
+### 角色与可见性（四级链 public < friends < family < private）
 
 | 角色 | 可见范围 |
 |------|----------|
-| 未登录（guest） | `visibility: public` 的作品 |
-| 登录用户（user） | public + friends |
-| 管理员（admin） | 全部（含 private）+ `/admin/` 管理台 |
+| 未登录（guest，路人/同事/面试官） | `visibility: public` 的作品——公开主页即面试官视图 |
+| 朋友（user） | public + friends |
+| 家人（family，只读） | public + friends + family（家庭内容） |
+| 管理员（admin） | 全部（含 private）+ `/admin/` 管理台 + 工作台 |
 
-手工建新用户：在 `el-taller` 目录运行
-`node -e "const{DatabaseSync}=require('node:sqlite');const c=require('crypto');const db=new DatabaseSync('data/users.db');const s=c.randomBytes(16).toString('hex');db.prepare('INSERT INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,1)').run('用户名',c.scryptSync('初始密码',s,64).toString('hex'),s,'user');console.log('done')"`
+建号：管理台 `/admin/` 可视化操作（推荐，可选是否强制首登改密）。
+应急手工建号（同管理台 POST 语义）：
+`node -e "const{DatabaseSync}=require('node:sqlite');const c=require('crypto');const db=new DatabaseSync('data/users.db');const s=c.randomBytes(16).toString('hex');db.prepare('INSERT INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,1)').run('用户名',c.scryptSync('初始密码',s,64).toString('hex'),s,'family');console.log('done')"`
+（role 填 `user`/`family`/`admin`；改密/改角色/删除账号后全站会话作废，所有人需重新登录。）
 
 ## La Biblioteca · 个人 AI 学习知识库（登录可见）
 
@@ -78,15 +81,15 @@
   desc: '一句话介绍解决了什么问题。',
   tags: ['Node.js', 'LLM'],
   status: 'terminado',                  // en-obra 打磨中 | terminado 完成 | pausado 暂停
-  visibility: 'public',                 // public | friends | private
+  visibility: 'public',                 // public | friends | family | private
   cover: '',                            // 封面图路径，留空自动渐变+首字母
   link: ''                              // 详情链接，可省
 }
 ```
 
 保存刷新即生效（服务模式无需重启）。
-⚠️ `friends`/`private` 作品只在服务模式下按角色过滤；file:// 直开会全部可见，
-上线前请改用服务模式部署。
+⚠️ `friends`/`family`/`private` 作品只在服务模式下按角色过滤；file:// 直开会全部可见，
+上线前请改用服务模式部署。家庭内容（尤其涉及未成年人的照片）必须在 HTTPS 落地后再上传。
 
 ## 个性化
 
