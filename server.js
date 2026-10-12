@@ -1846,9 +1846,13 @@ const server = http.createServer(async (req, res) => {
       const latest = hwLatest();
       const recentUrls = [];
       for (const d of hwStore.days.slice(0, 3)) for (const l of d.links || []) recentUrls.push(l.u);
+      /* B站 UP 最新视频直接带出（服务器已有 cookie+wbi 签名链路，收集任务无需再碰 B站 API） */
+      const bili = ((wbCache.bili && wbCache.bili.items) || []).map(v => ({
+        up: v.name, title: v.title, url: "https://www.bilibili.com/video/" + v.bv,
+      }));
       json(res, 200, {
         ok: true, need: !(latest && latest.date === hwToday()), date: hwToday(),
-        ups: wbCfg.biliUps, watch: hwStore.watch, recentUrls,
+        ups: wbCfg.biliUps, watch: hwStore.watch, recentUrls, bili,
       });
       return log(200);
     }

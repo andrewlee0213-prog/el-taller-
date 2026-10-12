@@ -342,8 +342,8 @@ try {
   let hpr = await fetch(BASE + "/api/workbench/hw/pending?token=" + hwTok);
   let hpj = await hpr.json();
   const hwDate = hpj.date;
-  check("hw pending 领取（need + UP/机型/近链清单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
-    Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls), JSON.stringify(hpj).slice(0, 140));
+  check("hw pending 领取（need + UP/机型/近链/B站视频清单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
+    Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls) && Array.isArray(hpj.bili), JSON.stringify(hpj).slice(0, 140));
   hd = await fetch(BASE + "/api/workbench/hw/done", {
     method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": hwTok },
     body: "not-json{",
