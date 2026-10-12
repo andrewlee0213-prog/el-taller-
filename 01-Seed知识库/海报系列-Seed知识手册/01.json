@@ -1,0 +1,12 @@
+{
+  "extends": "base.json",
+  "s1": { "no": "01" },
+  "s2": { "pain": "收藏夹一百篇", "solve": "不如读透一本。" },
+  "s3": { "image": "s3-01-c.png", "left": ["paper", "search", "chat", "folder", "phone"], "right": ["card", "calendar", "card", "star", "star"] },
+  "s4": [
+    { "t": "理顺十层全景", "icon": "folder" },
+    { "t": "讲的是人话", "icon": "chat" },
+    { "t": "附避坑清单", "icon": "shield" }
+  ],
+  "s5": "少囤一点干货，多读一本好书"
+}

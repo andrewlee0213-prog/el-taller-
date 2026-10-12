@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>poster</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { {{VARS}} }
+  html,body { width:1025px; height:1280px; overflow:hidden; }
+  body { font-family:"Noto Sans SC","Microsoft YaHei",sans-serif; }
+
+  .poster {
+    position:relative; width:1025px; height:1280px;
+    background:var(--bg); overflow:hidden;
+  }
+  /* 纸纹噪点 + 边缘微暗角 */
+  .grain {
+    position:absolute; inset:0; pointer-events:none; z-index:5; opacity:.05; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+  .vignette { position:absolute; inset:0; pointer-events:none; z-index:4;
+    background:radial-gradient(ellipse at center, transparent 62%, rgba(62,43,28,.06) 100%); }
+  .frame { position:absolute; inset:16px; border:2px dashed var(--frame); border-radius:18px; pointer-events:none; z-index:6; }
+
+  /* ── S1 品牌区 ─────────────────────────── */
+  .colname {
+    position:absolute; top:46px; left:50px; z-index:7;
+    font-size:22px; letter-spacing:4px; font-weight:700; color:var(--heavy); opacity:.9;
+    background:rgba(249,241,224,.78); padding:7px 14px; border-radius:10px;
+    box-shadow:2px 3px 0 rgba(62,43,28,.08);
+  }
+  .colname b { color:var(--focus); opacity:1; margin-right:10px; font-size:20px; }
+  .ribbon-wrap { position:absolute; top:32px; right:46px; z-index:7;
+    filter:drop-shadow(3px 4px 0 rgba(62,43,28,.18)); transform:rotate(1.2deg); }
+  .ribbon {
+    background:var(--heavy); color:var(--cream); font-size:25px; font-weight:800; letter-spacing:2px;
+    padding:11px 30px 11px 30px;
+    clip-path:polygon(0 0,100% 0,100% 100%,0 100%,16px 50%);
+  }
+  .no {
+    position:absolute; top:92px; right:50px; z-index:7;
+    font-size:19px; letter-spacing:3px; color:var(--heavy); font-weight:600;
+    background:rgba(249,241,224,.78); padding:4px 10px; border-radius:8px;
+  }
+
+  /* ── S2 双票笺标题 ─────────────────────── */
+  .tw { position:absolute; filter:drop-shadow(4px 6px 0 rgba(62,43,28,.16)); }
+  .tk {
+    height:104px; display:flex; align-items:center; justify-content:center;
+    border-radius:12px; font-weight:900; letter-spacing:2px; white-space:nowrap;
+  }
+  .tk.pain { background:#FFFCF0; color:var(--heavy); border:2px solid var(--tline); }
+  .tk.solve { background:var(--focus); color:#fff; }
+
+  /* ── S3 主视觉 ─────────────────────────── */
+  .scene { position:absolute; left:42px; top:320px; width:941px; height:556px; z-index:3; }
+  .scene svg { width:100%; height:100%; display:block; }
+  /* AI 底图槽位:贴纸卡相框 */
+  .s3frame {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-1.2deg);
+    width:92%; height:96%; background:#FFFDF6; padding:12px; border-radius:22px;
+    border:3.5px solid var(--heavy); box-shadow:7px 9px 0 rgba(62,43,28,.18); overflow:hidden;
+  }
+  .s3frame img { width:100%; height:100%; object-fit:cover; border-radius:14px; display:block; }
+
+  /* ── S4 三徽章 ─────────────────────────── */
+  .badges { position:absolute; left:0; right:0; top:908px; z-index:7;
+    display:flex; justify-content:center; align-items:center; gap:32px; }
+  .badge {
+    display:flex; align-items:center; gap:11px;
+    background:rgba(255,252,240,.94); border-radius:999px; padding:15px 24px 15px 20px;
+    box-shadow:3px 4px 0 rgba(62,43,28,.14); border:none;
+  }
+  .badge .bt { font-size:28px; font-weight:800; color:var(--heavy); letter-spacing:1px; white-space:nowrap; }
+
+  /* ── S5 金句通栏 ───────────────────────── */
+  .gold {
+    position:absolute; left:0; right:0; top:1040px; height:94px; z-index:7;
+    background:var(--heavy); display:flex; align-items:center; justify-content:center; gap:22px;
+  }
+  .gold .gt { color:var(--cream); font-size:38px; font-weight:900; letter-spacing:7px; white-space:nowrap; }
+  .gold .dia { width:12px; height:12px; background:var(--cream); opacity:.5; transform:rotate(45deg); }
+
+  /* ── S6 药丸 CTA ───────────────────────── */
+  .cta-row { position:absolute; left:0; right:0; top:1158px; z-index:7;
+    display:flex; justify-content:center; }
+  .pillwrap { position:relative; }
+  .pill {
+    background:var(--focus); color:#fff; font-size:32px; font-weight:800; letter-spacing:2px;
+    padding:17px 48px; border-radius:999px; box-shadow:4px 5px 0 rgba(62,43,28,.2);
+    position:relative; white-space:nowrap;
+  }
+  .ray { position:absolute; width:30px; height:5px; border-radius:3px; background:var(--heavy); opacity:.85; }
+  .rl1 { left:-58px; top:50%; transform:translateY(-50%); }
+  .rl2 { left:-46px; top:calc(50% - 25px); transform:rotate(-25deg); }
+  .rl3 { left:-46px; top:calc(50% + 25px); transform:rotate(25deg); }
+  .rr1 { right:-58px; top:50%; transform:translateY(-50%); }
+  .rr2 { right:-46px; top:calc(50% - 25px); transform:rotate(25deg); }
+  .rr3 { right:-46px; top:calc(50% + 25px); transform:rotate(-25deg); }
+
+  /* 角落装饰层 */
+  .deco { position:absolute; inset:0; pointer-events:none; z-index:8; }
+  .deco svg { width:100%; height:100%; display:block; }
+</style>
+</head>
+<body>
+<div class="poster"{{POSTER_BG}}>
+  <div class="vignette"></div>
+  <div class="frame"></div>
+
+  <!-- S1 -->
+  <div class="colname"><b>✦</b>{{COLNAME}}</div>
+  <div class="ribbon-wrap"><div class="ribbon">{{PRODUCT}}</div></div>
+  <div class="no">{{NO}} / {{TOTAL}}</div>
+
+  <!-- S2 -->
+  <div class="tw" style="left:66px; top:118px; width:580px; transform:rotate(-2.2deg);">
+    <div class="tk pain" style="clip-path:{{T1_CLIP}}; font-size:{{PAIN_FS}}px;">{{PAIN}}</div>
+  </div>
+  <div class="tw" style="left:322px; top:208px; width:600px; transform:rotate(1.9deg); z-index:3;">
+    <div class="tk solve" style="clip-path:{{T2_CLIP}}; font-size:{{SOLVE_FS}}px;">{{SOLVE}}</div>
+  </div>
+
+  <!-- S3 -->
+  <div class="scene">{{SCENE_SVG}}</div>
+
+  <!-- S4 -->
+  <div class="badges">{{BADGES}}</div>
+
+  <!-- S5 -->
+  <div class="gold"><span class="dia"></span><span class="gt">{{GOLD}}</span><span class="dia"></span></div>
+
+  <!-- S6 -->
+  <div class="cta-row">
+    <div class="pillwrap">
+      {{RAYS_L}}<div class="pill">{{CTA}}</div>{{RAYS_R}}
+    </div>
+  </div>
+
+  <div class="deco">{{DECO_SVG}}</div>
+  <div class="grain"></div>
+</div>
+</body>
+</html>

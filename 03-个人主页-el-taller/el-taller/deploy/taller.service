@@ -1,0 +1,15 @@
+[Unit]
+Description=El Taller de Andres web server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/taller
+ExecStart=/usr/bin/node /opt/taller/server.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

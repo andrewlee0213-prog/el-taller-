@@ -1,0 +1,12 @@
+{
+  "extends": "base.json",
+  "s1": { "no": "05" },
+  "s2": { "pain": "Demo一上就翻车", "solve": "九成不在模型。" },
+  "s3": { "image": "s3-05-c.png" },
+  "s4": [
+    { "t": "设好熔断线", "icon": "lock" },
+    { "t": "留全链路日志", "icon": "search" },
+    { "t": "接入回归门禁", "icon": "refresh" }
+  ],
+  "s5": "模型不是变量，工程才是"
+}

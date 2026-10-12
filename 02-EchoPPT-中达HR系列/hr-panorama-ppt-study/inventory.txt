@@ -1,0 +1,1021 @@
+=== CANVAS ===
+<p:sldSz cx="12192000" cy="6858000"/>
+slide order (rId -> file):
+  1. rId4 -> slides/slide1.xml
+  2. rId6 -> slides/slide2.xml
+  3. rId7 -> slides/slide3.xml
+  4. rId8 -> slides/slide4.xml
+  5. rId9 -> slides/slide5.xml
+  6. rId10 -> slides/slide6.xml
+  7. rId11 -> slides/slide7.xml
+  8. rId12 -> slides/slide8.xml
+  9. rId13 -> slides/slide9.xml
+  10. rId14 -> slides/slide10.xml
+  11. rId15 -> slides/slide11.xml
+
+=== theme1 ===
+name: Office 主题​​
+  dk1: 000000
+  lt1: FFFFFF
+  dk2: 44546A
+  lt2: E7E6E6
+  accent1: 4472C4
+  accent2: ED7D31
+  accent3: A5A5A5
+  accent4: FFC000
+  accent5: 5B9BD5
+  accent6: 70AD47
+  hlink: 0563C1
+  folHlink: 954F72
+  major: latin=Arial ea=
+  minor: latin=Arial ea=
+
+=== theme2 ===
+name: Office 主题
+  dk1: 000000
+  lt1: FFFFFF
+  dk2: 44546A
+  lt2: E7E6E6
+  accent1: 4472C4
+  accent2: ED7D31
+  accent3: A5A5A5
+  accent4: FFC000
+  accent5: 5B9BD5
+  accent6: 70AD47
+  hlink: 0563C1
+  folHlink: 954F72
+  major: latin=Arial ea=
+  minor: latin=Arial ea=
+
+=== theme3 ===
+name: Office 主题​​
+  dk1: 000000
+  lt1: FFFFFF
+  dk2: 44546A
+  lt2: E7E6E6
+  accent1: 4472C4
+  accent2: ED7D31
+  accent3: A5A5A5
+  accent4: FFC000
+  accent5: 5B9BD5
+  accent6: 70AD47
+  hlink: 0563C1
+  folHlink: 954F72
+  major: latin=Arial ea=
+  minor: latin=Arial ea=
+
+
+########## SLIDE 1 (slides/slide1.xml) ##########
+layout: ../slideLayouts/slideLayout1.xml | media: ../media/image3.png
+- [p:pic] "Picture 2" rect | x=0.00 y=0.00 w=13.33 h=7.50 | noFill 
+- [p:sp] "AutoShape 3" rect | x=2.10 y=3.31 w=9.09 h=0.57 | noFill 
+    [l]{28pt/B/#E24D22/微软雅黑}人力资源全景{28pt/B/#E24D22/微软雅黑}图{28pt/B/#E24D22/微软雅黑}：职能、分工与核心模块{28pt/B/#E24D22/微软雅黑}介绍
+- [p:sp] "AutoShape 5" rect | x=2.14 y=4.60 w=7.22 h=0.44 | noFill 
+    [l]{20pt/#262626/微软雅黑}人力资源部{20pt/#262626/微软雅黑} J{20pt/#262626/微软雅黑}udy
+- [p:sp] "AutoShape 6" rect | x=2.14 y=5.21 w=1.90 h=0.44 | noFill 
+    [l]{20pt/#262626/微软雅黑}2026年9月
+- [p:sp] "AutoShape 7" rect | x=11.57 y=6.16 w=1.15 h=0.57 | noFill 
+    [l]{18pt/#000000/Calibri} 
+- [p:sp] "矩形 8" rect | x=8.95 y=6.16 w=3.72 h=0.49 | F64102 line:F64102
+    [ctr]{20pt/B/微软雅黑}HR | {20pt/B/微软雅黑}组织能力的构建者
+  NOTES: HR | 业务增长的合伙人？
+
+
+########## SLIDE 2 (slides/slide2.xml) ##########
+layout: ../slideLayouts/slideLayout1.xml | media: ../media/image2.png
+- [p:grpSp] "Group 2" rect | x=-0.00 y=-0.08 w=13.36 h=7.56 | F2F2F2@100% 
+    [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "Group 3" rect | x=-0.00 y=0.00 w=13.33 h=7.50 | F2F2F2@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 4" rect | x=0.00 y=0.00 w=13.33 h=7.50 | F2F2F2@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:grpSp] "Group 5" rect | x=-0.00 y=5.54 w=2.39 h=1.96 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 6" rect | x=-0.00 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 7" rect | x=-0.00 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 8" rect | x=-0.00 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 9" rect | x=-0.00 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 10" rect | x=-0.00 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 11" rect | x=-0.00 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 12" rect | x=-0.00 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 13" rect | x=-0.00 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 14" rect | x=-0.00 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 15" rect | x=0.88 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 16" rect | x=0.88 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 17" rect | x=0.88 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 18" rect | x=0.88 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 19" rect | x=0.88 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 20" rect | x=0.88 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 21" rect | x=0.88 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 22" rect | x=0.88 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 23" rect | x=0.88 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 24" rect | x=0.44 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 25" rect | x=0.44 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 26" rect | x=0.44 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 27" rect | x=0.44 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 28" rect | x=0.44 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 29" rect | x=0.44 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 30" rect | x=0.44 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 31" rect | x=0.44 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 32" rect | x=0.44 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 33" rect | x=1.33 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 34" rect | x=1.33 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 35" rect | x=1.33 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 36" rect | x=1.33 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 37" rect | x=1.33 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 38" rect | x=1.33 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 39" rect | x=1.33 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 40" rect | x=1.33 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 41" rect | x=1.33 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 42" rect | x=1.77 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 43" rect | x=1.77 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 44" rect | x=1.77 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 45" rect | x=1.77 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 46" rect | x=1.77 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 47" rect | x=1.77 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 48" rect | x=1.77 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 49" rect | x=1.77 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 50" rect | x=1.77 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+      - [p:grpSp] "Group 51" rect | x=2.21 y=5.54 w=0.17 h=1.96 | noFill 
+          [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 52" rect | x=2.21 y=5.54 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 53" rect | x=2.21 y=5.79 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 54" rect | x=2.21 y=6.05 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 55" rect | x=2.21 y=6.30 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 56" rect | x=2.21 y=6.56 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 57" rect | x=2.21 y=6.81 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 58" rect | x=2.21 y=7.07 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+        - [p:sp] "AutoShape 59" rect | x=2.21 y=7.33 w=0.17 h=0.17 | noFill 
+            [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "Group 60" rect | x=8.27 y=-0.06 w=5.10 h=3.35 | noFill 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 61" rect | x=8.27 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 62" rect | x=8.27 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 63" rect | x=8.27 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 64" rect | x=8.27 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 65" rect | x=8.27 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 66" rect | x=8.27 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 67" rect | x=8.27 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 68" rect | x=8.27 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 69" rect | x=9.47 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 70" rect | x=9.47 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 71" rect | x=9.47 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 72" rect | x=9.47 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 73" rect | x=9.47 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 74" rect | x=9.47 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 75" rect | x=9.47 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 76" rect | x=9.47 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 77" rect | x=8.87 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 78" rect | x=8.87 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 79" rect | x=8.87 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 80" rect | x=8.87 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 81" rect | x=8.87 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 82" rect | x=8.87 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 83" rect | x=8.87 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 84" rect | x=8.87 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 85" rect | x=10.67 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 86" rect | x=10.67 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 87" rect | x=10.67 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 88" rect | x=10.67 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 89" rect | x=10.67 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 90" rect | x=10.67 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 91" rect | x=10.67 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 92" rect | x=10.67 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 93" rect | x=10.07 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 94" rect | x=10.07 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 95" rect | x=10.07 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 96" rect | x=10.07 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 97" rect | x=10.07 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 98" rect | x=10.07 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 99" rect | x=10.07 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 100" rect | x=10.07 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 101" rect | x=11.87 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 102" rect | x=11.87 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 103" rect | x=11.87 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 104" rect | x=11.87 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 105" rect | x=11.87 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 106" rect | x=11.87 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 107" rect | x=11.87 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 108" rect | x=11.87 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 109" rect | x=11.27 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 110" rect | x=11.27 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 111" rect | x=11.27 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 112" rect | x=11.27 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 113" rect | x=11.27 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 114" rect | x=11.27 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 115" rect | x=11.27 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 116" rect | x=11.27 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 117" rect | x=12.47 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 118" rect | x=12.47 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 119" rect | x=12.47 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 120" rect | x=12.47 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 121" rect | x=12.47 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 122" rect | x=12.47 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 123" rect | x=12.47 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 124" rect | x=12.47 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 125" rect | x=13.07 y=-0.06 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 126" rect | x=13.07 y=0.38 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 127" rect | x=13.07 y=0.81 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 128" rect | x=13.07 y=1.25 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 129" rect | x=13.07 y=1.69 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 130" rect | x=13.07 y=2.12 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 131" rect | x=13.07 y=2.56 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 132" rect | x=13.07 y=2.99 w=0.30 h=0.30 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+- [p:grpSp] "Group 133" rect | x=0.93 y=0.48 w=3.42 h=0.84 | noFill 
+    [l]{44pt/B/#C00000/微软雅黑}目 录
+  - [p:sp] "AutoShape 134" rect | x=1.04 y=0.64 w=1.61 h=0.84 | noFill 
+      [l]{44pt/B/#C00000/微软雅黑}目 录
+  - [p:sp] "AutoShape 135" rect | x=2.65 y=1.04 w=1.81 h=0.40 | noFill 
+      [l]{18pt/#C00000/微软雅黑}_CONTENTES
+- [p:pic] "Picture 136" rect | x=11.76 y=0.18 w=1.31 h=1.09 | noFill 
+- [p:sp] "Rounded Rectangle 6" roundRect | x=1.13 y=1.79 w=11.19 h=0.92 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 7" rect | x=1.13 y=1.79 w=0.10 h=0.92 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 8" rect | x=1.38 y=1.81 w=1.20 h=0.88 | noFill 
+    [l]{30pt/B/#ED7D31/微软雅黑}01
+- [p:sp] "TextBox 9" rect | x=2.63 y=1.94 w=10.00 h=0.62 | noFill 
+    [l]{18pt/B/#44546A/微软雅黑}HR的{18pt/B/#44546A/微软雅黑}职能
+    [l]{12.5pt/#44546A/微软雅黑}人力资源到底在做什么、创造什么价值
+- [p:sp] "Rounded Rectangle 10" roundRect | x=1.13 y=2.83 w=11.19 h=0.92 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 11" rect | x=1.13 y=2.83 w=0.10 h=0.92 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 12" rect | x=1.38 y=2.85 w=1.20 h=0.88 | noFill 
+    [l]{30pt/B/#ED7D31/微软雅黑}02
+- [p:sp] "TextBox 13" rect | x=2.63 y=2.98 w=10.00 h=0.62 | noFill 
+    [l]{18pt/B/#44546A/微软雅黑}HR{18pt/B/#44546A/微软雅黑}的{18pt/B/#44546A/微软雅黑}分工
+    [l]{12.5pt/#44546A/微软雅黑} {12.5pt/#44546A/微软雅黑}HR{12.5pt/#44546A/微软雅黑}团队介绍、{12.5pt/#44546A/微软雅黑}如何各司其职
+- [p:sp] "Rounded Rectangle 14" roundRect | x=1.13 y=3.87 w=11.19 h=0.92 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 15" rect | x=1.13 y=3.87 w=0.10 h=0.92 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 16" rect | x=1.38 y=3.89 w=1.20 h=0.88 | noFill 
+    [l]{30pt/B/#ED7D31/微软雅黑}03
+- [p:sp] "TextBox 17" rect | x=2.63 y=3.89 w=10.00 h=0.88 | noFill 
+    [l]{18pt/B/#44546A/微软雅黑}招聘：标准与流程
+    [l]{12.5pt/#44546A/微软雅黑}招对人的标准，以及从需求到入职的全流程
+- [p:sp] "Rounded Rectangle 18" roundRect | x=1.13 y=4.91 w=11.19 h=0.92 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 19" rect | x=1.13 y=4.91 w=0.10 h=0.92 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 20" rect | x=1.38 y=4.93 w=1.20 h=0.88 | noFill 
+    [l]{30pt/B/#ED7D31/微软雅黑}04
+- [p:sp] "TextBox 21" rect | x=2.63 y=5.06 w=10.00 h=0.62 | noFill 
+    [l]{18pt/B/#44546A/微软雅黑}绩效：{18pt/B/#44546A/微软雅黑}理念{18pt/B/#44546A/微软雅黑}与流程
+    [l]{12.5pt/#44546A/微软雅黑}重新理解绩效，以及管理闭环怎么跑
+- [p:sp] "Rounded Rectangle 22" roundRect | x=1.13 y=5.95 w=11.19 h=0.92 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 23" rect | x=1.13 y=5.95 w=0.10 h=0.92 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 24" rect | x=1.38 y=5.97 w=1.20 h=0.88 | noFill 
+    [l]{30pt/B/#ED7D31/微软雅黑}05
+- [p:sp] "TextBox 25" rect | x=2.63 y=5.97 w=10.00 h=0.88 | noFill 
+    [l]{18pt/B/#44546A/微软雅黑}HRBP：标准与职责
+    [l]{12.5pt/#44546A/微软雅黑}业务伙伴到底是干什么的、要具备什么
+
+
+########## SLIDE 3 (slides/slide3.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: -
+- [p:sp] "AutoShape 3" round2DiagRect | x=2.33 y=1.62 w=9.07 h=0.54 | noFill 
+    [ctr]{22pt/微软雅黑}人力资源不{22pt/微软雅黑}只{22pt/微软雅黑}是「{22pt/微软雅黑}招聘{22pt/微软雅黑}、办手续」，而是 {22pt/B/微软雅黑}组织能力的构建者。
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=2.03 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}HR{28pt/B/#C00000/微软雅黑}的职能
+- [p:sp] "Rounded Rectangle 7" roundRect | x=0.80 y=3.10 w=3.78 h=3.40 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "Rectangle 8" rect | x=0.80 y=3.10 w=3.78 h=0.10 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "TextBox 9" rect | x=0.98 y=3.32 w=3.44 h=2.62 | noFill 
+    [l]{24pt/B/#ED7D31/微软雅黑}选  SELECT
+    [l]{18pt/#44546A/微软雅黑}• 把{18pt/#44546A/微软雅黑}合适{18pt/#44546A/微软雅黑}的人请进来
+    [l]{18pt/#44546A/微软雅黑}• 建立人才标准与渠道
+    [l]{18pt/#44546A/微软雅黑}• 招聘{18pt/#44546A/微软雅黑}在这个阶段{18pt/#44546A/微软雅黑}是业务{18pt/#44546A/微软雅黑}及
+    [l]{18pt/#44546A/微软雅黑} {18pt/#44546A/微软雅黑} {18pt/#44546A/微软雅黑}人力资源的{18pt/#44546A/微软雅黑}第一工程
+- [p:sp] "Rounded Rectangle 10" roundRect | x=4.77 y=3.10 w=3.78 h=3.40 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "TextBox 12" rect | x=4.95 y=3.32 w=3.44 h=2.13 | noFill 
+    [l]{24pt/B/#ED7D31/微软雅黑}用  DEPLOY
+    [l]{18pt/#44546A/微软雅黑}• 让对的人做对的事
+    [l]{18pt/#44546A/微软雅黑}• 目标对齐与绩效牵引
+    [l]{18pt/#44546A/微软雅黑}• 排兵布阵、能{18pt/#44546A/微软雅黑}出{18pt/#44546A/微软雅黑}能{18pt/#44546A/微软雅黑}进
+- [p:sp] "Rounded Rectangle 13" roundRect | x=8.74 y=3.10 w=3.78 h=3.40 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+- [p:sp] "TextBox 15" rect | x=8.92 y=3.32 w=3.44 h=2.13 | noFill 
+    [l]{24pt/B/#ED7D31/微软雅黑}育留  GROW
+    [l]{18pt/#44546A/微软雅黑}• 让人持续{18pt/#44546A/微软雅黑}专业聚焦
+    [l]{18pt/#44546A/微软雅黑}• 激励与保留
+    [l]{18pt/#44546A/微软雅黑}• 文化与氛围建设
+- [p:sp] "Rectangle 8" rect | x=4.77 y=3.10 w=3.78 h=0.10 | ED7D31 
+    [ctr]{}¶
+- [p:sp] "Rectangle 8" rect | x=8.74 y=3.10 w=3.78 h=0.10 | ED7D31 
+    [ctr]{}¶
+  NOTES: 标准前置——先定「人才画像」再找人；招对人远比招到人更重要。
+
+
+########## SLIDE 4 (slides/slide4.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: -
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=2.03 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}HR{28pt/B/#C00000/微软雅黑}的分工
+- [p:sp] "TextBox 13" rect | x=11.03 y=2.68 w=2.58 h=0.52 | noFill 
+    [ctr]{26pt/B/#FFFFFF/微软雅黑}员工{26pt/B/#FFFFFF/微软雅黑}关系
+- [p:grpSp] "组合 68" roundRect | x=1.06 y=2.62 w=11.15 h=2.97 | FFFFFF@100% 
+    [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 55" roundRect | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 54" roundRect | x=0.00 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 58" roundRect | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:sp] "TextBox 9" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{16pt/#F64102/微软雅黑}定规则{16pt/#F64102/微软雅黑} · {16pt/#F64102/微软雅黑}内部{16pt/#F64102/微软雅黑}专家
+  - [p:sp] "TextBox 10" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#44546A/微软雅黑}• 政策与方案的设计者
+      [l]{13pt/#44546A/微软雅黑}• {13pt/#44546A/微软雅黑}招聘、{13pt/#44546A/微软雅黑}薪酬、绩效、职级体系
+      [l]{13pt/#44546A/微软雅黑}• 重大组织与人才项目
+      [l]{13pt/#44546A/微软雅黑}• 为全公司定标准、定框架
+  - [p:sp] "TextBox 14" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{16pt/#F64102/微软雅黑}管事务{16pt/#F64102/微软雅黑} · {16pt/#F64102/微软雅黑}共享服务
+  - [p:sp] "TextBox 15" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#44546A/微软雅黑}• 标准化事务的处理中心
+      [l]{13pt/#44546A/微软雅黑}• 入离{13pt/#44546A/微软雅黑}转调{13pt/#44546A/微软雅黑}、社保、证明
+      [l]{13pt/#44546A/微软雅黑}• 系统支撑与数据服务
+      [l]{13pt/#44546A/微软雅黑}• 让业务「办事不费劲」
+  - [p:sp] "TextBox 18" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{26pt/B/#FFFFFF/微软雅黑}HRBP
+  - [p:sp] "TextBox 19" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{16pt/#F64102/微软雅黑}贴业务{16pt/#F64102/微软雅黑} · {16pt/#F64102/微软雅黑}业务伙伴
+  - [p:sp] "TextBox 20" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#44546A/微软雅黑}• 派驻业务的 HR 伙伴
+      [l]{13pt/#44546A/微软雅黑}• 懂业务、连人才、推组织{13pt/#44546A/微软雅黑}、促文化
+      [l]{13pt/#44546A/微软雅黑}• 把政策在一线落地
+      [l]{13pt/#44546A/微软雅黑}• 管理层的贴身参谋
+  - [p:sp] "文本框 61" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{20pt/B/#F64102/微软雅黑}HR{20pt/B/#F64102/微软雅黑}模块
+  - [p:sp] "文本框 62" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{20pt/B/#F64102}HR{20pt/B/#F64102/微软雅黑}BP
+  - [p:sp] "文本框 63" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{20pt/B/#F64102/微软雅黑}员工关系
+- [p:sp] "AutoShape 3" roundRect | x=4.65 y=0.92 w=3.96 h=0.59 | noFill 
+    [ctr]{20pt/B/#FFFFFF/微软雅黑}人力资源部{20pt/B/#FFFFFF/微软雅黑} 
+- [p:grpSp] "组合 70" roundRect | x=1.06 y=5.62 w=11.16 h=1.48 | FFFFFF@100% 
+    [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 71" roundRect | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | F5EEF5 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 74" roundRect | x=0.00 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | F5EEF5 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:grpSp] "组合 77" roundRect | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF@100% 
+      [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 11" roundRect | x=-0.00 y=0.01 w=0.01 h=0.00 | FFFFFF@100% 
+        [ctr]{18pt/#FFFFFF/Calibri} 
+    - [p:sp] "AutoShape 12" round2SameRect | x=-0.00 y=0.01 w=0.01 h=0.00 | F5EEF5 line:bg1
+        [ctr]{18pt/#FFFFFF/Calibri} 
+  - [p:sp] "TextBox 10" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}招聘：{13pt/#7C5E7C/微软雅黑}罗会畅{13pt/#7C5E7C/微软雅黑}-HC
+      [l]{13pt/#7C5E7C/微软雅黑}             {13pt/#7C5E7C/微软雅黑}刘思程、陈馨兰{13pt/#7C5E7C/微软雅黑}-XM{13pt/#7C5E7C/微软雅黑} {13pt/#7C5E7C/微软雅黑}            
+      [l]{13pt/#7C5E7C/微软雅黑}             {13pt/#7C5E7C/微软雅黑}岑子欣、戴满豪、魏尔萱{13pt/#7C5E7C/微软雅黑}-GZ
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}培训：周银{13pt/#7C5E7C/微软雅黑}-XM
+  - [p:sp] "TextBox 15" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}胡丹丹、李彤{13pt/#7C5E7C/微软雅黑}-XM
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}苏珍珍（产假）{13pt/#7C5E7C/微软雅黑}-XM
+      [l]{13pt}¶
+  - [p:sp] "TextBox 20" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}品牌、货架、{13pt/#7C5E7C/微软雅黑}达播：陈文霞{13pt/#7C5E7C/微软雅黑}-GZ
+      [l]{13pt/#7C5E7C/微软雅黑}• {13pt/#7C5E7C/微软雅黑}抖音、职能、{13pt/#7C5E7C/微软雅黑}长沙：邱秀腾{13pt/#7C5E7C/微软雅黑}-XM
+      [l]{13pt/#7C5E7C/微软雅黑}（工具{13pt/#7C5E7C/微软雅黑}统一）
+- [p:cxnSp] "直接连接符 90" line | x=2.66 y=1.87 w=7.99 h=0.00 | F64102 line:F64102
+- [p:cxnSp] "直接连接符 92" line | x=2.66 y=1.88 w=0.00 h=0.71 | F64102 line:F64102
+- [p:cxnSp] "直接连接符 93" line | x=10.65 y=1.88 w=0.00 h=0.71 | F64102 line:F64102
+- [p:cxnSp] "直接连接符 94" line | x=6.64 y=1.56 w=0.00 h=0.98 | F64102 line:F64102
+  NOTES: 从需求到融入
+
+
+########## SLIDE 5 (slides/slide5.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: ../media/image4.png
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=6.15 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}招聘{28pt/B/#C00000/微软雅黑}·{28pt/B/#C00000/微软雅黑}标准：先画好像，再找对人{28pt/B/#C00000/微软雅黑} 
+- [p:sp] "Shape 5" roundRect | x=0.51 y=1.78 w=3.27 h=2.85 | GRADIENT 
+- [p:sp] "Text 6" rect | x=0.86 y=1.99 w=3.90 h=0.35 | noFill 
+    {14pt/B/微软雅黑}第一标准
+- [p:sp] "Text 7" rect | x=0.86 y=2.36 w=3.90 h=0.60 | noFill 
+    {28pt/B/#FFFFFF/微软雅黑}价值观匹配
+- [p:sp] "Text 8" rect | x=0.86 y=3.04 w=3.90 h=0.42 | noFill 
+    {17pt/B/微软雅黑}正道 · 利他 · 真实 · 情义
+- [p:sp] "Text 9" rect | x=0.86 y=3.52 w=3.90 h=0.35 | noFill 
+    {13pt/微软雅黑}面试必问 · 背调必查
+- [p:sp] "Shape 10" roundRect | x=0.85 y=3.99 w=1.90 h=0.40 | D80018 
+- [p:sp] "Text 11" rect | x=0.86 y=3.99 w=1.90 h=0.40 | noFill 
+    [ctr]{13pt/B/#FFFFFF/微软雅黑}不诚信：一票否决
+- [p:sp] "Text 13" rect | x=4.08 y=2.16 w=1.75 h=0.45 | noFill 
+    {19pt/B/#7C5E7C/微软雅黑}锐意进取
+- [p:sp] "Text 14" rect | x=5.46 y=2.21 w=5.40 h=0.40 | noFill 
+    {14pt/#3A2F40/微软雅黑}想打胜仗、能扛目标，跟得上大促节奏
+- [p:sp] "Shape 15" line | x=4.08 y=2.78 w=4.96 h=0.00 | E4DAE4 line:E4DAE4
+- [p:sp] "Text 16" rect | x=4.08 y=2.98 w=1.75 h=0.45 | noFill 
+    {19pt/B/#7C5E7C/微软雅黑}求真务实
+- [p:sp] "Text 17" rect | x=5.46 y=3.03 w=5.40 h=0.40 | noFill 
+    {14pt/#3A2F40/微软雅黑}用数据说话、不玩虚的，结果导向
+- [p:sp] "Shape 18" line | x=4.08 y=3.60 w=4.96 h=0.00 | E4DAE4 line:E4DAE4
+- [p:sp] "Text 19" rect | x=4.08 y=3.80 w=1.75 h=0.45 | noFill 
+    {19pt/B/#7C5E7C/微软雅黑}创造力强
+- [p:sp] "Text 20" rect | x=5.46 y=3.85 w=5.40 h=0.40 | noFill 
+    {14pt/#3A2F40/微软雅黑}内容与玩法的源头活水，匹配年轻团队
+- [p:sp] "Shape 21" roundRect | x=0.50 y=5.55 w=3.95 h=1.50 | F5EEF5 
+- [p:sp] "Text 22" rect | x=0.80 y=5.78 w=3.40 h=0.40 | noFill 
+    {16pt/B/#7C5E7C/微软雅黑}业务运营类
+- [p:sp] "Text 23" rect | x=0.80 y=6.22 w=3.40 h=0.65 | noFill 
+    {12.5pt/#6E6276/微软雅黑}懂数据、懂平台玩法...
+- [p:sp] "Shape 24" roundRect | x=4.69 y=5.55 w=3.95 h=1.50 | F5EEF5 
+- [p:sp] "Text 25" rect | x=4.99 y=5.78 w=3.40 h=0.40 | noFill 
+    {16pt/B/#7C5E7C/微软雅黑}品牌{16pt/B/#7C5E7C/微软雅黑}策划{16pt/B/#7C5E7C/微软雅黑}类
+- [p:sp] "Text 26" rect | x=4.99 y=6.22 w=3.40 h=0.65 | noFill 
+    {12.5pt/#6E6276/微软雅黑}懂审美、懂内容创意，做出品牌感...
+- [p:sp] "Shape 27" roundRect | x=8.88 y=5.55 w=3.95 h=1.50 | F5EEF5 
+- [p:sp] "Text 28" rect | x=9.18 y=5.78 w=3.40 h=0.40 | noFill 
+    {16pt/B/#7C5E7C/微软雅黑}校招
+- [p:sp] "Text 29" rect | x=9.18 y=6.22 w=3.40 h=0.65 | noFill 
+    {12.5pt/#6E6276/微软雅黑}潜力＞经验，看文化契合与可塑性...
+- [p:sp] "Text 12" rect | x=0.50 y=4.88 w=7.00 h=0.35 | noFill 
+    {16pt/B/#7C5E7C/微软雅黑}各{16pt/B/#7C5E7C/微软雅黑}条线细化人才画像（举例）{16pt/B/#7C5E7C/微软雅黑}:
+- [p:sp] "Text 12" rect | x=0.47 y=1.20 w=7.00 h=0.35 | noFill 
+    {16pt/B/#7C5E7C/微软雅黑}各条线通用人才画像：
+- [p:pic] "图片 3" rect | x=9.35 y=1.33 w=3.48 h=3.08 |  
+
+
+########## SLIDE 6 (slides/slide6.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: ../media/image5.png
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=6.59 h=1.04 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}招聘{28pt/B/#C00000/微软雅黑}·{28pt/B/#C00000/微软雅黑}流程：社招通用线{28pt/B/#C00000/微软雅黑} + {28pt/B/#C00000/微软雅黑}校招专线
+    [l]{28pt}¶
+- [p:sp] "Shape 5" roundRect | x=0.44 y=2.02 w=2.36 h=1.80 | F5EEF5 
+- [p:sp] "Shape 6" ellipse | x=0.73 y=2.22 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 7" rect | x=0.66 y=2.22 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}1
+- [p:sp] "Text 8" rect | x=0.70 y=2.74 w=1.85 h=0.38 | noFill 
+    {15.5pt/B/#7C5E7C/微软雅黑}需求确认
+- [p:sp] "Text 9" rect | x=0.70 y=3.14 w=1.99 h=0.60 | noFill 
+    {11.5pt/#6E6276/微软雅黑}依据业务策略确认人才策略
+    {11.5pt/#6E6276/微软雅黑}确认{11.5pt/#6E6276/微软雅黑}编制与JD
+- [p:sp] "Text 10" rect | x=2.80 y=2.74 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 11" roundRect | x=3.06 y=2.02 w=2.25 h=1.80 | F5EEF5 
+- [p:sp] "Shape 12" ellipse | x=3.32 y=2.22 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 13" rect | x=3.32 y=2.22 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}2
+- [p:sp] "Text 14" rect | x=3.32 y=2.74 w=1.85 h=0.38 | noFill 
+    {15.5pt/B/#7C5E7C/微软雅黑}寻访候选
+- [p:sp] "Text 15" rect | x=3.32 y=3.14 w=1.80 h=0.60 | noFill 
+    {11.5pt/#6E6276/微软雅黑}内推 / 平台 / 猎头 / 校招
+- [p:sp] "Text 16" rect | x=5.32 y=2.74 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 17" roundRect | x=5.58 y=2.02 w=2.25 h=1.80 | F5EEF5 
+- [p:sp] "Shape 18" ellipse | x=5.84 y=2.22 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 19" rect | x=5.84 y=2.22 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}3
+- [p:sp] "Text 20" rect | x=5.84 y=2.74 w=1.85 h=0.38 | noFill 
+    {15.5pt/B/#7C5E7C/微软雅黑}面试评估
+- [p:sp] "Text 21" rect | x=5.84 y=3.14 w=1.80 h=0.60 | noFill 
+    {11.5pt/#6E6276/微软雅黑}HR面+业务面，2轮闭环
+- [p:sp] "Text 22" rect | x=7.84 y=2.74 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 23" roundRect | x=8.10 y=2.02 w=2.25 h=1.80 | F5EEF5 
+- [p:sp] "Shape 24" ellipse | x=8.36 y=2.22 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 25" rect | x=8.36 y=2.22 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}4
+- [p:sp] "Text 26" rect | x=8.36 y=2.74 w=1.85 h=0.38 | noFill 
+    {15.5pt/B/#7C5E7C/微软雅黑}Offer审批
+- [p:sp] "Text 27" rect | x=8.36 y=3.14 w=1.80 h=0.60 | noFill 
+    {11.5pt/#6E6276/微软雅黑}5个工作日内完成
+- [p:sp] "Text 28" rect | x=10.36 y=2.74 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 29" roundRect | x=10.62 y=2.02 w=2.25 h=1.80 | F5EEF5 
+- [p:sp] "Shape 30" ellipse | x=10.88 y=2.22 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 31" rect | x=10.88 y=2.22 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}5
+- [p:sp] "Text 32" rect | x=10.88 y=2.74 w=1.85 h=0.38 | noFill 
+    {15.5pt/B/#7C5E7C/微软雅黑}入职融入
+- [p:sp] "Text 33" rect | x=10.88 y=3.14 w=1.80 h=0.60 | noFill 
+    {11.5pt/#6E6276/微软雅黑}背调后入职
+    {10pt/#6E6276/微软雅黑}员工层{10pt/#6E6276/微软雅黑}-{10pt/#6E6276/微软雅黑}伙伴计划、上级{10pt/#6E6276/微软雅黑}带教{10pt/#6E6276/微软雅黑}；
+    {10pt/#6E6276/微软雅黑}管理层{10pt/#6E6276/微软雅黑}-{10pt/#6E6276/微软雅黑}专属融入计划
+- [p:sp] "Shape 35" roundRect | x=0.50 y=4.38 w=1.70 h=0.42 | C078A8 
+- [p:sp] "Text 36" rect | x=0.50 y=4.38 w=1.70 h=0.42 | noFill 
+    [ctr]{14pt/B/#FFFFFF/微软雅黑}27届校招专线
+- [p:sp] "Text 37" rect | x=2.40 y=4.38 w=4.00 h=0.42 | noFill 
+    {15pt/B/#C078A8/微软雅黑}8个岗位 · 4城同步
+- [p:grpSp] "组合 1" line | x=0.15 y=4.95 w=9.05 h=1.02 | B997B9 line:B997B9
+    [ctr]{13pt/B/#C078A8/微软雅黑}8月底
+  - [p:sp] "Shape 38" line | x=0.00 y=0.01 w=0.02 h=0.00 | B997B9 line:B997B9
+  - [p:sp] "Shape 39" ellipse | x=0.00 y=0.01 w=0.00 h=0.00 | C078A8 line:C078A8
+  - [p:sp] "Text 40" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#C078A8/微软雅黑}8月底
+  - [p:sp] "Text 41" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}职位发布
+  - [p:sp] "Shape 42" ellipse | x=0.00 y=0.01 w=0.00 h=0.00 | FFFFFF line:B997B9
+  - [p:sp] "Text 43" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#7C5E7C/微软雅黑}9–10月
+  - [p:sp] "Text 44" rect | x=0.00 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}宣讲·笔试·面试
+  - [p:sp] "Shape 45" ellipse | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF line:B997B9
+  - [p:sp] "Text 46" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#7C5E7C/微软雅黑}11月
+  - [p:sp] "Text 47" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}发放Offer
+  - [p:sp] "Shape 48" ellipse | x=0.01 y=0.01 w=0.00 h=0.00 | FFFFFF line:B997B9
+  - [p:sp] "Text 49" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#7C5E7C/微软雅黑}寒假
+  - [p:sp] "Text 50" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}实习见习
+  - [p:sp] "Shape 51" ellipse | x=0.02 y=0.01 w=0.00 h=0.00 | FFFFFF line:B997B9
+  - [p:sp] "Text 52" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#7C5E7C/微软雅黑}2027.7
+  - [p:sp] "Text 53" rect | x=0.01 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}入职报到
+  - [p:sp] "Shape 54" ellipse | x=0.02 y=0.01 w=0.00 h=0.00 | FFFFFF line:B997B9
+  - [p:sp] "Text 55" rect | x=0.02 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{13pt/B/#7C5E7C/微软雅黑}入职后
+  - [p:sp] "Text 56" rect | x=0.02 y=0.01 w=0.00 h=0.00 | noFill 
+      [ctr]{12.5pt/#6E6276/微软雅黑}第7期集训营
+- [p:pic] "图片 2" rect | x=9.49 y=4.17 w=4.18 h=2.86 |  
+- [p:sp] "文本框 4" rect | x=10.79 y=6.83 w=1.46 h=0.30 | noFill 
+    {18pt/B/#7C5E7C/微软雅黑}STAR{18pt/B/#7C5E7C/微软雅黑}提问法
+- [p:sp] "Shape 35" roundRect | x=0.50 y=1.35 w=1.70 h=0.42 | C078A8 
+- [p:sp] "Text 36" rect | x=0.50 y=1.35 w=1.70 h=0.42 | noFill 
+    [ctr]{14pt/B/微软雅黑}社招通用线
+- [p:sp] "AutoShape 13" rect | x=0.43 y=6.45 w=4.36 h=0.44 | noFill 
+    [l]{20pt/B/#C00000/微软雅黑}精准社招{20pt/B/#C00000/微软雅黑} · {20pt/B/#C00000/微软雅黑}精简校招{20pt/B/#C00000/微软雅黑} · {20pt/B/#C00000/微软雅黑}蓄力人才
+  NOTES: 结果反哺下一轮目标设定，绩效不是终点而是起点。
+
+
+########## SLIDE 7 (slides/slide7.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: -
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=7.63 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}绩效{28pt/B/#C00000/微软雅黑}·{28pt/B/#C00000/微软雅黑}理念：绩效管理是为了更好{28pt/B/#C00000/微软雅黑}地带团队
+- [p:sp] "Shape 5" roundRect | x=0.56 y=1.45 w=5.96 h=5.42 | F5EEF5 
+- [p:sp] "TextBox 8" rect | x=0.90 y=1.81 w=5.10 h=1.61 | noFill 
+    [l]{16pt/B/#7C5E7C/微软雅黑}绩效 ={16pt/B/#FFFFFF/微软雅黑} {16pt/B/#ED7D31/微软雅黑}目标对齐{16pt/B/#FFFFFF/微软雅黑} {16pt/B/#7C5E7C/微软雅黑}+ {16pt/B/#ED7D31/微软雅黑}过程改进{16pt/B/#FFFFFF/微软雅黑} {16pt/B/#7C5E7C/微软雅黑}+{16pt/B/#FFFFFF/微软雅黑} {16pt/B/#ED7D31/微软雅黑}价值分配
+    [l]{8pt/#FFFFFF/微软雅黑} 
+    [l]{13.5pt/#7C5E7C/微软雅黑} {13.5pt/#7C5E7C/微软雅黑}对组织：战略落地的抓手
+    [l]{13.5pt/#7C5E7C/微软雅黑} {13.5pt/#7C5E7C/微软雅黑}对管理者：带团队的抓手
+    [l]{13.5pt/#7C5E7C/微软雅黑} {13.5pt/#7C5E7C/微软雅黑}对员工：成长与回报的依据
+- [p:grpSp] "组合 61" roundRect | x=0.98 y=3.83 w=5.13 h=2.67 | F2F2F2 line:D9DDE3
+    [ctr]{}¶
+  - [p:sp] "Rounded Rectangle 10" roundRect | x=0.01 y=0.00 w=0.01 h=0.00 | F2F2F2 line:D9DDE3
+      [ctr]{}¶
+  - [p:sp] "TextBox 11" rect | x=0.01 y=0.00 w=0.01 h=0.00 | noFill 
+      [l]{14pt/B/#ED7D31/微软雅黑}✗ 绩效 = 年底打分{14pt/B/#ED7D31/微软雅黑} ?
+  - [p:sp] "TextBox 12" rect | x=0.01 y=0.00 w=0.01 h=0.00 | noFill 
+      [l]{12.5pt/#44546A/微软雅黑}→ 绩效是全年持续的对齐与改进
+  - [p:sp] "Rounded Rectangle 13" roundRect | x=0.01 y=0.01 w=0.01 h=0.00 | F2F2F2 line:D9DDE3
+      [ctr]{}¶
+  - [p:sp] "TextBox 14" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+      [l]{14pt/B/#ED7D31/微软雅黑}✗ 绩效 = HR 的事{14pt/B/#ED7D31/微软雅黑} ?
+  - [p:sp] "TextBox 15" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+      [l]{12.5pt/#44546A/微软雅黑}→ 管理者才是第一责任人
+  - [p:sp] "Rounded Rectangle 16" roundRect | x=0.01 y=0.01 w=0.01 h=0.00 | F2F2F2 line:D9DDE3
+      [ctr]{}¶
+  - [p:sp] "TextBox 17" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+      [l]{14pt/B/#ED7D31/微软雅黑}✗ 指标越多越好{14pt/B/#ED7D31/微软雅黑} ?
+  - [p:sp] "TextBox 18" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+      [l]{12.5pt/#44546A/微软雅黑}→ 少而准，对齐战略才是关键
+- [p:sp] "Text 5" rect | x=7.20 y=1.81 w=0.85 h=0.60 | noFill 
+    {30pt/B/#B997B9/微软雅黑}01
+- [p:sp] "Text 6" rect | x=8.20 y=1.66 w=3.05 h=0.50 | noFill 
+    {20pt/B/#3A2F40/微软雅黑}对齐业务
+- [p:sp] "Text 7" rect | x=8.17 y=2.18 w=4.66 h=0.42 | noFill 
+    {14pt/#6E6276/微软雅黑}目标跟着经营节奏走{14pt/#6E6276/微软雅黑}，全员{14pt/#6E6276/微软雅黑}同向发力。
+- [p:sp] "Shape 8" line | x=7.20 y=2.68 w=5.35 h=0.00 | E4DAE4 line:E4DAE4
+- [p:sp] "Text 9" rect | x=7.20 y=3.14 w=0.85 h=0.60 | noFill 
+    {30pt/B/#B997B9/微软雅黑}02
+- [p:sp] "Text 10" rect | x=8.20 y=2.87 w=3.05 h=0.50 | noFill 
+    {20pt/B/#3A2F40/微软雅黑}轻形式 · 重反馈
+- [p:sp] "Text 11" rect | x=8.17 y=3.47 w=4.38 h=0.42 | noFill 
+    {14pt/#6E6276/微软雅黑}扁平管理、拒绝繁文缛节{14pt/#6E6276/微软雅黑}。重视员工辅导与{14pt/#6E6276/微软雅黑}反馈{14pt/#6E6276/微软雅黑}，件件{14pt/#6E6276/微软雅黑}有回音{14pt/#6E6276/微软雅黑}。
+- [p:sp] "Shape 12" line | x=7.20 y=4.15 w=5.35 h=0.00 | E4DAE4 line:E4DAE4
+- [p:sp] "Text 13" rect | x=7.20 y=4.58 w=0.85 h=0.60 | noFill 
+    {30pt/B/#B997B9/微软雅黑}03
+- [p:sp] "Text 14" rect | x=8.20 y=4.37 w=3.05 h=0.50 | noFill 
+    {20pt/B/#3A2F40/微软雅黑}相对{20pt/B/#3A2F40/微软雅黑}公平
+- [p:sp] "Text 15" rect | x=8.17 y=4.89 w=4.23 h=0.42 | noFill 
+    {14pt/#6E6276/微软雅黑}没有绝对公平，只有相对公平。提倡多劳多得、多创多得、多燃多得。
+- [p:sp] "Shape 16" line | x=7.20 y=5.58 w=5.35 h=0.00 | E4DAE4 line:E4DAE4
+- [p:sp] "Text 17" rect | x=7.20 y=5.94 w=0.85 h=0.60 | noFill 
+    {30pt/B/#B997B9/微软雅黑}04
+- [p:sp] "Text 18" rect | x=8.20 y=5.76 w=3.05 h=0.50 | noFill 
+    {20pt/B/#3A2F40/微软雅黑}发展导向
+- [p:sp] "Text 19" rect | x=8.17 y=6.28 w=4.03 h=0.42 | noFill 
+    {14pt/#6E6276/微软雅黑}绩效是成长的镜子，不是{14pt/#6E6276/微软雅黑}秋后算账。以战代练，以评促长，达者为师。
+- [p:sp] "ïṩlíďè"  | x=4.89 y=2.41 w=0.94 h=0.94 |  
+
+
+########## SLIDE 8 (slides/slide8.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: ../media/image6.png
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=4.01 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}绩效{28pt/B/#C00000/微软雅黑}·{28pt/B/#C00000/微软雅黑}流程：五步{28pt/B/#C00000/微软雅黑}闭环
+- [p:sp] "Shape 5" roundRect | x=0.50 y=1.27 w=2.25 h=2.55 | F5EEF5 
+- [p:sp] "Shape 6" ellipse | x=0.76 y=1.49 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 7" rect | x=0.76 y=1.49 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}1
+- [p:sp] "Text 8" rect | x=0.76 y=2.05 w=1.85 h=0.40 | noFill 
+    {16.5pt/B/#3A2F40/微软雅黑}目标设定
+- [p:sp] "Text 9" rect | x=0.76 y=2.49 w=1.99 h=1.10 | noFill 
+    {12pt/#6E6276/微软雅黑}定目标、{12pt/#6E6276/微软雅黑}通目标、谈{12pt/#6E6276/微软雅黑}目标
+    {12pt/#6E6276/微软雅黑}遵循{12pt/#6E6276/微软雅黑}SMART{12pt/#6E6276/微软雅黑}原则
+- [p:sp] "Text 10" rect | x=2.76 y=2.32 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 11" roundRect | x=3.02 y=1.27 w=2.25 h=2.55 | F5EEF5 
+- [p:sp] "Shape 12" ellipse | x=3.28 y=1.49 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 13" rect | x=3.28 y=1.49 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}2
+- [p:sp] "Text 14" rect | x=3.28 y=2.05 w=1.85 h=0.40 | noFill 
+    {16.5pt/B/#3A2F40/微软雅黑}过程跟进
+- [p:sp] "Text 15" rect | x=3.28 y=2.49 w=1.78 h=1.10 | noFill 
+    {12pt/#6E6276/微软雅黑}持续追踪与目标{12pt/#6E6276/微软雅黑}对焦
+    {12pt/#6E6276/微软雅黑}及时有效地{12pt/#6E6276/微软雅黑}反馈
+    {12pt/#6E6276/微软雅黑}抓准时机进行{12pt/#6E6276/微软雅黑}辅导
+- [p:sp] "Text 16" rect | x=5.28 y=2.32 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 17" roundRect | x=5.54 y=1.27 w=2.25 h=2.55 | F5EEF5 
+- [p:sp] "Shape 18" ellipse | x=5.80 y=1.49 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 19" rect | x=5.80 y=1.49 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}3
+- [p:sp] "Text 20" rect | x=5.80 y=2.05 w=1.85 h=0.40 | noFill 
+    {16.5pt/B/#3A2F40/微软雅黑}评估校准
+- [p:sp] "Text 21" rect | x=5.80 y=2.49 w=1.78 h=1.10 | noFill 
+    {12pt/#6E6276/微软雅黑}绩效考评（打分与{12pt/#6E6276/微软雅黑}排序）
+    {12pt/B/#6E6276/微软雅黑}271{12pt/#6E6276/微软雅黑}正态分布，{12pt/#6E6276/微软雅黑}Leader{12pt/#6E6276/微软雅黑}必须做出管理{12pt/#6E6276/微软雅黑}选择
+- [p:sp] "Text 22" rect | x=7.80 y=2.32 w=0.28 h=0.40 | noFill 
+    [ctr]{17pt/#B997B9/微软雅黑}▸
+- [p:sp] "Shape 23" roundRect | x=8.06 y=1.27 w=2.25 h=2.55 | F5EEF5 
+- [p:sp] "Shape 24" ellipse | x=8.32 y=1.49 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 25" rect | x=8.32 y=1.49 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}4
+- [p:sp] "Text 26" rect | x=8.32 y=2.05 w=1.85 h=0.40 | noFill 
+    {16.5pt/B/#3A2F40/微软雅黑}反馈面谈
+- [p:sp] "Text 27" rect | x=8.32 y=2.69 w=1.78 h=1.10 | noFill 
+    {12pt/#6E6276/微软雅黑}一人一谈，面向成长
+    {12pt/#6E6276/微软雅黑}2{12pt/#6E6276/微软雅黑}：管理期待，激发{12pt/#6E6276/微软雅黑}潜能
+    {12pt/#6E6276/微软雅黑}7{12pt/#6E6276/微软雅黑}：扬善砭过，{12pt/#6E6276/微软雅黑}明确要求
+    {12pt/#6E6276/微软雅黑}1{12pt/#6E6276/微软雅黑}：面向未来，正向引导
+    {12pt}¶
+- [p:sp] "Shape 29" roundRect | x=10.58 y=1.27 w=2.25 h=2.55 | F5EEF5 
+- [p:sp] "Shape 30" ellipse | x=10.84 y=1.49 w=0.42 h=0.42 | B997B9 
+- [p:sp] "Text 31" rect | x=10.84 y=1.49 w=0.42 h=0.42 | noFill 
+    [ctr]{16pt/B/#FFFFFF/微软雅黑}5
+- [p:sp] "Text 32" rect | x=10.84 y=2.05 w=1.85 h=0.40 | noFill 
+    {16.5pt/B/#3A2F40/微软雅黑}结果应用
+- [p:sp] "Text 33" rect | x=10.84 y=2.49 w=1.78 h=1.10 | noFill 
+    {12pt/#6E6276/微软雅黑}奖金 / 调薪 / 晋升 / 
+    {12pt/#6E6276/微软雅黑}绩效改进{12pt/#6E6276/微软雅黑} / {12pt/#6E6276/微软雅黑}淘汰
+    {12pt/#7C5E7C/微软雅黑}心要仁慈，刀要快
+- [p:sp] "Shape 34" line | x=11.71 y=3.87 w=0.00 h=0.45 | B997B9 line:B997B9
+- [p:sp] "Shape 35" line | x=1.63 y=4.32 w=10.08 h=0.00 | B997B9 line:B997B9
+- [p:sp] "Shape 36" line | x=1.63 y=3.87 w=0.00 h=0.45 | B997B9 line:B997B9
+- [p:sp] "Text 37" rect | x=5.42 y=4.39 w=2.50 h=0.30 | noFill 
+    [ctr]{12pt/#6E6276/微软雅黑}进入下一绩效周期
+- [p:sp] "Text 38" rect | x=0.50 y=5.46 w=1.40 h=0.60 | noFill 
+    {15pt/B/#3A2F40/微软雅黑}落地节奏
+- [p:grpSp] "组合 2" roundRect | x=1.51 y=5.41 w=7.85 h=0.70 | F5EEF5 
+  - [p:sp] "Shape 39" roundRect | x=0.00 y=0.01 w=0.01 h=0.00 | F5EEF5 
+  - [p:sp] "Shape 41" roundRect | x=0.01 y=0.01 w=0.01 h=0.00 | F5EEF5 
+  - [p:sp] "Shape 43" roundRect | x=0.01 y=0.01 w=0.01 h=0.00 | B997B9 
+  - [p:grpSp] "组合 1" rect | x=0.00 y=0.01 w=0.02 h=0.00 | noFill 
+      [ctr]{14pt/B/#7C5E7C/微软雅黑}9月 
+      [ctr]{12pt/B/#7C5E7C/微软雅黑}绩效管理框架{12pt/B/#7C5E7C/微软雅黑}梳理
+    - [p:sp] "Text 40" rect | x=0.00 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{14pt/B/#7C5E7C/微软雅黑}9月 
+        [ctr]{12pt/B/#7C5E7C/微软雅黑}绩效管理框架{12pt/B/#7C5E7C/微软雅黑}梳理
+    - [p:sp] "Text 42" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{14pt/B/#7C5E7C/微软雅黑}10月 
+        [ctr]{12pt/B/#7C5E7C/微软雅黑}绩效制度、流程、指标库
+    - [p:sp] "Text 44" rect | x=0.01 y=0.01 w=0.01 h=0.00 | noFill 
+        [ctr]{B/微软雅黑}11-12{B/微软雅黑}月{B/微软雅黑} 
+        [ctr]{12pt/B/微软雅黑}试运行{12pt/B/微软雅黑}&{12pt/B/微软雅黑}复盘修订
+- [p:sp] "AutoShape 13" rect | x=0.42 y=6.56 w=3.70 h=0.44 | noFill 
+    [l]{20pt/B/#C00000/微软雅黑}为过程鼓掌，为结果买单。
+- [p:pic] "图片 5" rect | x=9.66 y=4.45 w=3.57 h=2.93 |  
+
+
+########## SLIDE 9 (slides/slide9.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: -
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=8.21 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}HRBP·{28pt/B/#C00000/微软雅黑}业务身边的{28pt/B/#C00000/微软雅黑}HR{28pt/B/#C00000/微软雅黑}（既懂业务，又懂人）
+- [p:sp] "圆角矩形 2" roundRect | x=0.73 y=1.27 w=3.13 h=2.60 | GRADIENT 
+- [p:sp] "文本框 8" rect | x=0.96 y=1.50 w=2.67 h=0.23 |  
+    {13.5pt/B/#FFFFFF/微软雅黑}为什么需要{13.5pt/B/#FFFFFF/微软雅黑} HRBP
+- [p:sp] "文本框 9" rect | x=1.13 y=1.90 w=2.50 h=0.51 |  
+    {9.75pt/#FFFFFF/微软雅黑}多品牌{9.75pt/#FFFFFF/微软雅黑} × {9.75pt/#FFFFFF/微软雅黑}多平台{9.75pt/#FFFFFF/微软雅黑} × {9.75pt/#FFFFFF/微软雅黑}多城据点，业务复杂度已超出传统{9.75pt/#FFFFFF/微软雅黑} HR {9.75pt/#FFFFFF/微软雅黑}职能
+- [p:sp] "文本框 10" rect | x=1.13 y=2.53 w=2.50 h=0.51 |  
+    {9.75pt/#FFFFFF/微软雅黑}直播「日销{9.75pt/#FFFFFF/微软雅黑} + {9.75pt/#FFFFFF/微软雅黑}大促」双节奏，{9.75pt/#FFFFFF/微软雅黑}HR {9.75pt/#FFFFFF/微软雅黑}节奏必须贴着业务走
+- [p:sp] "文本框 11" rect | x=1.13 y=3.17 w=2.50 h=0.51 |  
+    {9.75pt/#FFFFFF/微软雅黑}业务要的不是「后勤{9.75pt/#FFFFFF/微软雅黑} HR{9.75pt/#FFFFFF/微软雅黑}」，是并肩作战、听得懂业务的伙伴
+- [p:sp] "圆角矩形 12" roundRect | x=4.04 y=1.27 w=4.22 h=1.24 | F5EEF5 
+- [p:sp] "圆角矩形 13" roundRect | x=4.29 y=1.68 w=0.08 h=0.08 | E8702A 
+- [p:sp] "文本框 14" rect | x=4.46 y=1.62 w=0.67 h=0.21 |  
+    {B/#2C2C2A/微软雅黑}战略伙伴
+- [p:sp] "文本框 15" rect | x=4.29 y=1.91 w=3.89 h=0.25 |  
+    {10.8pt/#5F5E5A/微软雅黑}参与业务规划、提前做人力盘点
+- [p:sp] "圆角矩形 16" roundRect | x=8.39 y=1.27 w=4.22 h=1.24 | F5EEF5 
+- [p:sp] "圆角矩形 17" roundRect | x=8.64 y=1.68 w=0.08 h=0.08 | E8702A 
+- [p:sp] "文本框 18" rect | x=8.80 y=1.62 w=0.83 h=0.21 |  
+    {B/#2C2C2A/微软雅黑}员工支持者
+- [p:sp] "文本框 19" rect | x=8.64 y=1.91 w=3.89 h=0.25 |  
+    {9.75pt/#5F5E5A/微软雅黑}沟通关怀、留任与劳动关系维护
+- [p:sp] "圆角矩形 20" roundRect | x=4.04 y=2.64 w=4.22 h=1.24 | F5EEF5 
+- [p:sp] "圆角矩形 21" roundRect | x=4.29 y=3.05 w=0.08 h=0.08 | E8702A 
+- [p:sp] "文本框 22" rect | x=4.46 y=2.98 w=0.83 h=0.21 |  
+    {B/#2C2C2A/微软雅黑}变革推动者
+- [p:sp] "文本框 23" rect | x=4.29 y=3.27 w=3.89 h=0.25 |  
+    {10.8pt/#5F5E5A/微软雅黑}新据点落地、组织调整的推动引擎
+- [p:sp] "圆角矩形 24" roundRect | x=8.39 y=2.64 w=4.22 h=1.24 | F5EEF5 
+- [p:sp] "圆角矩形 25" roundRect | x=8.64 y=3.05 w=0.08 h=0.08 | E8702A 
+- [p:sp] "文本框 26" rect | x=8.80 y=2.98 w=0.83 h=0.21 |  
+    {B/#2C2C2A/微软雅黑}流程守护者
+- [p:sp] "文本框 27" rect | x=8.64 y=3.27 w=3.89 h=0.25 |  
+    {10.8pt/#5F5E5A/微软雅黑}招人{10.8pt/#5F5E5A/微软雅黑} · {10.8pt/#5F5E5A/微软雅黑}用人{10.8pt/#5F5E5A/微软雅黑} · {10.8pt/#5F5E5A/微软雅黑}留人，落到一线不走样
+- [p:sp] "圆角矩形 28" roundRect | x=0.73 y=4.20 w=0.04 h=0.17 | E8702A 
+- [p:sp] "文本框 3" rect | x=0.85 y=4.18 w=0.67 h=0.21 |  
+    {12pt/B/#2C2C2A/微软雅黑}职能标准
+- [p:sp] "圆角矩形 30" roundRect | x=0.73 y=4.49 w=2.88 h=0.96 | F5EEF5 
+- [p:sp] "文本框 31" rect | x=0.89 y=4.72 w=2.58 h=0.19 |  
+    {12pt/B/#C2571B/微软雅黑}懂业务
+- [p:sp] "文本框 32" rect | x=0.89 y=4.97 w=2.58 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}参会、读数据、识别人效痛点
+- [p:sp] "圆角矩形 33" roundRect | x=3.73 y=4.49 w=2.88 h=0.96 | F5EEF5 
+- [p:sp] "文本框 34" rect | x=3.89 y=4.72 w=2.58 h=0.19 |  
+    {12pt/B/#C2571B/微软雅黑}推组织
+- [p:sp] "文本框 35" rect | x=3.89 y=4.97 w=2.58 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}搭班子、建结构、调机制流程
+- [p:sp] "圆角矩形 36" roundRect | x=6.73 y=4.49 w=2.88 h=0.96 | F5EEF5 
+- [p:sp] "文本框 37" rect | x=6.89 y=4.72 w=2.58 h=0.19 |  
+    {12pt/B/#C2571B/微软雅黑}选人才
+- [p:sp] "文本框 38" rect | x=6.89 y=4.97 w=2.58 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}选{10pt/#5F5E5A/微软雅黑} / {10pt/#5F5E5A/微软雅黑}用{10pt/#5F5E5A/微软雅黑} / {10pt/#5F5E5A/微软雅黑}育{10pt/#5F5E5A/微软雅黑} / {10pt/#5F5E5A/微软雅黑}留在一线真正落地
+- [p:sp] "圆角矩形 39" roundRect | x=9.73 y=4.49 w=2.88 h=0.96 | F5EEF5 
+- [p:sp] "文本框 40" rect | x=9.89 y=4.72 w=2.58 h=0.19 |  
+    {12pt/B/#C2571B/微软雅黑}促文化
+- [p:sp] "文本框 41" rect | x=9.89 y=4.97 w=2.58 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}传导价值观、建设团队氛围
+- [p:sp] "圆角矩形 42" roundRect | x=0.73 y=5.86 w=0.04 h=0.17 | E8702A 
+- [p:sp] "文本框 43" rect | x=0.85 y=5.84 w=0.67 h=0.21 |  
+    {12pt/B/#2C2C2A/微软雅黑}工作节奏
+- [p:sp] "圆角矩形 45" roundRect | x=0.76 y=6.15 w=2.88 h=0.96 | FFFFFF 
+- [p:sp] "任意多边形 66"  | x=0.76 y=6.15 w=2.88 h=0.96 | E8702A line:E8702A
+- [p:sp] "文本框 67" rect | x=0.91 y=6.30 w=2.55 h=0.19 |  
+    {12pt/B/#2C2C2A/微软雅黑}每日
+- [p:sp] "文本框 69" rect | x=0.91 y=6.55 w=2.55 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}1on1 · {10pt/#5F5E5A/微软雅黑}面试{10pt/#5F5E5A/微软雅黑} · {10pt/#5F5E5A/微软雅黑}业务现场
+- [p:sp] "圆角矩形 70" roundRect | x=3.76 y=6.15 w=2.88 h=0.96 | FFFFFF 
+- [p:sp] "任意多边形 71"  | x=3.76 y=6.15 w=2.88 h=0.96 | E8702A line:E8702A
+- [p:sp] "文本框 77" rect | x=3.91 y=6.30 w=2.55 h=0.19 |  
+    {12pt/B/#2C2C2A/微软雅黑}每周
+- [p:sp] "文本框 78" rect | x=3.91 y=6.55 w=2.55 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}业务对齐{10pt/#5F5E5A/微软雅黑} · {10pt/#5F5E5A/微软雅黑}周复盘
+- [p:sp] "圆角矩形 79" roundRect | x=6.76 y=6.15 w=2.88 h=0.96 | FFFFFF 
+- [p:sp] "任意多边形 80"  | x=6.76 y=6.15 w=2.88 h=0.96 | E8702A line:E8702A
+- [p:sp] "文本框 81" rect | x=6.91 y=6.30 w=2.55 h=0.19 |  
+    {12pt/B/#2C2C2A/微软雅黑}每月
+- [p:sp] "文本框 82" rect | x=6.91 y=6.55 w=2.55 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}人力盘点{10pt/#5F5E5A/微软雅黑} · {10pt/#5F5E5A/微软雅黑}入离职分析
+- [p:sp] "圆角矩形 83" roundRect | x=9.76 y=6.15 w=2.88 h=0.96 | FFFFFF 
+- [p:sp] "任意多边形 84"  | x=9.76 y=6.15 w=2.88 h=0.96 | E8702A line:E8702A
+- [p:sp] "文本框 85" rect | x=9.91 y=6.30 w=2.55 h=0.19 |  
+    {12pt/B/#2C2C2A/微软雅黑}每季
+- [p:sp] "文本框 86" rect | x=9.91 y=6.55 w=2.55 h=0.23 |  
+    {10pt/#5F5E5A/微软雅黑}组织诊断{10pt/#5F5E5A/微软雅黑} · {10pt/#5F5E5A/微软雅黑}绩效复盘{10pt/#5F5E5A/微软雅黑} · {10pt/#5F5E5A/微软雅黑}文化落地
+- [p:sp] "圆角矩形 89" roundRect | x=0.96 y=1.98 w=0.06 h=0.06 | FFFFFF@95% 
+- [p:sp] "圆角矩形 90" roundRect | x=0.96 y=2.61 w=0.06 h=0.06 | FFFFFF@95% 
+- [p:sp] "圆角矩形 91" roundRect | x=0.96 y=3.25 w=0.06 h=0.06 | FFFFFF@95% 
+
+
+########## SLIDE 10 (slides/slide10.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: -
+- [p:sp] "AutoShape 13" rect | x=0.23 y=0.35 w=1.81 h=0.57 | noFill 
+    [l]{28pt/B/#C00000/微软雅黑}推进{28pt/B/#C00000/微软雅黑}节奏
+- [p:sp] "Shape 3" roundRect | x=0.50 y=1.52 w=3.95 h=4.15 | F5EEF5 
+- [p:sp] "Shape 4" roundRect | x=0.78 y=1.82 w=1.70 h=0.44 | C078A8 
+- [p:sp] "Text 5" rect | x=0.82 y=1.82 w=1.70 h=0.44 | noFill 
+    [ctr]{14pt/B/#FFFFFF/微软雅黑}2026 Q4
+- [p:sp] "Text 6" rect | x=0.82 y=2.42 w=3.30 h=0.62 | noFill 
+    {26pt/B/#3A2F40/微软雅黑}打胜仗
+- [p:sp] "Shape 7" ellipse | x=0.84 y=3.44 w=0.10 h=0.10 | C078A8 
+- [p:sp] "Text 8" rect | x=1.06 y=3.29 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}招聘达成
+- [p:sp] "Shape 9" ellipse | x=0.84 y=4.17 w=0.10 h=0.10 | C078A8 
+- [p:sp] "Text 10" rect | x=1.06 y=4.01 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}绩效规范
+- [p:sp] "Shape 11" ellipse | x=0.84 y=4.88 w=0.10 h=0.10 | C078A8 
+- [p:sp] "Text 12" rect | x=1.06 y=4.74 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}信任共盟
+- [p:sp] "Text 13" rect | x=4.45 y=3.27 w=0.26 h=0.50 | noFill 
+    [ctr]{#B997B9/微软雅黑}▸
+- [p:sp] "Shape 14" roundRect | x=4.69 y=1.52 w=3.95 h=4.15 | F5EEF5 
+- [p:sp] "Shape 15" roundRect | x=5.01 y=1.82 w=1.70 h=0.44 | B997B9 
+- [p:sp] "Text 16" rect | x=4.97 y=1.82 w=1.70 h=0.44 | noFill 
+    [ctr]{14pt/B/#FFFFFF/微软雅黑}2027 {14pt/B/#FFFFFF/微软雅黑}上{14pt/B/#FFFFFF/微软雅黑}半年
+- [p:sp] "Text 17" rect | x=5.01 y=2.42 w=3.30 h=0.62 | noFill 
+    {26pt/B/#3A2F40/微软雅黑}建制度
+- [p:sp] "Shape 18" ellipse | x=5.03 y=3.44 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 19" rect | x=5.25 y=3.29 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}招聘制度及{#3A2F40/微软雅黑}流程
+- [p:sp] "Shape 20" ellipse | x=5.03 y=4.17 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 21" rect | x=5.25 y=4.01 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}薪酬绩效制度及{#3A2F40/微软雅黑}流程
+- [p:sp] "Shape 22" ellipse | x=5.03 y=4.88 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 23" rect | x=5.25 y=4.74 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}员工关系制度及{#3A2F40/微软雅黑}流程
+- [p:sp] "Text 24" rect | x=8.64 y=3.27 w=0.26 h=0.50 | noFill 
+    [ctr]{#B997B9/微软雅黑}▸
+- [p:sp] "Shape 25" roundRect | x=8.88 y=1.52 w=3.95 h=4.15 | F5EEF5 
+- [p:sp] "Shape 26" roundRect | x=9.20 y=1.82 w=1.70 h=0.44 | B997B9 
+- [p:sp] "Text 27" rect | x=9.16 y=1.82 w=1.70 h=0.44 | noFill 
+    [ctr]{14pt/B/#FFFFFF/微软雅黑}2027 {14pt/B/#FFFFFF/微软雅黑}下半年
+- [p:sp] "Text 28" rect | x=9.20 y=2.42 w=3.30 h=0.62 | noFill 
+    {26pt/B/#3A2F40/微软雅黑}成体系
+- [p:sp] "Shape 29" ellipse | x=9.22 y=3.44 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 30" rect | x=9.44 y=3.29 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}招聘运营体系
+- [p:sp] "Shape 31" ellipse | x=9.22 y=4.17 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 32" rect | x=9.44 y=4.01 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}绩效盘点体系
+- [p:sp] "Shape 33" ellipse | x=9.22 y=4.88 w=0.10 h=0.10 | B997B9 
+- [p:sp] "Text 34" rect | x=9.44 y=4.74 w=3.20 h=0.40 | noFill 
+    {#3A2F40/微软雅黑}人才发展{#3A2F40/微软雅黑}体系
+- [p:sp] "文本框 37" rect | x=0.42 y=6.12 w=6.67 h=0.61 | noFill 
+    [l]{15pt/B/#7C5E7C/微软雅黑}给管理层的 3 {15pt/B/#7C5E7C/微软雅黑}点期待
+    [l]{13pt}¶
+- [p:sp] "文本框 38" rect | x=2.85 y=6.07 w=6.67 h=1.04 | noFill 
+    [l]{13pt/#7C5E7C/微软雅黑}① 把 HR 当伙伴
+    [l]{13pt/#7C5E7C/微软雅黑}② 用人部门是招聘第一责任人，{13pt/#7C5E7C/微软雅黑}HR{13pt/#7C5E7C/微软雅黑}是助攻
+    [l]{13pt/#7C5E7C/微软雅黑}③ 绩效常态化，别把问题攒到{13pt/#7C5E7C/微软雅黑}辞退{13pt/#7C5E7C/微软雅黑}时
+- [p:sp] "文本框 40" rect | x=7.80 y=6.07 w=4.99 h=1.51 | noFill 
+    [r]{20pt/B/#C00000/微软雅黑}HR 的价值，
+    [r]{20pt/B/#C00000/微软雅黑}在于赋能业务，让人与组织一起变强。
+    [r]{20pt}¶
+
+
+########## SLIDE 11 (slides/slide11.xml) ##########
+layout: ../slideLayouts/slideLayout13.xml | media: ../media/image9.png, ../media/image8.png, ../media/image7.jpeg
+- [p:sp] "AutoShape 2" rect | x=2.12 y=3.62 w=1.83 h=0.57 | noFill 
+    [l]{28pt/B/#E24D22/微软雅黑}谢谢聆听
+- [p:grpSp] "Group 3" rect | x=0.00 y=0.00 w=13.33 h=7.50 | noFill 
+  - [p:pic] "Picture 4" rect | x=0.00 y=0.00 w=13.33 h=7.50 | noFill 
+  - [p:pic] "Picture 5" rect | x=11.49 y=6.06 w=1.36 h=0.75 | noFill 
+- [p:pic] "Picture 6" rect | x=11.58 y=6.22 w=1.15 h=0.46 | noFill 
+- [p:sp] "Shape 5" roundRect | x=2.33 y=3.74 w=1.18 h=0.52 | F7AA7D 
+- [p:sp] "Shape 7" roundRect | x=3.75 y=3.74 w=1.18 h=0.52 | F7AA7D 
+- [p:sp] "Shape 9" roundRect | x=5.17 y=3.74 w=1.18 h=0.52 | F7AA7D 
+- [p:sp] "Shape 11" roundRect | x=6.59 y=3.74 w=1.18 h=0.52 | F7AA7D 
+- [p:grpSp] "组合 6" rect | x=2.33 y=3.74 w=5.44 h=0.52 | F7AA7D 
+    [ctr]{16pt/B/微软雅黑}正道
+  - [p:sp] "Text 6" rect | x=0.00 y=0.01 w=0.00 h=0.00 | F7AA7D 
+      [ctr]{16pt/B/微软雅黑}正道
+  - [p:sp] "Text 8" rect | x=0.01 y=0.01 w=0.00 h=0.00 | F7AA7D 
+      [ctr]{16pt/B/微软雅黑}利他
+  - [p:sp] "Text 10" rect | x=0.01 y=0.01 w=0.00 h=0.00 | F7AA7D 
+      [ctr]{16pt/B/微软雅黑}真实
+  - [p:sp] "Text 12" rect | x=0.01 y=0.01 w=0.00 h=0.00 | F7AA7D 
+      [ctr]{16pt/B/微软雅黑}情义

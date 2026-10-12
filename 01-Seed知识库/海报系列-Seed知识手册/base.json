@@ -1,0 +1,14 @@
+{
+  "theme": {
+    "bg": "#F7EEDC",
+    "focus": "#1F6F6B",
+    "heavy": "#3E2B1C",
+    "cream": "#F7EEDC",
+    "accents": ["#2B7DE9", "#F08C3C", "#8FCB4A"],
+    "red": "#E2554A",
+    "bgImage": "bg-texture-c.png"
+  },
+  "s1": { "product": "AI Agent 手册", "column": "Agent 不迷路计划", "total": 6 },
+  "s6": { "cta": "找我领便携版" },
+  "_note": "extends 此文件的 poster 只需填 s2/s3/s4/s5/s1.no"
+}
