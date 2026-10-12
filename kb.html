@@ -266,7 +266,7 @@ let view = 'shelf', bookId = '', chapterIdx = 0;
 let IS_ADMIN = false;
 const chapterCache = new Map();
 const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖' };
-const bookIcon = b => b.collected ? '📼' : (b.uploaded ? '📄' : (ICONS[b.id] || '📚'));
+const bookIcon = b => b.atlas ? '📔' : (b.collected ? '📼' : (b.uploaded ? '📄' : (ICONS[b.id] || '📚')));
 const bookById = id => window.KB.books.find(b => b.id === id);
 
 try{ localStorage.removeItem('kb-state'); }catch(e){}   /* 旧版位置记忆已废弃：进 Biblioteca 一律落书架，仅深链直达章节 */
@@ -289,7 +289,7 @@ function renderShelf(){
   document.getElementById('shelfGrid').innerHTML = books.map(b =>
     '<button class="bcard" data-bid="' + esc(b.id) + '"><span class="bic">' + bookIcon(b) + '</span>' +
     '<b>' + esc(b.title) + '</b><small>' + esc(b.desc || '') + '</small>' +
-    '<span class="bmeta">' + b.chapters.length + ' 章' + (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : '')) + '</span></button>').join('');
+    '<span class="bmeta">' + b.chapters.length + ' 章' + (b.atlas ? ' · 图鉴' : (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : ''))) + '</span></button>').join('');
 }
 
 function renderBook(){

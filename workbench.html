@@ -165,6 +165,37 @@ html[data-theme="crepusculo"]{
 .hw-h-warn{color:var(--warn)}
 .hw-h-miss{opacity:.75}
 .hw-empty{color:var(--g-dim);font-size:12px;line-height:1.7}
+.hw-lens{flex:none;font-size:10px;font-weight:600;border-radius:6px;padding:1px 6px;
+  background:color-mix(in srgb,var(--g-accent) 18%,transparent);color:var(--g-accent-soft)}
+.hw-atlasbtn{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 8%,transparent);
+  color:var(--g-text);cursor:pointer;font-size:11px;border-radius:999px;padding:4px 12px;flex:none;transition:.25s;white-space:nowrap}
+.hw-atlasbtn:hover{background:color-mix(in srgb,var(--ink) 16%,transparent)}
+/* ---- 硬件图鉴弹窗（复用 kbin 弹层形态） ---- */
+.atl-mask{position:fixed;inset:0;z-index:900;background:rgba(8,5,2,.6);backdrop-filter:blur(7px);
+  display:none;align-items:center;justify-content:center;padding:3vh 3vw}
+.atl-mask.on{display:flex}
+.atl-dialog{width:94vw;height:92vh;display:flex;flex-direction:column;gap:0;padding:22px 26px 16px;border-radius:24px;min-width:0}
+.atl-head{display:flex;align-items:center;gap:12px;font-size:15px}
+.atl-head b{flex:none}
+.atl-stats{font-size:11px;color:var(--g-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.atl-filters{display:flex;gap:8px;padding:12px 0 10px;flex-wrap:wrap;align-items:center}
+.atl-chip{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:none;color:var(--g-dim);cursor:pointer;
+  font-size:11px;border-radius:999px;padding:3px 12px;transition:.2s}
+.atl-chip:hover{color:var(--g-text)}
+.atl-chip.on{background:var(--g-accent);border-color:transparent;color:#fff}
+.atl-sel{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 7%,transparent);
+  color:var(--g-text);border-radius:999px;padding:4px 10px;font:inherit;font-size:11px;outline:0;cursor:pointer}
+.atl-q{flex:1;min-width:120px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);
+  background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--g-text);border-radius:999px;padding:5px 14px;font:inherit;font-size:11.5px;outline:0}
+.atl-q:focus{border-color:color-mix(in srgb,var(--g-accent) 55%,transparent)}
+.atl-body{flex:1;overflow:auto;min-height:0}
+.atl-table{width:100%;border-collapse:collapse;font-size:12px;min-width:640px}
+.atl-table th{position:sticky;top:0;text-align:left;font-size:10.5px;font-weight:600;color:var(--g-dim);padding:8px;white-space:nowrap;
+  border-bottom:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--g-card) 92%,transparent);backdrop-filter:blur(5px)}
+.atl-table td{padding:7px 8px;border-bottom:1px dashed color-mix(in srgb,var(--ink) 7%,transparent);vertical-align:top;line-height:1.5}
+.atl-table a{color:var(--g-text);text-decoration:none}
+.atl-table a:hover{color:var(--g-accent-soft)}
+.atl-empty{padding:40px;text-align:center;color:var(--g-dim);font-size:12.5px;line-height:1.8}
 .chead{display:flex;align-items:center;gap:10px}
 .chead .cbar{width:8px;height:26px;border-radius:2px;flex:none;background:var(--c,#ff9d2e)}
 .chead b{font-size:14.5px;font-weight:600}
@@ -486,6 +517,7 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
       <div class="g-card wbcard" id="card-hw" style="--c:#f59e0b">
         <div class="chead"><span class="cbar"></span><b>智能硬件 · 每日情报</b>
           <span class="upd" id="hwUpd"></span>
+          <button class="hw-atlasbtn" id="hwAtlasBtn" title="累积的硬件目录（每日情报自动沉淀）">📔 图鉴</button>
           <button class="rfbtn" data-sec="hw" title="重新拉取（情报由 Mac 收集任务生成，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody ilist" id="hwBody"><span class="dim">等待首份情报…</span></div>
       </div>
@@ -595,6 +627,22 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
     <div class="kbin-dfoot"><span class="dim" id="kbinDCount">0 / 500 · ⌘/Ctrl+Enter 提交 · Esc 关闭</span>
       <button class="bmini" id="kbinDCancel">取消</button>
       <button class="btn btn-hot" id="kbinDGo" style="padding:8px 20px;font-size:12.5px">提交评论</button></div>
+  </div>
+</div>
+
+<!-- 智能硬件图鉴 · 全屏弹层（每日情报自动沉淀的累积目录） -->
+<div class="atl-mask" id="atlMask">
+  <div class="atl-dialog g-glass">
+    <div class="atl-head"><b>📔 智能硬件图鉴</b><span class="atl-stats" id="atlStats"></span>
+      <button class="icmt" id="atlClose" title="关闭（Esc）" style="margin-left:auto;font-size:14px">✕</button></div>
+    <div class="atl-filters">
+      <button class="atl-chip on" data-lf="all">全部</button>
+      <button class="atl-chip" data-lf="1">透镜① 数据可见</button>
+      <button class="atl-chip" data-lf="2">透镜② 持续采集</button>
+      <select class="atl-sel" id="atlCat"><option value="">全部品类</option></select>
+      <input type="text" class="atl-q" id="atlQ" placeholder="搜索名称 / 品牌 / 采集什么…">
+    </div>
+    <div class="atl-body" id="atlBody"><div class="atl-empty">加载中…</div></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -888,10 +936,13 @@ $("#kbinDGo").addEventListener("click", async () => {
   renderKbInbox();
 });
 document.addEventListener("keydown", e => {
-  const open = $("#kbinMask").style.display !== "none";
-  if (!open) return;
-  if (e.key === "Escape") kbinClose();
-  else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("#kbinDGo").click();
+  const kbinOpen = $("#kbinMask").style.display !== "none";
+  if (e.key === "Escape") {
+    if (kbinOpen || $("#atlMask").classList.contains("on")) { kbinClose(); atlasClose(); }
+    return;
+  }
+  if (!kbinOpen) return;
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") $("#kbinDGo").click();
 });
 
 function renderPanelHint() {
@@ -1360,6 +1411,7 @@ function renderHw() {
   const catHtml = (cat, ico, ls) => '<div class="hw-cat">' + ico + " " + esc(cat) + "</div>" + ls.map(l =>
     '<div class="hw-link"><span class="hw-src">' + esc(l.s || "") + '</span>' +
     '<a class="hw-t" href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + "</a>" +
+    (l.lens ? '<span class="hw-lens">' + (l.lens === 3 ? "①②" : l.lens === 1 ? "①" : "②") + "</span>" : "") +
     (l.n ? '<span class="hw-n">' + esc(l.n) + "</span>" : "") + "</div>").join("");
   for (const [cat, ico] of HW_CATS) {
     const ls = by.get(cat);
@@ -1376,6 +1428,66 @@ function renderHw() {
   }).join(" · ") + "</div>";
   body.innerHTML = html;
 }
+
+/* ================= 硬件图鉴弹窗（每日情报自动沉淀的累积目录，筛选全在客户端） ================= */
+let ATLAS = { devices: [], filter: "all", cat: "", q: "" };
+async function atlasOpen() {
+  $("#atlMask").classList.add("on");
+  $("#atlBody").innerHTML = '<div class="atl-empty">加载中…</div>';
+  try {
+    const d = await api("GET", "/api/workbench/hw/devices");
+    ATLAS.devices = d.devices || [];
+  } catch (e) { ATLAS.devices = []; }
+  const cats = [...new Set(ATLAS.devices.map(x => x.cat))].sort();
+  $("#atlCat").innerHTML = '<option value="">全部品类</option>' + cats.map(c => '<option value="' + esc(c) + '">' + esc(c) + "</option>").join("");
+  atlasRender();
+}
+function atlasClose() { $("#atlMask").classList.remove("on"); }
+function atlasRender() {
+  const dev = ATLAS.devices;
+  const l1 = dev.filter(d => d.lens === 1 || d.lens === 3).length;
+  const l2 = dev.filter(d => d.lens === 2 || d.lens === 3).length;
+  const mz = dev.filter(d => String(d.firstSeen || "").startsWith(new Date().toISOString().slice(0, 7))).length;
+  $("#atlStats").textContent = "共 " + dev.length + " 件 · 透镜① " + l1 + " · 透镜② " + l2 + " · 本月新增 " + mz;
+  const q = ATLAS.q.trim().toLowerCase();
+  const rows = dev.filter(d => {
+    if (ATLAS.filter === "1" && !(d.lens === 1 || d.lens === 3)) return false;
+    if (ATLAS.filter === "2" && !(d.lens === 2 || d.lens === 3)) return false;
+    if (ATLAS.cat && d.cat !== ATLAS.cat) return false;
+    if (q && !((d.name + " " + (d.brand || "") + " " + (d.collects || "") + " " + (d.shows || "")).toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const tag = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
+  $("#atlBody").innerHTML = rows.length
+    ? '<table class="atl-table"><thead><tr><th>设备</th><th>品类</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>首现</th><th>热度</th></tr></thead><tbody>' +
+      rows.map(d => {
+        const ps = d.prices || [];
+        const last = ps[ps.length - 1];
+        const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
+        return "<tr>" +
+          "<td>" + (d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.name) + "</a>" : esc(d.name)) + "</td>" +
+          "<td>" + esc(d.cat) + "</td><td>" + tag(d.lens) + "</td>" +
+          "<td>" + esc(cs || "—") + "</td><td>" + esc(d.status || "") + "</td>" +
+          "<td" + (ps.length ? ' title="' + esc(ps.map(p => p.d + " " + p.p).join("\n")) + '"' : "") + ">" + esc(last ? last.p : "") + "</td>" +
+          "<td>" + esc(d.firstSeen || "") + "</td><td>" + (d.heat || 1) + "</td></tr>";
+      }).join("") + "</tbody></table>"
+    : '<div class="atl-empty">图鉴还是空的 —— Mac 收集任务每日推送后自动累积<br>透镜① = 让以往无法展现的数据可见 · 透镜② = 让以往无法收集的数据可持续收集</div>';
+}
+$("#hwAtlasBtn").addEventListener("click", atlasOpen);
+$("#atlClose").addEventListener("click", atlasClose);
+$("#atlMask").addEventListener("click", e => { if (e.target.id === "atlMask") atlasClose(); });
+document.querySelectorAll(".atl-chip").forEach(c => c.addEventListener("click", () => {
+  document.querySelectorAll(".atl-chip").forEach(x => x.classList.remove("on"));
+  c.classList.add("on");
+  ATLAS.filter = c.dataset.lf;
+  atlasRender();
+}));
+$("#atlCat").addEventListener("change", e => { ATLAS.cat = e.target.value; atlasRender(); });
+let atlasQTimer = null;
+$("#atlQ").addEventListener("input", e => {
+  clearTimeout(atlasQTimer);
+  atlasQTimer = setTimeout(() => { ATLAS.q = e.target.value; atlasRender(); }, 250);
+});
 
 function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
@@ -1396,6 +1508,8 @@ async function loadAll() {
   CFG = d.cfg; WB = d.data; SCHED = d.sched; DIS = d.dislikes || {};
   INBOX = d.kbInbox || [];
   HW = d.hw || null;
+  const btn = $("#hwAtlasBtn");
+  if (btn) btn.textContent = "📔 图鉴" + (d.hwDevices ? " · " + d.hwDevices + " 件" : "");
   LOG = log.items || [];
   CMT = {};
   (cmt.items || []).forEach(c => { CMT[c.url] = c; });

@@ -62,6 +62,13 @@ fs.writeFileSync(path.join(tmpData, "workbench-hw.json"), JSON.stringify({
   })),
   watch: ["雷鸟 Air3"],
 }));
+/* 预置 505 台种子设备（boot 图鉴裁到 500；done 后文件同样 500，多出的新设备挤掉最冷种子。001 给高 heat 保证活到更新断言） */
+fs.writeFileSync(path.join(tmpData, "hw-devices.json"), JSON.stringify({
+  devices: Array.from({ length: 505 }, (_, i) => ({
+    name: "种子设备" + String(i + 1).padStart(3, "0"), cat: "测试品类", lens: 1, brand: "", collects: "", shows: "",
+    status: "传闻", firstSeen: "2026-09-01", lastSeen: "2026-09-0" + ((i % 9) + 1), heat: i === 0 ? 5 : 1, url: "", src: "", prices: [],
+  })),
+}));
 console.log("临时数据目录: " + tmpData);
 console.log("测试端口: " + PORT);
 const child = spawn(NODE24, ["server.js"], {
@@ -342,8 +349,9 @@ try {
   let hpr = await fetch(BASE + "/api/workbench/hw/pending?token=" + hwTok);
   let hpj = await hpr.json();
   const hwDate = hpj.date;
-  check("hw pending 领取（need + UP/机型/近链/B站视频清单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
-    Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls) && Array.isArray(hpj.bili), JSON.stringify(hpj).slice(0, 140));
+  check("hw pending 领取（need + UP/机型/近链/B站视频/图鉴名单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
+    Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls) && Array.isArray(hpj.bili) &&
+    Array.isArray(hpj.devices) && hpj.devices.length === 500, JSON.stringify(hpj).slice(0, 140));
   hd = await fetch(BASE + "/api/workbench/hw/done", {
     method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": hwTok },
     body: "not-json{",
@@ -373,11 +381,21 @@ try {
     date: hwDate,
     summary: "今日整合：AI 眼镜两连发，戒指赛道降价。" + "长".repeat(2500),
     links: [
-      { t: '<script>alert("hw")</script> 众筹新品', u: "https://www.kickstarter.com/projects/x", s: "Kickstarter", cat: "众筹源头", n: "达成 300%" },
-      { t: "雷鸟 Air3 半年长测", u: "https://www.bilibili.com/video/BV1hw", s: "B站", cat: "测评口碑", n: "" },
+      { t: '<script>alert("hw")</script> 众筹新品', u: "https://www.kickstarter.com/projects/x", s: "Kickstarter", cat: "众筹源头", n: "达成 300%", lens: 1 },
+      { t: "雷鸟 Air3 半年长测", u: "https://www.bilibili.com/video/BV1hw", s: "B站", cat: "测评口碑", n: "", lens: 9 },
       { t: "无 URL 条目应被丢弃", u: "javascript:alert(1)", s: "x", cat: "展会新品" },
     ],
-    prices: [{ m: "XREAL One", p: "2299 元", src: "慢慢买" }],
+    prices: [
+      { m: "XREAL One", p: "2299 元", src: "慢慢买" },
+      { m: "Galaxy Ring", p: "1999 元（闲鱼样本均值）", src: "闲鱼快照" },
+      { m: "Oura Ring 4", p: "$249（黑五常价 $299）", src: "Reddit 讨论样本" },
+    ],
+    devices: [
+      { name: "XREAL One", brand: "XREAL", cat: "AI眼镜", lens: 3, collects: "第一视角视频", shows: "AR 信息叠加", status: "已发售", url: "https://www.xreal.com/one", price: "2299 元", priceSrc: "慢慢买" },
+      { name: "Oura Ring 4", brand: "Oura", cat: "智能戒指", lens: 2, collects: "HRV/皮温/睡眠分期", status: "已发售", url: "https://ouraring.com/4" },
+      { name: "非法透镜机", cat: "手表", lens: 9, status: "传闻" },
+      { name: "种子设备001", status: "已发售", price: "99 元" },
+    ],
     sources: { kickstarter: "原生", smzdm: "降级(bing)", xianyu: "缺席" },
     watch: ["Rokid Glasses 3"],
   });
@@ -387,10 +405,39 @@ try {
   await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
   r = await req("GET", "/api/workbench/data");
   const hw = r.json.hw;
-  check("情报进入 /data（最新一条）", hw && hw.date === hwDate && hw.summary.startsWith("今日整合：") && hw.links.length === 2 && hw.prices.length === 1,
-    JSON.stringify(hw).slice(0, 140));
+  check("情报进入 /data（最新一条 + 图鉴计数）", hw && hw.date === hwDate && hw.summary.startsWith("今日整合：") && hw.links.length === 2 && hw.prices.length === 3 &&
+    r.json.hwDevices === 500, JSON.stringify({ hw: hw && hw.date, hwDevices: r.json.hwDevices }));
+  check("链接透镜标注（非法 lens 9 归 0）", hw.links.some(l => l.lens === 1) && hw.links.every(l => [0, 1, 2, 3].includes(l.lens)),
+    JSON.stringify(hw.links.map(l => l.lens)));
   check("summary 截 2000 / 非 http 链接被滤", hw.summary.length === 2000 && !hw.links.some(l => !/^https?:\/\//i.test(l.u)), String(hw.summary.length));
   check("链接标题原样存储（XSS 转义在前端 esc 渲染）", hw.links.some(l => l.t.includes("<script>alert")), JSON.stringify(hw.links[0]));
+  /* 图鉴：匿名 401 → admin 全量 → 合并/价轨/淘汰 → Biblioteca 动态书 */
+  hd = await fetch(BASE + "/api/workbench/hw/devices");
+  check("hw devices 匿名 → 401", hd.status === 401, hd.status);
+  r = await req("GET", "/api/workbench/hw/devices");
+  const devs = (r.json && r.json.devices) || [];
+  const dx = devs.find(d => d.name === "XREAL One") || {};
+  const dO = devs.find(d => d.name === "Oura Ring 4") || {};
+  check("图鉴合并：新设备入库 + 老 heat+1 + 非法 lens 归 0",
+    dx.lens === 3 && dx.heat === 1 && dx.url === "https://www.xreal.com/one" &&
+    (devs.find(d => d.name === "非法透镜机") || {}).lens === 0 &&
+    (devs.find(d => d.name === "种子设备001") || {}).heat === 6,
+    JSON.stringify({ total: devs.length, dx, d001: devs.find(d => d.name === "种子设备001") }));
+  check("图鉴价轨：设备自带价 + 保值组同日覆盖挂轨",
+    (dx.prices || []).length === 1 && dx.prices[0].p === "2299 元" && (dO.prices || [])[0] && dO.prices[0].p.includes("249") &&
+    !devs.some(d => d.name === "Galaxy Ring"),   /* 保值组机型不凭空造设备 */
+    JSON.stringify({ dx: dx.prices, dO: dO.prices }));
+  check("图鉴 500 上限冷淘汰（505 种子 + 3 新 → 挤掉 8 台最冷）",
+    devs.length === 500 && devs.filter(d => d.name.startsWith("种子设备")).length === 497, devs.length);
+  r = await req("GET", "/kb-data.js");
+  check("图鉴成书（Biblioteca 动态书 + atlas 标记）",
+    (r.text || "").includes("hw-devices") && (r.text || "").includes("智能硬件图鉴") && (r.text || "").includes("atlas"), (r.text || "").slice(0, 80));
+  const kbJ = JSON.parse(r.text.replace(/^window\.KB = /, "").replace(/;\s*$/, ""));
+  const atlasBook = kbJ.books.find(b => b.id === "hw-devices");
+  const aiIdx = atlasBook ? atlasBook.chapters.findIndex(c => c.title.startsWith("AI眼镜")) : -1;
+  r = await req("GET", "/api/kb/chapter?b=hw-devices&c=" + aiIdx);
+  check("图鉴章渲染品类表格", aiIdx >= 0 && r.json && r.json.ok && r.json.html.includes("<table") && r.json.html.includes("XREAL One"),
+    "aiIdx=" + aiIdx + " " + JSON.stringify(r.json).slice(0, 100));
   let hwFile = JSON.parse(fs.readFileSync(path.join(tmpData, "workbench-hw.json"), "utf8"));
   check("推送后仍只留 7 天且今日置顶", hwFile.days.length === 7 && hwFile.days[0].date === hwDate, hwFile.days.map(d => d.date).join(","));
   check("watch 增量合并（+Rokid）", hwFile.watch.includes("Rokid Glasses 3") && hwFile.watch.includes("雷鸟 Air3"), JSON.stringify(hwFile.watch));

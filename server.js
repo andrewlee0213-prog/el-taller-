@@ -409,6 +409,28 @@ function kbAllBooks() {
       chapters, collected: true, note: "",
     });
   }
+  /* 智能硬件图鉴（动态书：每品类一章，渲染时从 hw-devices.json 生成——每日情报 done 合并后自动更新，零迁移） */
+  if (hwDevices.devices.length) {
+    const byCat = new Map();
+    for (const d of hwDevices.devices) {
+      if (!byCat.has(d.cat)) byCat.set(d.cat, []);
+      byCat.get(d.cat).push(d);
+    }
+    const cats = [...byCat.entries()].sort((a, b) => b[1].length - a[1].length);
+    const chapters = cats.map(([cat, list], i) => ({
+      id: "c" + i, title: cat + " · " + list.length + " 件", html: hwAtlasTable(list), text: "",
+    }));
+    const l1 = hwDevices.devices.filter(d => d.lens === 1 || d.lens === 3).length;
+    const l2 = hwDevices.devices.filter(d => d.lens === 2 || d.lens === 3).length;
+    chapters[0].html = '<p style="opacity:.72;font-size:12px;margin:0 0 14px">📔 每日情报自动沉淀 · 共 ' + hwDevices.devices.length + " 件 " + cats.length +
+      " 类 · 透镜① " + l1 + " 件 · 透镜② " + l2 + " 件<br>① 让以往无法展现的数据可见 · ② 让以往无法收集的数据可持续收集</p>" + chapters[0].html;
+    books.push({
+      id: "hw-devices", title: "智能硬件图鉴", es: "📔 硬件图鉴",
+      desc: "每日情报沉淀 · " + hwDevices.devices.length + " 件 · " + cats.length + " 品类 · 透镜①" + l1 + " ②" + l2,
+      intro: "符合两个透镜的硬件累积目录：① 让以往无法展现的数据可见；② 让以往无法收集的数据可持续收集。由 openclaw 硬件情报站每日自动合并去重。",
+      chapters, atlas: true, note: "",
+    });
+  }
   return books.concat(kbUploadBooks());
 }
 function kbUploadBooks() {
@@ -437,7 +459,7 @@ function kbUploadBooks() {
 /* 目录（不含正文）：藏书成百上千时 kb-data.js 也只有几十 KB；正文按需 /api/kb/chapter */
 function kbCatalog() {
   return kbAllBooks().map(b => ({
-    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, collected: !!b.collected, note: b.note || "",
+    id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, collected: !!b.collected, atlas: !!b.atlas, note: b.note || "",
     chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
   }));
 }
@@ -548,6 +570,7 @@ function hwSanitize(body, date) {
   const entry = { date, at: Date.now(), summary: str(body.summary, 2000) };
   entry.links = (Array.isArray(body.links) ? body.links : []).slice(0, 60).map(l => ({
     t: str(l && l.t, 160), u: str(l && l.u, 500), s: str(l && l.s, 30), cat: str(l && l.cat, 16), n: str(l && l.n, 120),
+    lens: [1, 2, 3].includes(l && l.lens) ? l.lens : 0,
   })).filter(l => l.t && /^https?:\/\//i.test(l.u));
   entry.prices = (Array.isArray(body.prices) ? body.prices : []).slice(0, 40).map(x => ({
     m: str(x && x.m, 60), p: str(x && x.p, 40), src: str(x && x.src, 30),
@@ -555,6 +578,72 @@ function hwSanitize(body, date) {
   entry.sources = {};
   for (const [k, v] of Object.entries(body.sources || {})) entry.sources[str(k, 20)] = str(v, 60);
   return entry;
+}
+
+/* ---------------- 硬件图鉴（透镜硬件累积目录：done 按 name 合并去重，价轨留 12 条，上限 500 冷淘汰） ---------------- */
+const HW_DEV_FILE = path.join(DATA, "hw-devices.json");
+let hwDevices = loadJson(HW_DEV_FILE, null);
+if (!hwDevices || !Array.isArray(hwDevices.devices)) hwDevices = { devices: [] };
+function hwDevPrune() {
+  hwDevices.devices.sort((a, b) => ((b.heat || 0) - (a.heat || 0)) || (a.lastSeen < b.lastSeen ? 1 : -1));
+  if (hwDevices.devices.length > 500) hwDevices.devices = hwDevices.devices.slice(0, 500);
+}
+hwDevPrune();
+function hwDevPrice(dev, date, p, src) {
+  const last = dev.prices[dev.prices.length - 1];
+  if (last && last.d === date) { last.p = p; if (src) last.src = src; }
+  else { dev.prices.push({ d: date, p, src: src || "" }); if (dev.prices.length > 12) dev.prices = dev.prices.slice(-12); }
+}
+function hwMergeDevices(list, date, watchPrices) {
+  const byName = new Map(hwDevices.devices.map(d => [String(d.name).toLowerCase(), d]));
+  for (const raw of (Array.isArray(list) ? list.slice(0, 20) : [])) {
+    const name = String((raw && raw.name) || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    if (!name) continue;
+    const cat = String((raw && raw.cat) || "").trim().slice(0, 16);
+    const lens = [1, 2, 3].includes(raw && raw.lens) ? raw.lens : 0;
+    let dev = byName.get(name.toLowerCase());
+    if (dev) {
+      dev.lastSeen = date;
+      dev.heat = (dev.heat || 1) + 1;
+      if (cat) dev.cat = cat;
+      if (lens) dev.lens = lens;
+      const c = String(raw.collects || "").trim().slice(0, 60); if (c) dev.collects = c;
+      const s = String(raw.shows || "").trim().slice(0, 60); if (s) dev.shows = s;
+      const st = String(raw.status || "").trim().slice(0, 12); if (st) dev.status = st;
+      const u = String(raw.url || "").trim().slice(0, 500); if (/^https?:\/\//i.test(u)) dev.url = u;
+    } else {
+      dev = { name, brand: String((raw && raw.brand) || "").trim().slice(0, 40), cat: cat || "未分类", lens,
+        collects: String((raw && raw.collects) || "").trim().slice(0, 60), shows: String((raw && raw.shows) || "").trim().slice(0, 60),
+        status: String((raw && raw.status) || "传闻").trim().slice(0, 12), firstSeen: date, lastSeen: date, heat: 1,
+        url: /^https?:\/\//i.test(String((raw && raw.url) || "")) ? String(raw.url).trim().slice(0, 500) : "",
+        src: String((raw && raw.src) || "").trim().slice(0, 30), prices: [] };
+      byName.set(name.toLowerCase(), dev);
+      hwDevices.devices.push(dev);
+    }
+    const p = String((raw && (raw.price || raw.p)) || "").trim().slice(0, 40);
+    if (p) hwDevPrice(dev, date, p, String((raw && raw.priceSrc) || raw.src || "").trim().slice(0, 30));
+  }
+  /* 保值组价格样本自动挂到同名设备的价格轨迹 */
+  for (const wp of (watchPrices || [])) {
+    const m = String(wp.m || "").trim().toLowerCase();
+    if (!m) continue;
+    const dev = hwDevices.devices.find(d => d.name.toLowerCase().includes(m) || m.includes(d.name.toLowerCase()));
+    if (dev) hwDevPrice(dev, date, String(wp.p || "").slice(0, 40), String(wp.src || "").slice(0, 30));
+  }
+  hwDevPrune();
+}
+/* 图鉴书章正文：品类内的设备表（kbMdToHtml 的 table 样式复用） */
+function hwAtlasTable(list) {
+  const tag = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
+  let h = "<table><thead><tr><th>设备</th><th>透镜</th><th>采集 / 展现</th><th>状态</th><th>最新价</th><th>热度</th></tr></thead><tbody>";
+  for (const d of list) {
+    const cs = [d.collects, d.shows].filter(Boolean).join(" / ");
+    const price = d.prices && d.prices.length ? d.prices[d.prices.length - 1].p : "";
+    h += "<tr><td>" + (d.url ? '<a href="' + kbUploadEsc(d.url) + '" target="_blank" rel="noopener">' + kbUploadEsc(d.name) + "</a>" : kbUploadEsc(d.name)) +
+      "</td><td>" + tag(d.lens) + "</td><td>" + kbUploadEsc(cs || "—") + "</td><td>" + kbUploadEsc(d.status || "") +
+      "</td><td>" + kbUploadEsc(price) + "</td><td>" + (d.heat || 1) + "</td></tr>";
+  }
+  return h + "</tbody></table>";
 }
 
 const CHROME_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -1853,6 +1942,7 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, {
         ok: true, need: !(latest && latest.date === hwToday()), date: hwToday(),
         ups: wbCfg.biliUps, watch: hwStore.watch, recentUrls, bili,
+        devices: hwDevices.devices.map(d => ({ name: d.name, cat: d.cat, lens: d.lens, status: d.status, firstSeen: d.firstSeen })),
       });
       return log(200);
     }
@@ -1886,7 +1976,9 @@ const server = http.createServer(async (req, res) => {
       }
       hwPrune();
       saveJson(WB_FILE.hw, hwStore);
-      json(res, 200, { ok: true, date: entry.date, links: entry.links.length, watch: hwStore.watch.length });
+      hwMergeDevices(body.devices, date, entry.prices);   /* 图鉴合并（含保值组价格自动挂轨） */
+      saveJson(HW_DEV_FILE, hwDevices);
+      json(res, 200, { ok: true, date: entry.date, links: entry.links.length, watch: hwStore.watch.length, devices: hwDevices.devices.length });
       return log(200);
     }
 
@@ -1903,6 +1995,7 @@ const server = http.createServer(async (req, res) => {
           cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
           data: wbCache,
           hw: hwLatest(),
+          hwDevices: hwDevices.devices.length,
           dislikes: wbDislikes,
           kbInbox: Object.values(kbUploads).filter(u => u.state === "new").sort((a, b) => a.at - b.at).map(u => {
             const b = upBooks.find(x => x.id === "up-" + u.id);
@@ -1911,6 +2004,12 @@ const server = http.createServer(async (req, res) => {
           sched: Object.fromEntries(Object.entries(wbSched).map(([k, s]) => [k, { busy: s.busy, nextAt: s.nextAt }])),
           now: Date.now(),
         });
+        return log(200);
+      }
+
+      /* 硬件图鉴全量（弹窗视图用；只读，写路径在 done 合并） */
+      if (p === "/api/workbench/hw/devices" && req.method === "GET") {
+        json(res, 200, { devices: hwDevices.devices, now: Date.now() });
         return log(200);
       }
 
