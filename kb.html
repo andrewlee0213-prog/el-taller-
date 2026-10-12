@@ -299,7 +299,7 @@ function renderBook(){
   const nb = document.getElementById('bookNote');
   nb.style.display = b.note ? '' : 'none';
   nb.textContent = b.note ? '📝 ' + b.note : '';
-  document.getElementById('kbDel').style.display = (IS_ADMIN && (b.uploaded || b.collected)) ? '' : 'none';
+  document.getElementById('kbDel').style.display = (IS_ADMIN && !b.atlas) ? '' : 'none';
   const box = document.getElementById('toc');
   box.innerHTML = b.chapters.map((c,ci) =>
     '<li><button data-c="' + ci + '" class="' + (ci === chapterIdx ? 'on' : '') + '"><span class="no">' + String(ci).padStart(2,'0') + '</span><span>' + esc(c.title) + '</span></button></li>').join('');
@@ -418,11 +418,16 @@ document.getElementById('backShelf').addEventListener('click', () => { view = 's
   });
   document.getElementById('kbDel').addEventListener('click', async () => {
     const b = bookById(bookId);
-    if (!b || !(b.uploaded || b.collected) || !confirm('删除「' + (b.title || '').slice(0, 40) + '」？' + (b.uploaded ? '文件与目录一并移除。' : '收集条目与转录内容一并移除。'))) return;
-    const ep = b.uploaded ? '/api/kb/upload?id=' + encodeURIComponent(b.id.slice(3)) : '/api/kb/collect?id=' + encodeURIComponent(b.id.slice(4));
+    if (!b || b.atlas) return;
+    let ep, msg;
+    if (b.uploaded) { ep = '/api/kb/upload?id=' + encodeURIComponent(b.id.slice(3)); msg = '上传文件与目录一并移除。'; }
+    else if (b.collected) { ep = '/api/kb/collect?id=' + encodeURIComponent(b.id.slice(4)); msg = '收集条目与转录内容一并移除。'; }
+    else if (b.id === 'lectura') { ep = '/api/kb/book?id=lectura'; msg = '将清空全部 ' + b.chapters.length + ' 篇对照阅读收录，不可恢复。'; }
+    else { ep = '/api/kb/book?id=' + encodeURIComponent(b.id); msg = '书架将不再显示这本书（源文件不受影响，想恢复告诉我即可）。'; }
+    if (!confirm('删除「' + (b.title || '').slice(0, 40) + '」？' + msg)) return;
     const r = await fetch(ep, { method: 'DELETE' });
     if (r.ok) location.reload();
-    else alert('删除失败');
+    else { let e = ''; try { e = (await r.json()).error || ''; } catch (_) {} alert('删除失败' + (e ? '：' + e : '')); }
   });
 })();
 

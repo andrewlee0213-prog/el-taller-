@@ -449,6 +449,29 @@ try {
   hpj = await hpr.json();
   check("推送后 pending.need=false（今日已完成）", hpj.ok === true && hpj.need === false, JSON.stringify(hpj).slice(0, 80));
 
+  /* ---- Biblioteca 书本删除（静态书=屏蔽名单 / lectura 清空 / 图鉴拒删） ---- */
+  cookie = "";
+  r = await req("DELETE", "/api/kb/book?id=agent-handbook");
+  check("书本删除 匿名 → 401", r.status === 401, r.status);
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  r = await req("GET", "/kb-data.js");
+  check("删除前目录含静态书 agent-handbook", (r.text || "").includes("agent-handbook"));
+  r = await req("DELETE", "/api/kb/book?id=agent-handbook");
+  check("删除静态书 → 200（first=true）", r.json && r.json.ok === true && r.json.first === true, JSON.stringify(r.json));
+  r = await req("GET", "/kb-data.js");
+  check("删除后目录不再含 agent-handbook", !(r.text || "").includes("agent-handbook"));
+  r = await req("GET", "/api/kb/chapter?b=agent-handbook&c=0");
+  check("删除后章节 → 404", r.status === 404, r.status);
+  r = await req("DELETE", "/api/kb/book?id=agent-handbook");
+  check("重复删除幂等 → 200（first=false）", r.json && r.json.ok === true && r.json.first === false, JSON.stringify(r.json));
+  check("屏蔽名单写入 data/（部署不覆盖）", JSON.parse(fs.readFileSync(path.join(tmpData, "kb-removed.json"), "utf8")).ids.includes("agent-handbook"));
+  r = await req("DELETE", "/api/kb/book?id=hw-devices");
+  check("图鉴书拒删 → 400", r.status === 400, r.status);
+  r = await req("DELETE", "/api/kb/book?id=lectura");
+  check("lectura 空书 → 404", r.status === 404, r.status);
+  r = await req("DELETE", "/api/kb/book?id=up-nope");
+  check("上传/收集书引导走原接口 → 400", r.status === 400, r.status);
+
   /* ---- BLOCKED 目录 ---- */
   cookie = "";
   r = await req("GET", "/data/server-config.json");

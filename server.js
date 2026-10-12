@@ -379,8 +379,12 @@ function kbFullBooks() {
   }
   return kbFullCache.books;
 }
+/* 静态书移除名单：kb-data.js 是部署产物（每次 deploy 重推），删除靠运行时屏蔽——
+   名单存 data/kb-removed.json（永不随部署覆盖）；恢复 = 从名单里去掉 id */
+const KB_REMOVED_FILE = path.join(DATA, "kb-removed.json");
+let kbRemoved = new Set((loadJson(KB_REMOVED_FILE, { ids: [] }).ids || []).map(String).filter(Boolean));
 function kbAllBooks() {
-  const books = kbFullBooks().slice();
+  const books = kbFullBooks().slice().filter(b => !kbRemoved.has(b.id));
   const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
   if (arts.length) books.push({
     id: "lectura", title: "阅读精选 · 对照阅读", es: "📖 Lectura",
@@ -1757,6 +1761,32 @@ const server = http.createServer(async (req, res) => {
       kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now(), state: "new" };
       saveJson(KB_UPLOAD_FILE, kbUploads);
       json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
+      return log(200);
+    }
+
+    /* 书本删除：静态书=进运行时屏蔽名单（源文件不动，可恢复）；lectura=清空对照阅读收录；
+       上传/收集书各有专用接口；图鉴书由每日情报自动生成，拒删 */
+    if (p === "/api/kb/book" && req.method === "DELETE") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const id = String(u.searchParams.get("id") || "");
+      if (!id) { json(res, 400, { ok: false, error: "缺少 id" }); return log(400); }
+      if (id === "hw-devices") { json(res, 400, { ok: false, error: "图鉴书由每日情报自动生成，不能删除" }); return log(400); }
+      if (id.startsWith("up-") || id.startsWith("col-")) { json(res, 400, { ok: false, error: "上传/收集书请走各自删除接口" }); return log(400); }
+      if (id === "lectura") {
+        const n = Object.keys(wbBiblio).length;
+        if (!n) { json(res, 404, { ok: false, error: "not found（本书当前为空）" }); return log(404); }
+        for (const k of Object.keys(wbBiblio)) delete wbBiblio[k];
+        saveJson(WB_FILE.biblio, wbBiblio);
+        json(res, 200, { ok: true, removed: n });
+        return log(200);
+      }
+      const book = kbFullBooks().find(b => b.id === id);
+      if (!book) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      const first = !kbRemoved.has(id);
+      kbRemoved.add(id);
+      saveJson(KB_REMOVED_FILE, { ids: [...kbRemoved] });
+      json(res, 200, { ok: true, title: book.title, first });
       return log(200);
     }
 
