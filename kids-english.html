@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭英语启蒙 App · El Taller de Andres</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:#241006;min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,rgba(255,150,45,.26),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,rgba(150,80,28,.30),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,rgba(120,60,140,.16),transparent 65%),
+    linear-gradient(155deg,#4a290f 0%,#331a0a 48%,#1d0d05 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),#c96a12);box-shadow:0 8px 22px rgba(255,157,46,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:#2a1505;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.hero-row{display:flex;gap:28px;align-items:center;margin:30px 0 20px;flex-wrap:wrap}
+.hero-row .icon{width:150px;height:150px;border-radius:34px;flex:none;object-fit:cover;
+  border:1px solid rgba(255,255,255,.25);box-shadow:0 22px 50px rgba(0,0,0,.5)}
+.ahead{flex:1;min-width:260px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 8px}
+.ahead .sub{font-size:14.5px;color:var(--g-dim)}
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article p{font-size:14.5px;line-height:1.95;color:rgba(255,240,228,.82);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul,.article ol{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:rgba(255,240,228,.82);margin:4px 0}
+.article blockquote{border-left:3px solid rgba(255,157,46,.5);background:rgba(255,236,216,.06);padding:14px 20px;border-radius:14px;margin:16px 0}
+.article blockquote p{color:var(--g-dim);font-size:13.5px;margin:2px 0}
+.article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;min-width:0}
+.article table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+.article th{background:rgba(255,157,46,.14);color:var(--g-accent-soft);font-weight:600;text-align:left}
+.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:9px 13px;vertical-align:top;line-height:1.7}
+.article td{color:rgba(255,240,228,.8)}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.tl{position:relative;margin:20px 0 6px;padding-left:28px}
+.tl::before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:linear-gradient(rgba(255,157,46,.55),rgba(255,157,46,.10))}
+.tl .ti{position:relative;padding:0 0 20px}
+.tl .ti:last-child{padding-bottom:4px}
+.tl .ti::before{content:"";position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:#ff9d2e;box-shadow:0 0 0 4px rgba(255,157,46,.16)}
+.tl .ti.fix::before{background:#39d98a;box-shadow:0 0 0 4px rgba(57,217,138,.16)}
+.tl .ti .td{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.tl .ti b{display:block;font-size:15px;font-weight:650;margin:4px 0 5px}
+.tl .ti p{margin:0;font-size:13.5px;line-height:1.85;color:rgba(255,240,228,.75)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.chip{font-size:11.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:var(--g-dim)}
+.cardwall{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:20px 0 8px}
+.kcard{border-radius:16px;overflow:hidden;background:#fdfcf8;box-shadow:0 16px 36px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.35)}
+.kcard img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.kcard .lab{display:flex;align-items:baseline;justify-content:space-between;padding:9px 14px 11px}
+.kcard .lab b{font-size:16px;font-weight:750;color:#3a2b1a}
+.kcard .lab span{font-size:12px;color:#8a7a62}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:rgba(255,240,228,.4)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} .cardwall{grid-template-columns:repeat(2,1fr)} .hero-row .icon{width:110px;height:110px;border-radius:26px} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller de Andres</b></div>
+      </div>
+      <a class="btn-ghost" href="index.html">← 回工坊</a>
+    </header>
+
+    <div class="hero-row">
+      <img class="icon" src="assets/kids/icon-yoyo.jpg" alt="App 图标">
+      <div class="ahead">
+        <span class="eyebrow">Inglés en casa · 为家而做</span>
+        <h1>家庭英语启蒙 App</h1>
+        <div class="sub">六年规划 · 1600 词 · iOS + Android 双端 · 真机部署</div>
+      </div>
+    </div>
+
+    <article class="article g-glass">
+      <h2>缘起与主张</h2>
+      <p>家里娃快一岁了。市面上的启蒙 App 要么广告与订阅满天飞，要么内容黑箱不可控，于是自己动手写一个：以<b>入学前六年</b>为轴，1600 个单词按年龄逐步展开（覆盖牛津上海版小学英语 1A–5B 的词汇总量），每天一小步，六年走完。</p>
+      <blockquote><p><b>架构主张：AI 只在内容工厂介入。</b>大模型负责把 10 册教材变成干净的词库、例句、故事和插画；孩子面前运行的永远是确定性代码——没有联网、没有推荐流、没有不可预期的生成内容。</p></blockquote>
+
+      <h2>六个模块</h2>
+      <div class="tw"><table>
+        <tr><th style="width:30%">模块</th><th>做什么</th></tr>
+        <tr><td>SRS 间隔重复引擎</td><td>1→2→4→7→15→30 天回访序列，「主演（新词）+ 回访 + 客串」每日阵容；新词配额随年龄 0/1/2/3 变化，按正确率与反应时长自适应加减</td></tr>
+        <tr><td>家长每日练习页</td><td>今日阵容、指导语、出行日重排、打卡闭环——家长是真正的操作者</td></tr>
+        <tr><td>磨耳朵故事机</td><td>20 则自创场景故事逐句 TTS 朗读，锁屏后台续播，语速/音调/声音可调；满遍 ×3 自动换篇，连听 30 分钟自然边界暂停并提示家长</td></tr>
+        <tr><td>儿歌熏听排程</td><td>50 首儿歌按难度 D1–D3 螺旋推进（25 周一轮回卷），每日主打 2 + 回访 2，播放满 10 秒才计数；iOS / Android 桌面小组件一键起播今日歌单</td></tr>
+        <tr><td>亲子大图卡</td><td>全屏翻卡自动发音，按成长阶段倒计时锁定（防止娃无限划）</td></tr>
+        <tr><td>孩子空间</td><td>听音辨图游戏、点读探索，均带每日时长上限</td></tr>
+        <tr><td>成长档案</td><td>阶段曲线、学习足迹、生活彩蛋记录</td></tr>
+      </table></div>
+
+      <h2>内容工厂：AI 在哪一步干活</h2>
+      <p>一条 Python 流水线把 10 册教材 PDF 变成可用的学习内容，每一步有闸门：</p>
+      <div class="tw"><table>
+        <tr><th style="width:26%">工序</th><th>做法</th></tr>
+        <tr><td>① 教材提取</td><td>Vision OCR 逐页提取词汇表，人工复核边界</td></tr>
+        <tr><td>② 词库加工</td><td>音标、释义、例句整理，按教材册次分层（1600 词 · 20 个场景）</td></tr>
+        <tr><td>③ 质检闸门</td><td>QC 脚本核查拼写/分层/重复，不过闸不入库</td></tr>
+        <tr><td>④ 插画工厂</td><td>智谱 CogView 批量生成黏土风单词插画，家长审定后入库（104 张成品，页面上这 6 张就是）</td></tr>
+        <tr><td>⑤ 冻结内容包</td><td>内容打成 Bundle 随 App 分发——运行时零网络依赖</td></tr>
+      </table></div>
+
+      <h2>单词卡长什么样</h2>
+      <div class="cardwall">
+        <div class="kcard"><img src="assets/kids/w_cat.jpg" alt="cat 黏土插画"><div class="lab"><b>cat</b><span>猫</span></div></div>
+        <div class="kcard"><img src="assets/kids/w_dog.jpg" alt="dog 黏土插画"><div class="lab"><b>dog</b><span>狗</span></div></div>
+        <div class="kcard"><img src="assets/kids/w_apple.jpg" alt="apple 黏土插画"><div class="lab"><b>apple</b><span>苹果</span></div></div>
+        <div class="kcard"><img src="assets/kids/w_sun.jpg" alt="sun 黏土插画"><div class="lab"><b>sun</b><span>太阳</span></div></div>
+        <div class="kcard"><img src="assets/kids/w_moon.jpg" alt="moon 黏土插画"><div class="lab"><b>moon</b><span>月亮</span></div></div>
+        <div class="kcard"><img src="assets/kids/w_star.jpg" alt="star 黏土插画"><div class="lab"><b>star</b><span>星星</span></div></div>
+      </div>
+
+      <h2>十月迭代：Android 版从零到真机</h2>
+      <p>10 月 2 日，Android 原生版一天六波从空目录装进真机：Kotlin 2 + Jetpack Compose + Material3，与 iOS 版逐波对齐——数据/逻辑层（logiccheck-K 25 项全绿）→ 家长端三 Tab → 儿歌音频引擎（ExoPlayer + MediaSession + 前台服务）→ 磨耳朵故事播放器 → 孩子空间 → 桌面小组件 + release 签名。此后持续真机打磨：Android 13+ 通知权限运行时申请、折叠屏适配、小组件 UI 重设计（响应式两档 + 暖色视觉）。</p>
+      <blockquote><p><b>移植不是复制。</b>逻辑判定层双端同源：同一套 SRS 配额、儿歌排程与收听边界判定，iOS 与 Android 各自实现、共享同一组断言——任何一侧漂移，验证器当场抓住。</p></blockquote>
+      <p>同月落地的还有<b>听觉研究四波</b>：磨耳朵的「韵律好感输入」定位、连续收听 30 分钟自然边界、故事满遍 ×3 自动换篇、ListeningPolicy 纯判定抽成双端同源模块。以及一条小产线——儿歌功能宣传单页，设计决策表 + SVG 贴纸产线自动出图，和单词插画同一个思路：人定设计，机器出活。</p>
+      <figure style="margin:18px 0 6px">
+        <img src="assets/kids/promo-songs.jpg" alt="儿歌功能宣传单页" style="width:100%;border-radius:16px;border:1px solid rgba(255,255,255,.35);box-shadow:0 16px 36px rgba(0,0,0,.4);display:block">
+        <figcaption style="font-size:12px;color:var(--g-dim);margin-top:8px">儿歌功能宣传单页（1025×1280）：「找歌排歌费妈 → 每周主打直接听」，自动排歌单 / 一键连播 / 听久自动提醒。</figcaption>
+      </figure>
+
+      <h2>工程质量</h2>
+      <ul>
+        <li><b>SQLite 只增事件流水</b>：对错、错误选项、反应时长全部落表，学习行为可完整回放——数据不是状态，是历史。</li>
+        <li><b>到期日保真重建</b>：改任何历史记录，SRS 队列都能从事件流重建出完全一致的到期日。</li>
+        <li><b>双端逻辑验证器</b>：iOS 与 Android 各 25 项逻辑断言——SRS 推进/退回、阵容重排、读写往返、配额曲线、儿歌排程、收听边界；双端同源约束入断言，防单侧改动漂移。另有 App 内六步自检与环境变量测试钩子。</li>
+        <li><b>审查修复任务书制度</b>：0930 / 1001 / 1007 三份审查任务书归档入库，第八轮 17 项「应修未修」清单五波全部收口，每波独立提交、提交信息写明根因。</li>
+        <li><b>两次真机崩溃的诊断</b>：iPhone SIGSEGV 无限递归爆栈、Android 冷启动深链前台服务超时闪退，各自从崩溃报告定位根因修复，完整过程留在 commit 历史里。</li>
+        <li><b>三端验证</b>：macOS 实机、iOS 模拟器、iPhone 真机全部跑通。</li>
+      </ul>
+
+      <h2>开发时间轴</h2>
+      <div class="tl">
+        <div class="ti"><span class="td">2026-09-28 · Day 1</span><b>立项：内容工厂先行</b><p>当天跑通流水线全链路：OCR 双引擎提取 10 册 104 页图词页、QC 五道闸、清洗打标、1600 词词图构建——先把内容地基打好，再写 App。</p></div>
+        <div class="ti"><span class="td">2026-09-29 · Day 2</span><b>App 成形 + 真机部署</b><p>SRS 引擎、家长每日练习页、磨耳朵故事机、孩子空间成型；手写 xcodeproj 打通免费签名，App 装进 iPhone 真机；macOS / 模拟器 / 真机三端验证通过。</p></div>
+        <div class="ti fix"><span class="td">2026-09-29 · 重大 Bug</span><b>真机 SIGSEGV 闪退</b><p>startSession 未归零 roundIndex，「下一轮↔开始会话」无限互递归爆栈。模拟器复现 .ips 定位根因：加空阵容守卫 + 语音合成器引用保留 + --selftest 诊断参数，真机 30 秒压测稳定。</p></div>
+        <div class="ti"><span class="td">2026-09-30 · Day 3</span><b>迭代大日</b><p>儿歌板块上线（SSS 连播、难度分档、锁屏续播）；iOS 26 液态玻璃兼容层落地；桌面小组件（WidgetKit + App Intents）交付；同日修掉十余项：tab 图标不渲染、部署包套娃、播放页要点两次、进度条不动等。</p></div>
+        <div class="ti fix"><span class="td">2026-09-30 · 重大 Bug</span><b>每日配额按「每次构建」超发</b><p>新词配额误按会话构建次数生效——一次会话超发新词、家长页主演一天内漂移。新增 introducedToday 按天扣减，主演优先收当日已引入词，端到端验证器补按天扣减断言。</p></div>
+        <div class="ti"><span class="td">2026-09-30</span><b>作品上站</b><p>以第 8 件作品进 El Taller 作品集（本页），黏土单词插画首次公开。</p></div>
+        <div class="ti fix"><span class="td">2026-10-01 · 重大回归</span><b>儿歌元数据全失配</b><p>前一日 meta 的 file 字段改存完整文件名后，查找端仍用去扩展名的词干——中文标题/难度/分区全丢，App 与小组件排程分歧。id 统一为完整文件名、三处查找对齐；同日修掉小组件跨周陈旧、播放失败半换死锁等四处 P1，故事与儿歌叠声互让补全。</p></div>
+        <div class="ti"><span class="td">2026-10-02</span><b>Android 版一天六波上线</b><p>Kotlin + Jetpack Compose + Material3 原生移植：数据/逻辑层（logiccheck-K 25 项全绿）→ 家长端三 Tab → 儿歌音频引擎（ExoPlayer + MediaSession 前台服务）→ 磨耳朵播放器 → 孩子空间 → 桌面小组件 + release 签名，装进真机。</p></div>
+        <div class="ti"><span class="td">2026-10-05</span><b>真机打磨</b><p>Android 13+ 通知权限运行时申请、折叠屏（OriginOS）专属说明；iOS 小组件与宿主编译解耦，锁屏播放键路由改宿主注入。</p></div>
+        <div class="ti fix"><span class="td">2026-10-08 · 重大 Bug</span><b>第八轮审查五波收口</b><p>17 项「应修未修」清单全部落地：Android 播放引擎 P1×3（自然播完无限循环、共享 player 双 owner 释放后崩溃、music_play 只读不写致回访排程成死代码）、小组件暂停态死按钮、孩子空间时长锁可绕过等；Android 真机重发包验证。</p></div>
+        <div class="ti"><span class="td">2026-10-08</span><b>听觉研究四波落地</b><p>连听 30 分钟自然边界暂停 + 家长提示、故事满遍 ×3 自动换篇、磨耳朵「韵律好感输入」定位文案；ListeningPolicy 纯判定抽成双端同源模块，验证器同步扩容——Android 1.3 发布。</p></div>
+        <div class="ti"><span class="td">2026-10-09</span><b>宣传物料也走产线</b><p>儿歌功能宣传单页：每周歌单票卡母题，设计决策表 + SVG 贴纸产线（HTML + JSON）出成品 PNG——人定设计，机器出活。</p></div>
+      </div>
+
+      <h2>迭代计划</h2>
+      <p><b>近期三件事</b>：</p>
+      <ul>
+        <li><b>干扰项升级</b>：接入词图的易混淆对边——干扰项定向使用孩子真实混淆过的词（pink/purple 这类），让每次错误都更有信息量。</li>
+        <li><b>掌握判定多通道扩展</b>：听 / 认 / 说分通道记录与判定，「说」的通道逐步启用。</li>
+        <li><b>词库核对收尾</b>：CEFR 官方词表核对 + 全部词表页人工目检（内容工厂侧）。</li>
+      </ul>
+      <p><b>中期——App 随孩子长大逐段解锁</b>（六年里程碑）：</p>
+      <div class="tw"><table>
+        <tr><th style="width:34%">里程碑</th><th>内容</th></tr>
+        <tr><td>M1 · 2027 上半年</td><td>MVP 上 TestFlight，家长模式全量运转</td></tr>
+        <tr><td>M2 · 2027–2028</td><td>孩子模式 v1（听音辨图 / 点读探索 / 儿歌互动）+ 儿歌内容包</td></tr>
+        <tr><td>M3 · 2028–2029</td><td>每日场景系统 + SRS 主线 + 游戏库 + 记录系统全量运转</td></tr>
+        <tr><td>M4 · 2029–2030</td><td>自然拼读 + 句型 + 家长 AI 周报</td></tr>
+        <tr><td>M5 · 2030 起</td><td>AI 对话陪练（端上）+ 毕业测评——入学前通过分层目标</td></tr>
+      </table></div>
+
+      <blockquote><p>这个项目没有用户增长目标，只有一个用户。给一个真实的、会长大的用户做产品，和给市场做产品，是完全不同的两种快乐。</p></blockquote>
+      <div class="chips">
+        <span class="chip">SwiftUI</span><span class="chip">Jetpack Compose</span><span class="chip">SPM</span><span class="chip">AVSpeechSynthesis</span><span class="chip">ExoPlayer · MediaSession</span><span class="chip">SQLite 事件溯源</span><span class="chip">SRS</span><span class="chip">Vision OCR</span><span class="chip">CogView 插画工厂</span><span class="chip">零网络依赖</span>
+      </div>
+    </article>
+
+    <div class="endnote"><a href="index.html">← 回工坊</a> · El Taller de Andres</div>
+  </div>
+</div>
+</body>
+</html>

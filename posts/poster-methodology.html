@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贴纸海报方法论 · 通用适配篇 · El Taller Cuaderno</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
+<style>
+:root{
+  --g-accent:#ff9d2e; --g-accent-soft:#ffd9a3; --g-text:#fff6ec;
+  --g-dim:rgba(255,240,228,.58); --g-brd:rgba(255,255,255,.15);
+  --g-glass-hi:rgba(185,128,82,.38); --g-glass-lo:rgba(115,70,40,.32);
+  --g-card-hi:rgba(255,236,216,.13); --g-card-lo:rgba(255,214,180,.06);
+  --g-blur:46px; --g-radius:24px;
+  --g-font:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--g-font);color:var(--g-text);background:#241006;min-height:100vh}
+.g-page{position:relative;min-height:100vh;overflow-x:hidden}
+.g-page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(90% 70% at 72% 6%,rgba(255,150,45,.26),transparent 60%),
+    radial-gradient(60% 55% at 6% 88%,rgba(150,80,28,.30),transparent 62%),
+    radial-gradient(45% 40% at 92% 74%,rgba(120,60,140,.16),transparent 65%),
+    linear-gradient(155deg,#4a290f 0%,#331a0a 48%,#1d0d05 100%)}
+.g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{position:relative;z-index:2;width:min(860px,92vw);margin:0 auto}
+.g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
+  border:1px solid var(--g-brd);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0;margin-right:auto}
+.brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--g-accent),#c96a12);box-shadow:0 8px 22px rgba(255,157,46,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.brand .mark svg{width:20px;height:20px;stroke:#2a1505;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand b{font-size:15px;font-weight:600;white-space:nowrap}
+.btn-ghost{border-radius:999px;text-decoration:none;padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.10);color:var(--g-text);border:1px solid rgba(255,255,255,.16);transition:.25s}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.ahead{margin:38px 0 18px}
+.ahead .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
+.ahead h1{font-size:30px;font-weight:650;line-height:1.35;margin:10px 0 12px}
+.ahead .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ahead .meta .date{font-size:12.5px;color:var(--g-dim);margin-right:6px}
+.ahead .tag{font-size:12px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:var(--g-dim)}
+.article{border-radius:30px;padding:36px 40px;margin-bottom:30px}
+.article h2{font-size:20px;font-weight:650;margin:36px 0 14px;padding-left:12px;border-left:3px solid var(--g-accent);line-height:1.4}
+.article h2:first-child{margin-top:0}
+.article h3{font-size:16px;font-weight:600;margin:24px 0 10px;color:var(--g-accent-soft)}
+.article p{font-size:14.5px;line-height:1.95;color:rgba(255,240,228,.82);margin:10px 0}
+.article b{color:var(--g-accent-soft);font-weight:600}
+.article ul,.article ol{margin:10px 0 10px 22px}
+.article li{font-size:14.5px;line-height:1.95;color:rgba(255,240,228,.82);margin:4px 0}
+.article blockquote{border-left:3px solid rgba(255,157,46,.5);background:rgba(255,236,216,.06);padding:14px 20px;border-radius:14px;margin:16px 0}
+.article blockquote p{color:var(--g-dim);font-size:13.5px;margin:2px 0}
+.article .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:16px 0;min-width:0}
+.article table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px}
+.article th{background:rgba(255,157,46,.14);color:var(--g-accent-soft);font-weight:600;text-align:left}
+.article th,.article td{border:1px solid rgba(255,255,255,.12);padding:9px 13px;vertical-align:top;line-height:1.7}
+.article td{color:rgba(255,240,228,.8)}
+.article pre{background:rgba(20,10,4,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px 18px;overflow-x:auto;font-size:12.5px;line-height:1.75;margin:14px 0;font-family:ui-monospace,"SF Mono",Consolas,monospace;color:rgba(255,240,228,.85)}
+.article code{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.10);padding:2px 7px;border-radius:6px;color:var(--g-accent-soft)}
+.article pre code{background:none;padding:0}
+.article hr{border:0;border-top:1px dashed rgba(255,255,255,.18);margin:28px 0}
+.endnote{margin:26px 0 40px;text-align:center;font-size:12.5px;color:rgba(255,240,228,.4)}
+.endnote a{color:var(--g-accent-soft);text-decoration:none}
+@media (max-width:680px){ .article{padding:24px 20px;border-radius:22px} .ahead h1{font-size:23px} }
+</style>
+</head>
+<body>
+<div class="g-page">
+  <div class="g-noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
+        <div><b>El Taller · Cuaderno</b></div>
+      </div>
+      <a class="btn-ghost" href="../index.html">← 回工坊</a>
+    </header>
+
+    <div class="ahead">
+      <span class="eyebrow">Cuaderno · 工坊日志</span>
+      <h1>贴纸海报方法论 · 通用适配篇</h1>
+      <div class="meta">
+        <span class="date">2026-09-25</span>
+        <span class="tag">设计方法论</span><span class="tag">海报</span><span class="tag">AI 生成</span>
+      </div>
+    </div>
+
+    <article class="article g-glass">
+      <blockquote>
+        <p>前提：《订票助手海报设计方法论》是「病例」，本文是「医理」。</p>
+        <p>核心结论：那套海报 = <b>叙事层 + 结构层 + 风格层</b>。前两层完全通用，第三层（贴纸风/登机牌/默认蓝）只是皮，换业务时整张换掉。</p>
+      </blockquote>
+
+      <h2>一、三层解耦：迁移时动哪层、不动哪层</h2>
+      <div class="tw"><table>
+        <tr><th style="width:22%">层</th><th>内容</th><th style="width:22%">迁移时</th></tr>
+        <tr><td>叙事层（通用）</td><td>Before→After 对比、单张单卖点、说人话不说参数、系列叙事弧</td><td><b>原样保留</b></td></tr>
+        <tr><td>结构层（通用）</td><td>五段式竖屏构图、双条斜叠标题、三徽章、金句横幅+CTA、六个固定槽位</td><td><b>原样保留</b></td></tr>
+        <tr><td>风格层（可换）</td><td>视觉母题（登机牌）、贴纸拼贴质感、吉祥物、配色三角色的具体色值</td><td><b>按业务整体换肤</b></td></tr>
+      </table></div>
+      <p>想通这一点，任何一个成功案例就变成了填空模板：<b>换母题、换痛点、换品牌色、换吉祥物，骨架不动。</b></p>
+
+      <h2>二、五步适配法（任何业务照此走）</h2>
+
+      <h3>第 1 步：找到你的「登机牌」（定母题）</h3>
+      <p>订票助手的灵魂是登机牌——业务里<b>高频出现的实体物件</b>。每个业务都有自己的那个物件：</p>
+      <div class="tw"><table>
+        <tr><th>业务</th><th>母题候选</th><th>徽章变体</th></tr>
+        <tr><td>报销</td><td>发票、收据、贴票单</td><td>报销章、回执贴纸</td></tr>
+        <tr><td>薪酬</td><td>工资条、算盘、计算器纸带</td><td>薪级邮戳</td></tr>
+        <tr><td>招聘</td><td>简历、offer 信封、工牌</td><td>录取检票章</td></tr>
+        <tr><td>考勤</td><td>打卡工卡、钟表</td><td>全勤邮票</td></tr>
+        <tr><td>审批</td><td>盖章单据、卷宗、签批单</td><td>审批通过章</td></tr>
+        <tr><td>知识库</td><td>索引卡、书签、图书馆标签</td><td>分类藏书票</td></tr>
+        <tr><td>数据报表</td><td>表格纸、图钉图表</td><td>数据校验章</td></tr>
+        <tr><td>培训</td><td>结业证书、课程票</td><td>学分邮票</td></tr>
+      </table></div>
+      <p><b>母题四条检验标准</b>：①外行一眼看懂业务；②能承载标题文字（做成票笺/卡片）；③能拆出徽章变体（邮戳/标签/贴纸）；④自带「流程感/票据感」。找不到实物母题的业务，用「场景」当母题（如办公桌、会议室），但优先找实物。</p>
+
+      <h3>第 2 步：列旧流程痛点清单（定文案素材）</h3>
+      <p>把用户现在的完整旧流程逐步写下来，每一步 = 未来的一集。订票系列的编号就是这么来的：01 开网页（5 个网页下线）→ 02 比价 → 03 核对 → 04 填表 → 05 筛选 → 06 出行。<b>痛点清单比功能清单重要</b>——每集标题的前句从痛点里来，不从功能里来。</p>
+
+      <h3>第 3 步：痛点翻译成人话标题（填标题槽）</h3>
+      <p>公式：<b>前句 = 痛点的口语吐槽（浅底），后句 = 产品替代动作（焦点色底）</b>。</p>
+      <div class="tw"><table>
+        <tr><th>公式</th><th>原例</th><th>通用化</th></tr>
+        <tr><td>数字对比</td><td>5 个网页，下线。1 句话，上线。</td><td>N 个麻烦，清零。1 个动作，办完。</td></tr>
+        <tr><td>熟语挪用</td><td>别玩「找不同」/ 不必靠眼神</td><td>借大众熟语吐槽痛点</td></tr>
+        <tr><td>对仗拟人</td><td>你说人话，它听得懂。</td><td>你说 X，它懂 Y。</td></tr>
+        <tr><td>让步转折</td><td>航班很多，你不用全看。</td><td>X 很多，你不用 Y。</td></tr>
+      </table></div>
+      <p>铁律：短句+逗号断句+句号入画；只说体感词（费劲/来回/逐条/加班），不说参数词（引擎/模型/系统）。</p>
+
+      <h3>第 4 步：画 Before→After（填主视觉槽）</h3>
+      <ul>
+        <li>主视觉永远是<b>左边乱、右边净</b>：旧方式画成皱纸、乱飞的标签、问号涂鸦、水彩乱涡；新方式画成整齐卡片、绿色对勾、星光。中间用箭头/产品化身（气泡/logo 漏斗）连接。</li>
+        <li>三徽章填法：动词开头，各 ≤7 字，三色错开。动词库：<b>自动 X / 一句话 X / 少一点 X / 随时 X / 免 X / X 一眼可见</b>。</li>
+      </ul>
+
+      <h3>第 5 步：金句 + 配色换肤（填金句槽）</h3>
+      <p><b>金句公式库</b>（「A 归 A、B 归 B」式的立场句，通用模板直接套）：</p>
+      <ul>
+        <li>分工式：A 交给机器人，B 留给你。</li>
+        <li>让步式：X 可以很 Y，Z 应该很 W。</li>
+        <li>取舍式：把 A 留在 B，把 C 带上路/还给自己。</li>
+        <li>立场式：该 X 听懂人，不是让人迁就 X。</li>
+        <li>承诺式：在 X 之前，少留一个 Y。</li>
+      </ul>
+      <p><b>配色三角色</b>（逻辑不变，色值随品牌换）：</p>
+      <ul>
+        <li>底色：保持低饱和暖底（米黄/米白）最安全；严肃场合换浅灰蓝。</li>
+        <li>焦点色：<b>换成你自己的品牌主色</b>（默认蓝→企业 VI 色），仍是唯一高饱和色、只给标题二条+CTA+产品化身。</li>
+        <li>压重色：暖业务用深棕，冷业务换藏青/墨绿，都替代纯黑。</li>
+        <li>徽章三色从辅助色环取三等分（蓝橙绿/红黄青），永不挨着放同色。</li>
+      </ul>
+
+      <h2>三、风格换肤对照（什么场合穿什么皮）</h2>
+      <div class="tw"><table>
+        <tr><th>场合</th><th>换成什么</th><th>保留什么</th></tr>
+        <tr><td>内部轻推广、朋友圈、社群</td><td>本款贴纸拼贴（亲和、去冰冷感）</td><td>全套</td></tr>
+        <tr><td>向上汇报、预算材料、CHO 汇报</td><td>扁平商务插画/轻拟物，去贴纸感</td><td>五段构图+文案方法+叙事弧</td></tr>
+        <tr><td>面向年轻员工、校招</td><td>像素风/表情包/国潮</td><td>全套叙事结构</td></tr>
+        <tr><td>正式品牌物</td><td>大字报留白风（底色+焦点色逻辑照旧）</td><td>文案方法</td></tr>
+      </table></div>
+
+      <h2>四、Worked Example：套用到「报销机器人」</h2>
+      <p>以某企业 AI 部门推数字员工为例（母题=发票，焦点色=企业 VI）：</p>
+      <ul>
+        <li>栏目名：<b>报销不跑腿计划</b></li>
+        <li>01 一沓发票，下课。一张照片，上班。（数字对比）</li>
+        <li>02 贴票这事，不必对齐到毫米。（熟语挪用）</li>
+        <li>03 一张发票，别再来回传。（痛点直给）</li>
+        <li>04 你说报销，它懂流程。（对仗拟人）</li>
+        <li>05 单据很多，你不用盯。（让步转折）</li>
+        <li>06 把贴票留在相机里，把下班还给自己。（取舍式收尾）</li>
+        <li>三徽章（每集换一组）：拍照自动识别 / 合规预校验 / 进度随时查</li>
+        <li>金句：<b>流程交给机器人，时间还给你。</b></li>
+        <li>主视觉示例（04）：左边=皱纸+满桌发票+计算器+问号涂鸦，中间蓝色气泡机器人，右边=一张整齐的报销单卡片+绿勾。</li>
+      </ul>
+
+      <h2>五、通用版 AI 生成 Prompt 骨架</h2>
+<pre><code>[底色]纸纹背景海报，[风格皮肤：手绘贴纸拼贴/扁平商务插画]风格。
+顶部右侧[压重色]丝带标签写「产品名」，下方系列名+编号。
+上部两条微倾斜的[母题物件]票笺叠放：前条浅底写痛点短句，
+后条[焦点色]底白字写解法短句，带投影。
+中部 Before→After 对比插画：左侧混乱（皱纸、乱飞标签、问号），
+经[产品化身]漏斗，右侧变为整齐卡片+绿色对勾。
+中下部三枚[母题变体徽章]横排，三种辅助色，各含小图标+≤7字卖点。
+底部[压重色]通栏金句横幅，最下方[焦点色]药丸 CTA「[最低门槛动词]…」+放射短线。
+四角点缀母题碎片、装饰符号。</code></pre>
+
+      <hr>
+      <p><b>一句话迁移口诀：骨架不动换皮囊，母题跟着业务走，痛点写标题、卖点进徽章、立场做金句，一集只讲一件事。</b></p>
+    </article>
+
+    <div class="endnote"><a href="../index.html#cuaderno">← 回工坊日志</a> · 配套成品见「海报六连」 · El Taller de Andres</div>
+  </div>
+</div>
+</body>
+</html>

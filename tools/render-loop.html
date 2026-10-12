@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>render-loop · 作品弧线轮播视频产线（tools 内部，永不对外）</title>
+<style>
+  html,body{margin:0;height:100%;background:#120803;overflow:hidden}
+  #stage{display:block;width:100vw;height:auto}
+  #hud{position:fixed;left:12px;bottom:10px;font:12px/1.6 monospace;color:#ffd9a3;z-index:9;white-space:pre}
+</style>
+</head>
+<body>
+<canvas id="stage" width="1440" height="520"></canvas>
+<div id="hud">idle</div>
+<script>
+/* ================= 配置 ================= */
+const W = 1440, H = 520;
+const CARD_W = 340, CARD_H = 430, PITCH = 294;          // 交叠 46px
+const TOP_BASE = 120;                                    // 卡片未变换上缘
+const SET_W = 7 * PITCH;                                 // 一套宽度 2058（无缝循环周期）
+const T_LOOP = 28;                                       // 一圈秒数（速度≈73.5px/s）
+const MQ = { scaleMin: 0.80, liftMax: 88 };
+const COVER_H = 200;
+
+const WORKS = [
+  { img:'assets/cover-kb.jpg',       title:'个人知识库工程', sub:'LA BIBLIOTECA' },
+  { img:'assets/cover-site.jpg',     title:'El Taller 本站', sub:'ESTE SITIO' },
+  { img:'assets/cover-kindle.jpg',   title:'Kindle 墨水屏看板', sub:'KINDLE DASHBOARD' },
+  { img:'assets/cover-widget.jpg',   title:'GLM 用量桌面挂件', sub:'WIDGET' },
+  { img:'assets/cover-poster.jpg',   title:'AI 海报批量产线', sub:'POSTER PIPELINE' },
+  { img:'assets/cover-wallpaper.jpg',title:'ZCode 壁纸注入工具', sub:'WALLPAPER' },
+  { img:'assets/cover-video.jpg',    title:'白话短视频脚本', sub:'VIDEO SCRIPTS' },
+];
+
+const cv = document.getElementById('stage');
+const ctx = cv.getContext('2d');
+const hud = document.getElementById('hud');
+const cx = W / 2, half = W / 2;
+const yTop = t => -MQ.liftMax * t * t;
+
+/* 预加载封面 */
+const imgs = WORKS.map(w => { const im = new Image(); im.src = w.img; return im; });
+let loaded = 0, total = imgs.length;
+imgs.forEach(im => im.onload = im.onerror = () => loaded++);
+function ready(){ return loaded >= total; }
+
+function rr(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function drawCard(i, travel){
+  const w = CARD_W, h = CARD_H;
+  const xL = -CARD_W + i * PITCH - travel;               // 起点留一张卡余量
+  if (xL + w < -80 || xL > W + 80) return;
+  const tC = (xL + w/2 - cx) / half, tL = (xL - cx) / half, tR = (xL + w - cx) / half;
+  let s = MQ.scaleMin + (1 - MQ.scaleMin) * Math.abs(tC);
+  if (s > 1) s = 1;
+  const tilt = Math.atan2(yTop(tR) - yTop(tL), w * s);
+  const ty = yTop(tC) + (h/2) * (s - 1);
+  const px = xL + w/2, py = TOP_BASE + h/2 + ty;
+
+  ctx.save();
+  ctx.translate(px, py); ctx.rotate(tilt); ctx.scale(s, s);
+  /* 阴影玻璃卡体 */
+  ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 16;
+  ctx.fillStyle = 'rgba(58,32,15,.66)';
+  rr(-w/2, -h/2, w, h, 24); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  /* 卡内渐变+描边 */
+  const g = ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+  g.addColorStop(0, 'rgba(255,236,216,.12)'); g.addColorStop(1, 'rgba(255,214,180,.04)');
+  ctx.fillStyle = g; rr(-w/2, -h/2, w, h, 24); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.17)'; ctx.lineWidth = 1; ctx.stroke();
+  /* 封面 */
+  const im = imgs[i % 7];
+  ctx.save(); rr(-w/2+14, -h/2+14, w-28, COVER_H, 14); ctx.clip();
+  if (im && im.width) ctx.drawImage(im, -w/2+14, -h/2+14, w-28, COVER_H);
+  else { ctx.fillStyle = '#3a2210'; ctx.fillRect(-w/2+14, -h/2+14, w-28, COVER_H); }
+  ctx.restore();
+  /* 文案 */
+  const it = WORKS[i % 7];
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff9d2e';
+  ctx.font = '600 11px "Segoe UI",system-ui,sans-serif';
+  ctx.fillText(it.sub, -w/2+18, -h/2+COVER_H+44);
+  ctx.fillStyle = '#fff6ec';
+  ctx.font = '600 17px "Segoe UI",system-ui,"PingFang SC",sans-serif';
+  ctx.fillText(it.title, -w/2+18, -h/2+COVER_H+74);
+  ctx.fillStyle = 'rgba(255,240,228,.5)';
+  ctx.font = '400 11.5px "Segoe UI",system-ui,"PingFang SC",sans-serif';
+  ctx.fillText('El Taller de Andres · obra', -w/2+18, -h/2+COVER_H+98);
+  ctx.restore();
+}
+
+function drawBG(){
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#31190b'); bg.addColorStop(.55, '#241006'); bg.addColorStop(1, '#170b04');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  let g1 = ctx.createRadialGradient(W*.74, 0, 0, W*.74, 0, H*1.1);
+  g1.addColorStop(0, 'rgba(255,150,45,.22)'); g1.addColorStop(1, 'transparent');
+  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+  let g2 = ctx.createRadialGradient(W*.08, H, 0, W*.08, H, H*1.0);
+  g2.addColorStop(0, 'rgba(150,80,28,.26)'); g2.addColorStop(1, 'transparent');
+  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+}
+
+function drawVignette(){
+  let t = ctx.createLinearGradient(0, 0, 0, 70);
+  t.addColorStop(0, 'rgba(18,8,3,.85)'); t.addColorStop(1, 'transparent');
+  ctx.fillStyle = t; ctx.fillRect(0, 0, W, 70);
+  let b = ctx.createLinearGradient(0, H-70, 0, H);
+  b.addColorStop(0, 'transparent'); b.addColorStop(1, 'rgba(18,8,3,.85)');
+  ctx.fillStyle = b; ctx.fillRect(0, H-70, W, 70);
+}
+
+function draw(phase){                                     // phase ∈ [0,1)
+  const travel = phase * SET_W;
+  drawBG();
+  for (let i = 0; i < 15; i++) drawCard(i, travel);       // 两套卡（含余量）
+  drawVignette();
+}
+
+/* ================= 录制控制器（供外部 evaluate 调用） ================= */
+const R = { status:'idle', chunks:[], poster:null };
+window.__render = R;
+
+R.poster = function(){ draw(0); return cv.toDataURL('image/jpeg', .82); };
+
+/* Worker 时钟：后台标签 rAF 会被冻结，Worker 消息不受节流 */
+let clock = null;
+function startClock(cb){
+  stopClock();
+  const src = `setInterval(()=>postMessage(0),16)`;
+  clock = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  clock.onmessage = cb;
+}
+function stopClock(){ if (clock) { clock.terminate(); clock = null; } }
+
+R.start = function(fps, kbps){
+  if (!ready()) return 'images-not-loaded';
+  const mimes = [
+    'video/mp4;codecs=avc1.640028',
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ];
+  const mime = mimes.find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  if (!mime) { R.status = 'no-recorder'; return R.status; }
+  R.mime = mime; R.status = 'recording'; R.chunks = [];
+  const stream = cv.captureStream(fps);
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: kbps * 1000 });
+  rec.ondataavailable = e => { if (e.data && e.data.size) R.chunks.push(e.data); };
+  rec.onstop = () => {
+    stopClock();
+    const blob = new Blob(R.chunks, { type: mime });
+    const fr = new FileReader();
+    fr.onload = () => {
+      const b64 = fr.result.split(',')[1];
+      R.b64len = b64.length;
+      R.chunkCache = [];
+      for (let i = 0; i < b64.length; i += 120000) R.chunkCache.push(b64.slice(i, i + 120000));
+      R.bytes = blob.size;
+      R.status = 'done';
+    };
+    fr.readAsDataURL(blob);
+  };
+  R.abort = () => { stopClock(); try { rec.stop(); } catch(e){} R.status = 'aborted'; };
+  const t0 = performance.now();
+  startClock(() => {
+    const el = (performance.now() - t0) / 1000;
+    draw((el / T_LOOP) % 1);
+    hud.textContent = 'rec ' + el.toFixed(1) + 's / ' + T_LOOP + 's';
+    if (el >= T_LOOP + .4){ stopClock(); rec.stop(); }
+  });
+  rec.start(2000);
+  return 'ok:' + mime;
+};
+
+R.poll = () => R.status;
+R.getChunk = i => R.chunkCache ? R.chunkCache[i] : null;
+R.chunkCount = () => R.chunkCache ? R.chunkCache.length : 0;
+
+/* 待机画面 */
+(function standby(){
+  if (!ready()) { hud.textContent = 'loading covers ' + loaded + '/' + total; setTimeout(standby, 100); return; }
+  draw(0); hud.textContent = 'ready · ' + loaded + ' covers';
+})();
+</script>
+</body>
+</html>
