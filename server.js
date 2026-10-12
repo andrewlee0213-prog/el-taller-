@@ -383,6 +383,41 @@ function kbFullBooks() {
    名单存 data/kb-removed.json（永不随部署覆盖）；恢复 = 从名单里去掉 id */
 const KB_REMOVED_FILE = path.join(DATA, "kb-removed.json");
 let kbRemoved = new Set((loadJson(KB_REMOVED_FILE, { ids: [] }).ids || []).map(String).filter(Boolean));
+/* 书本分类：七类白名单；类别表存 data/kb-categories.json（运行时，部署不覆盖）。
+   by: auto（GLM 按内容分）| manual（站主手改，永不被自动覆盖）；图鉴/阅读精选的类别在 catalog 固定，不入表 */
+const KB_CATS = ["AI与智能体", "职场与商业", "设计与审美", "视频与创作", "硬件与设备", "学习与语言", "其他"];
+const KB_CAT_FILE = path.join(DATA, "kb-categories.json");
+let kbCats = loadJson(KB_CAT_FILE, {});
+if (!kbCats || typeof kbCats !== "object" || Array.isArray(kbCats)) kbCats = {};
+let kbClassifyBusy = false;
+function kbCatOf(b) {
+  if (b.atlas) return "硬件与设备";
+  if (b.id === "lectura") return "AI与智能体";
+  return (kbCats[b.id] && kbCats[b.id].cat) || "";
+}
+/* GLM 自动分类（后台逐本，1.5s 间隔；未配 Key / 已有类别则跳过；失败静默等下次补扫） */
+function kbClassifyQueue() {
+  if (kbClassifyBusy || !wbCfg.glmKey) return;
+  const todo = kbAllBooks().filter(b => !kbCats[b.id] && !b.atlas && b.id !== "lectura");
+  if (!todo.length) return;
+  kbClassifyBusy = true;
+  (async () => {
+    for (const b of todo) {
+      try {
+        const chs = (b.chapters || []).slice(0, 12).map(c => c.title).join(" / ").slice(0, 600);
+        const out = await glmChat(
+          "判断下面这本书属于哪个类别。类别只能从这七个里选一个：AI与智能体/职场与商业/设计与审美/视频与创作/硬件与设备/学习与语言/其他。\n" +
+          "书名：" + b.title + "\n简介：" + String(b.desc || b.intro || "").slice(0, 200) + "\n章节：" + chs + "\n只回答类别名，不要任何其他文字。",
+          { temperature: 0 });
+        const hit = KB_CATS.find(c => String(out || "").includes(c));
+        if (hit) { kbCats[b.id] = { cat: hit, by: "auto", at: Date.now() }; saveJson(KB_CAT_FILE, kbCats); }
+      } catch (e) { console.log("[kb] 分类失败 " + b.id + ": " + e.message); }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    kbClassifyBusy = false;
+    kbClassifyQueue();
+  })().catch(() => { kbClassifyBusy = false; });
+}
 function kbAllBooks() {
   const books = kbFullBooks().slice().filter(b => !kbRemoved.has(b.id));
   const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
@@ -464,6 +499,7 @@ function kbUploadBooks() {
 function kbCatalog() {
   return kbAllBooks().map(b => ({
     id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, collected: !!b.collected, atlas: !!b.atlas, note: b.note || "",
+    cat: kbCatOf(b),
     chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
   }));
 }
@@ -1739,7 +1775,9 @@ const server = http.createServer(async (req, res) => {
         try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
         delete kbUploadParsed[e.id];
         delete kbUploads[e.id];
+        delete kbCats["up-" + e.id];
         saveJson(KB_UPLOAD_FILE, kbUploads);
+        saveJson(KB_CAT_FILE, kbCats);
         json(res, 200, { ok: true });
         return log(200);
       }
@@ -1758,9 +1796,10 @@ const server = http.createServer(async (req, res) => {
       const id = "u" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36);
       const file = id + ext;
       fs.writeFileSync(path.join(KB_UPLOAD_DIR, file), buf);
-      kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now(), state: "new" };
-      saveJson(KB_UPLOAD_FILE, kbUploads);
-      json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
+        kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now(), state: "new" };
+        saveJson(KB_UPLOAD_FILE, kbUploads);
+        kbClassifyQueue();   /* 新上传入队自动分类 */
+        json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
       return log(200);
     }
 
@@ -1786,7 +1825,23 @@ const server = http.createServer(async (req, res) => {
       const first = !kbRemoved.has(id);
       kbRemoved.add(id);
       saveJson(KB_REMOVED_FILE, { ids: [...kbRemoved] });
+      /* 类别条目保留：恢复这本书时分类还在 */
       json(res, 200, { ok: true, title: book.title, first });
+      return log(200);
+    }
+
+    /* 手动改类（admin；白名单校验；manual 永不被自动分类覆盖） */
+    if (p === "/api/kb/category" && req.method === "PUT") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const body = await readJson(req);
+      const id = String(body.id || "");
+      const cat = String(body.cat || "");
+      if (!KB_CATS.includes(cat)) { json(res, 400, { ok: false, error: "类别需在七类白名单内" }); return log(400); }
+      if (!kbAllBooks().some(b => b.id === id)) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      kbCats[id] = { cat, by: "manual", at: Date.now() };
+      saveJson(KB_CAT_FILE, kbCats);
+      json(res, 200, { ok: true, cat });
       return log(200);
     }
 
@@ -1830,8 +1885,10 @@ const server = http.createServer(async (req, res) => {
       if (req.method === "DELETE") {
         const idx = kbCollect.items.findIndex(i => i.id === String(u.searchParams.get("id") || ""));
         if (idx < 0) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+        delete kbCats["col-" + kbCollect.items[idx].id];
         kbCollect.items.splice(idx, 1);
         saveJson(KB_COLLECT_FILE, kbCollect);
+        saveJson(KB_CAT_FILE, kbCats);
         json(res, 200, { ok: true });
         return log(200);
       }
@@ -1896,6 +1953,7 @@ const server = http.createServer(async (req, res) => {
       }
       it.doneAt = Date.now();
       saveJson(KB_COLLECT_FILE, kbCollect);
+      if (it.state === "done") kbClassifyQueue();   /* 新收集成书入队自动分类 */
       json(res, 200, { ok: true });
       return log(200);
     }
@@ -2408,6 +2466,8 @@ readerPurge();
 setInterval(readerPurge, 3600e3).unref();
 /* 重启补拉：卡片缓存里的在列文章若正文未备好，90 秒后后台预取（错过首轮抓取钩子的兜底） */
 setTimeout(() => { readerPrefetch("anth"); readerPrefetch("arxiv"); }, 90e3).unref();
+/* 书本自动分类：boot 5s 后背景扫未分类的书（无 GLM Key 自动跳过，配好 Key 重启即补全） */
+setTimeout(kbClassifyQueue, 5e3).unref();
 
 server.listen(CFG.PORT, "0.0.0.0", () => {
   const lans = [];

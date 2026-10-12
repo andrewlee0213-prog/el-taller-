@@ -69,6 +69,11 @@ fs.writeFileSync(path.join(tmpData, "hw-devices.json"), JSON.stringify({
     status: "传闻", firstSeen: "2026-09-01", lastSeen: "2026-09-0" + ((i % 9) + 1), heat: i === 0 ? 5 : 1, url: "", src: "", prices: [],
   })),
 }));
+/* 预置书本分类（manual 一条 + auto 一条；图鉴/阅读精选的类别是 catalog 固定值不入表） */
+fs.writeFileSync(path.join(tmpData, "kb-categories.json"), JSON.stringify({
+  "interview-bank": { cat: "职场与商业", by: "manual", at: 1 },
+  "video-scripts": { cat: "视频与创作", by: "auto", at: 1 },
+}));
 console.log("临时数据目录: " + tmpData);
 console.log("测试端口: " + PORT);
 const child = spawn(NODE24, ["server.js"], {
@@ -471,6 +476,41 @@ try {
   check("lectura 空书 → 404", r.status === 404, r.status);
   r = await req("DELETE", "/api/kb/book?id=up-nope");
   check("上传/收集书引导走原接口 → 400", r.status === 400, r.status);
+
+  /* ---- Biblioteca 书本分类（auto/manual + 图鉴固定 + 删除挂钩） ---- */
+  r = await req("GET", "/kb-data.js");
+  const kbc = JSON.parse(r.text.replace(/^window\.KB = /, "").replace(/;\s*$/, ""));
+  const cbi = kbc.books.find(b => b.id === "interview-bank");
+  const cbv = kbc.books.find(b => b.id === "video-scripts");
+  const cba = kbc.books.find(b => b.id === "hw-devices");
+  check("目录带分类（种子 manual/auto + 图鉴固定硬件与设备）",
+    cbi && cbi.cat === "职场与商业" && cbv && cbv.cat === "视频与创作" && cba && cba.cat === "硬件与设备",
+    JSON.stringify({ i: cbi && cbi.cat, v: cbv && cbv.cat, a: cba && cba.cat }));
+  cookie = "";
+  r = await req("PUT", "/api/kb/category", { id: "dala-design", cat: "设计与审美" });
+  check("改类 匿名 → 401", r.status === 401, r.status);
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  r = await req("PUT", "/api/kb/category", { id: "dala-design", cat: "玄学" });
+  check("白名单外类别 → 400", r.status === 400, r.status);
+  r = await req("PUT", "/api/kb/category", { id: "dala-design", cat: "设计与审美" });
+  check("手动改类 → 200", r.json && r.json.ok === true && r.json.cat === "设计与审美", JSON.stringify(r.json));
+  let catFile = JSON.parse(fs.readFileSync(path.join(tmpData, "kb-categories.json"), "utf8"));
+  check("manual 落盘", catFile["dala-design"] && catFile["dala-design"].by === "manual", JSON.stringify(catFile["dala-design"]));
+  r = await req("PUT", "/api/kb/category", { id: "no-such-book", cat: "其他" });
+  check("改类不存在书 → 404", r.status === 404, r.status);
+  r = await req("DELETE", "/api/kb/book?id=video-scripts");
+  check("删除静态书（类别条目应保留）", r.json && r.json.ok === true, JSON.stringify(r.json));
+  catFile = JSON.parse(fs.readFileSync(path.join(tmpData, "kb-categories.json"), "utf8"));
+  check("静态书删除后类别仍在表（恢复友好）", catFile["video-scripts"] && catFile["video-scripts"].cat === "视频与创作");
+  const upr = await rawUpload("分类清理测试.md", "# 分类清理\n\n## 一\n\n内容\n");
+  const upId = upr.json && upr.json.id;
+  check("上传新书", !!upId, JSON.stringify(upr.json));
+  r = await req("PUT", "/api/kb/category", { id: "up-" + upId, cat: "学习与语言" });
+  check("给上传书分类", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("DELETE", "/api/kb/upload?id=" + upId);
+  check("删除上传书", r.json && r.json.ok === true, JSON.stringify(r.json));
+  catFile = JSON.parse(fs.readFileSync(path.join(tmpData, "kb-categories.json"), "utf8"));
+  check("上传书删除后类别条目清理", !catFile["up-" + upId], Object.keys(catFile).join(","));
 
   /* ---- BLOCKED 目录 ---- */
   cookie = "";

@@ -201,6 +201,23 @@ html[data-theme="negro"]{
   font-size:12px;line-height:1;cursor:pointer;color:var(--g-dim);background:color-mix(in srgb,var(--ink) 12%,transparent);z-index:2}
 .bcard:hover .bdel{display:grid}
 .bdel:hover{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+/* ---- 书本分类：chips 行 + 分组标题 + 书内类目徽标 ---- */
+.kbchips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 2px}
+.kbchip{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:none;color:var(--g-dim);cursor:pointer;
+  font:inherit;font-size:11.5px;border-radius:999px;padding:4px 13px;transition:.2s;white-space:nowrap}
+.kbchip:hover{color:var(--g-text)}
+.kbchip.on{background:var(--g-accent);border-color:transparent;color:#fff}
+.cathead{grid-column:1/-1;display:flex;align-items:baseline;gap:9px;padding:10px 2px 2px;font-size:13px;font-weight:600;color:var(--g-accent-soft)}
+.cathead small{font-weight:400;font-size:11px;color:var(--g-dim)}
+.bookcat{flex:none;font-size:10.5px;border-radius:999px;padding:2px 9px;cursor:default;
+  background:color-mix(in srgb,var(--g-accent) 15%,transparent);color:var(--g-accent-soft);white-space:nowrap}
+.bookcat.editable{cursor:pointer}
+.bookcat.editable:hover{background:color-mix(in srgb,var(--g-accent) 28%,transparent)}
+.kbcatmenu{display:none;flex-direction:column;gap:5px;padding:10px;margin-top:6px;border-radius:12px;
+  background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent)}
+.kbcatmenu button{border:0;background:none;color:var(--g-text);font:inherit;font-size:12px;text-align:left;
+  padding:5px 9px;border-radius:8px;cursor:pointer}
+.kbcatmenu button:hover{background:color-mix(in srgb,var(--g-accent) 18%,transparent)}
 .bic{font-size:25px;line-height:1}
 .bcard b{font-size:13.5px;line-height:1.55}
 .bcard small{font-size:11.5px;color:var(--g-dim);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -242,13 +259,15 @@ html[data-theme="negro"]{
         <b id="shelfCount"></b>
         <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，可一次多选，每份 ≤25MB">＋ 上传 PDF / MD</button><button class="book-tab upbtn" id="kbCollectBtn" style="margin-left:8px" title="提交 B 站视频链接，家中 openclaw + getnote 自动转录，收录进「个人收集 · 视频集」">＋ 收视频</button></span>
       </div>
+      <div class="kbchips" id="kbChips"></div>
       <div class="shelf" id="shelfGrid"></div>
     </div>
 
     <div class="layout" id="bookLayout" style="display:none">
       <aside class="sidebar g-glass">
         <button class="back-shelf" id="backShelf">← 📚 书架</button>
-        <div class="toc-head"><b id="bookTitle"></b><small id="bookDesc"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
+        <div class="toc-head"><b id="bookTitle"></b><span class="bookcat" id="bookCat" style="display:none" title="书本分类"></span><small id="bookDesc"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
+        <div class="kbcatmenu" id="kbCatMenu" style="display:none"></div>
         <ul class="toc" id="toc"></ul>
         <div class="toc-hint" id="tocHint">💡 内容为个人学习笔记，请勿外传。素材更新后经维护机制并入。</div>
       </aside>
@@ -273,6 +292,41 @@ const chapterCache = new Map();
 const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖' };
 const bookIcon = b => b.atlas ? '📔' : (b.collected ? '📼' : (b.uploaded ? '📄' : (ICONS[b.id] || '📚')));
 const bookById = id => window.KB.books.find(b => b.id === id);
+/* 书本分类（与 server KB_CATS 白名单同表）：chips 筛选 + 「全部」分组；选择记 localStorage */
+const KBCATS = [['AI与智能体','🤖'],['职场与商业','💼'],['设计与审美','🎨'],['视频与创作','🎬'],['硬件与设备','🔬'],['学习与语言','📚'],['其他','📎']];
+let KB_CAT_SEL = 'all';
+try { const v = localStorage.getItem('taller-kb-cat'); if (v) KB_CAT_SEL = v; } catch(e) {}
+const kbCatIco = c => { const h = KBCATS.find(x => x[0] === c); return h ? h[1] + ' ' + c : (c === '未分类' ? '❓ 未分类' : c); };
+const cardHtml = b =>
+  '<button class="bcard" data-bid="' + esc(b.id) + '">' +
+  (IS_ADMIN && !b.atlas ? '<span class="bdel" data-bid="' + esc(b.id) + '" title="删除本书">✕</span>' : '') +
+  '<span class="bic">' + bookIcon(b) + '</span>' +
+  '<b>' + esc(b.title) + '</b><small>' + esc(b.desc || '') + '</small>' +
+  '<span class="bmeta">' + b.chapters.length + ' 章' + (b.atlas ? ' · 图鉴' : (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : ''))) + '</span></button>';
+document.getElementById('kbChips').addEventListener('click', e => {
+  const chip = e.target.closest('.kbchip');
+  if (!chip) return;
+  KB_CAT_SEL = chip.dataset.kcat;
+  try { localStorage.setItem('taller-kb-cat', KB_CAT_SEL); } catch(err) {}
+  renderShelf();
+});
+/* 书内类目徽标：admin 点击弹改类菜单 */
+document.getElementById('bookCat').addEventListener('click', () => {
+  if (!IS_ADMIN) return;
+  const m = document.getElementById('kbCatMenu');
+  if (m.style.display === 'none') {
+    m.innerHTML = '<div style="font-size:11px;color:var(--g-dim);padding:2px 9px">改为：</div>' +
+      KBCATS.map(([c, ico]) => '<button data-kbcat="' + esc(c) + '">' + ico + ' ' + esc(c) + '</button>').join('');
+    m.style.display = 'flex';
+  } else m.style.display = 'none';
+});
+document.getElementById('kbCatMenu').addEventListener('click', async e => {
+  const btn = e.target.closest('button[data-kbcat]');
+  if (!btn) return;
+  const r = await fetch('/api/kb/category', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: bookId, cat: btn.dataset.kbcat }) });
+  if (r.ok) location.reload();
+  else { let er = ''; try { er = (await r.json()).error || ''; } catch(_) {} alert('改类失败' + (er ? '：' + er : '')); }
+});
 
 try{ localStorage.removeItem('kb-state'); }catch(e){}   /* 旧版位置记忆已废弃：进 Biblioteca 一律落书架，仅深链直达章节 */
 
@@ -291,18 +345,39 @@ function renderShelf(){
   const books = window.KB.books;
   document.getElementById('shelfCount').textContent = '📚 藏书 ' + books.length + ' 本 · ' + books.reduce((n,b)=>n+b.chapters.length,0) + ' 章';
   document.getElementById('shelfUp').style.display = IS_ADMIN ? '' : 'none';
-  document.getElementById('shelfGrid').innerHTML = books.map(b =>
-    '<button class="bcard" data-bid="' + esc(b.id) + '">' +
-    (IS_ADMIN && !b.atlas ? '<span class="bdel" data-bid="' + esc(b.id) + '" title="删除本书">✕</span>' : '') +
-    '<span class="bic">' + bookIcon(b) + '</span>' +
-    '<b>' + esc(b.title) + '</b><small>' + esc(b.desc || '') + '</small>' +
-    '<span class="bmeta">' + b.chapters.length + ' 章' + (b.atlas ? ' · 图鉴' : (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : ''))) + '</span></button>').join('');
+  const counts = {}; let uncat = 0;
+  for (const b of books) { if (b.cat) counts[b.cat] = (counts[b.cat] || 0) + 1; else uncat++; }
+  let chips = '<button class="kbchip' + (KB_CAT_SEL === 'all' ? ' on' : '') + '" data-kcat="all">全部 ' + books.length + '</button>';
+  for (const [c, ico] of KBCATS) {
+    if (c === '未分类') { if (uncat) chips += '<button class="kbchip' + (KB_CAT_SEL === '__uncat' ? ' on' : '') + '" data-kcat="__uncat">❓ 未分类 ' + uncat + '</button>'; }
+    else if (counts[c]) chips += '<button class="kbchip' + (KB_CAT_SEL === c ? ' on' : '') + '" data-kcat="' + esc(c) + '">' + ico + ' ' + c + ' ' + counts[c] + '</button>';
+  }
+  document.getElementById('kbChips').innerHTML = chips;
+  let html = '';
+  if (KB_CAT_SEL === 'all') {          /* 全部 = 按类分组；无 cat 的书归「未分类」等自动分类跑完自然归位 */
+    for (const [c, ico] of KBCATS.slice(0, 7)) {
+      const g = books.filter(b => b.cat === c);
+      if (g.length) html += '<div class="cathead">' + ico + ' ' + esc(c) + ' <small>' + g.length + ' 本</small></div>' + g.map(cardHtml).join('');
+    }
+    const u = books.filter(b => !b.cat);
+    if (u.length) html += '<div class="cathead">❓ 未分类 <small>' + u.length + ' 本</small></div>' + u.map(cardHtml).join('');
+  } else {
+    const g = KB_CAT_SEL === '__uncat' ? books.filter(b => !b.cat) : books.filter(b => b.cat === KB_CAT_SEL);
+    html = g.map(cardHtml).join('');
+  }
+  document.getElementById('shelfGrid').innerHTML = html;
 }
 
 function renderBook(){
   const b = bookById(bookId);
   document.getElementById('bookTitle').textContent = b.title;
   document.getElementById('bookDesc').textContent = b.desc || '';
+  const bc = document.getElementById('bookCat');
+  bc.style.display = '';
+  bc.textContent = kbCatIco(b.cat || '未分类');
+  bc.classList.toggle('editable', IS_ADMIN);
+  bc.title = IS_ADMIN ? '点击修改分类' : '书本分类';
+  document.getElementById('kbCatMenu').style.display = 'none';
   const nb = document.getElementById('bookNote');
   nb.style.display = b.note ? '' : 'none';
   nb.textContent = b.note ? '📝 ' + b.note : '';
