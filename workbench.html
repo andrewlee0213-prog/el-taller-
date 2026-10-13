@@ -1660,17 +1660,41 @@ async function body3dLoad() {
       .multiply(new THREE.Matrix4().makeTranslation(-(box.min.x + size.x / 2), -box.min.y, -(box.min.z + size.z / 2)));
     const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2 };
     B3REG.tpose = size.x / (size.y || 1) > 1.5;   /* T-pose（水平展臂）：手臂部位改按横轴分段 */
-    /* 部位拆分：世界坐标烘进几何（骨骼绑定姿态定格成静态），三角形按质心分桶，顶点属性全桶共享 */
+    /* 部位拆分：世界坐标烘进几何（骨骼绑定姿态定格成静态），三角形按质心分桶，顶点属性全桶共享。
+       第一遍先烘坐标并数「眼带高度两侧 |z| 大的三角形」——多的一侧是脸（重解算朝向可能整体翻 180°），
+       脸朝 -z 就整体转回规范朝向，之后分带/眼部识别/锚点/默认机位全部免调 */
     const group = new THREE.Group();
     const pick = [];
-    gltf.scene.traverse(o => {
-      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-      const g = o.geometry.clone();
-      if (!skinned) g.applyMatrix4(o.matrixWorld);
-      g.applyMatrix4(norm);
-      g.morphAttributes = {};
-      ["skinIndex", "skinWeight"].forEach(k => g.deleteAttribute && g.deleteAttribute(k));
-      if (!g.index) g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i));
+    const baked = [];
+    let eyePos = 0, eyeNeg = 0;
+    {
+      const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+      gltf.scene.traverse(o => {
+        if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+        const g = o.geometry.clone();
+        if (!skinned) g.applyMatrix4(o.matrixWorld);
+        g.applyMatrix4(norm);
+        g.morphAttributes = {};
+        ["skinIndex", "skinWeight"].forEach(k => g.deleteAttribute && g.deleteAttribute(k));
+        if (!g.index) g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i));
+        const idx = g.index.array, pos = g.attributes.position;
+        const yLo = B3REG.eyeY[0] * 1.7, yHi = B3REG.eyeY[1] * 1.7, zCut = B3REG.eyeZ * dim.halfD;
+        for (let t = 0; t < idx.length; t += 3) {
+          a.fromBufferAttribute(pos, idx[t]); b.fromBufferAttribute(pos, idx[t + 1]); c.fromBufferAttribute(pos, idx[t + 2]);
+          const cy = (a.y + b.y + c.y) / 3;
+          if (cy > yLo && cy < yHi) {
+            const cz = (a.z + b.z + c.z) / 3;
+            if (cz > zCut) eyePos++; else if (cz < -zCut) eyeNeg++;
+          }
+        }
+        baked.push({ o, g });
+      });
+    }
+    if (eyeNeg > eyePos) {
+      const rot = new THREE.Matrix4().makeRotationY(Math.PI);
+      for (const { g } of baked) g.applyMatrix4(rot);
+    }
+    for (const { o, g } of baked) {
       const idx = g.index.array, pos = g.attributes.position;
       const buckets = new Map();
       const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
@@ -1692,7 +1716,7 @@ async function body3dLoad() {
         m.userData.wear = wear;
         group.add(m); pick.push(m);
       }
-    });
+    }
     if (!pick.length) throw new Error("no mesh");
     const scene = new THREE.Scene();
     scene.add(group);
