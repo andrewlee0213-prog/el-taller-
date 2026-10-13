@@ -27,12 +27,13 @@ fi
 echo "  零命中 ✓"
 
 echo "── 2/5 打包 ──"
-# 根目录 HTML 自动收集（新页面不再漏打包）；其余为固定清单
+# 根目录 HTML 自动收集（新页面不再漏打包）；assets 走 find 白名单（models/ 扫描件不上线）；
+# 不用 tar --exclude：bsdtar 3.5.3 与 --no-xattrs 同用时解析错乱
 HTMLS=$(ls *.html)
+ASSETS=$(find assets -type f ! -path 'assets/models/*')
 tar --no-xattrs --no-mac-metadata -czf /tmp/taller.tar.gz \
   $HTMLS kb-data.js works.js notes.js server.js \
-  --exclude assets/models \
-  assets posts \
+  $ASSETS posts \
   data/kb-content.json \
   deploy/taller.service deploy/nginx-taller.conf
 echo "  /tmp/taller.tar.gz ✓（含 $HTMLS）"
