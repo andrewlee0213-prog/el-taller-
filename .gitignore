@@ -7,3 +7,6 @@ tools/shots/
 
 # 本机私有脱敏词表（词表本身即内部信息，绝不入库）
 tools/sanitize.local.json
+
+# 手办 3D 扫描件（assets/models/）：走 deploy 上线，不进公开仓库；换模型=覆盖同名文件
+assets/models/

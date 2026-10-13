@@ -168,7 +168,8 @@ const MIME = {
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
   ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
   ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
-  ".mp4": "video/mp4", ".webm": "video/webm", ".m4v": "video/mp4",
+    ".mp4": "video/mp4", ".webm": "video/webm", ".m4v": "video/mp4",
+    ".glb": "model/gltf-binary",
   ".pdf": "application/pdf", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 const BLOCKED_DIRS = ["data", "tools", "node_modules", ".git", "deploy"]; // 永不对外

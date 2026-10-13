@@ -213,6 +213,21 @@ html[data-theme="crepusculo"]{
 .bcount.zero{display:none}
 .atl-mapchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .atl-list{flex:1;min-width:0;overflow:auto;padding-right:4px}
+/* ---- 身体图 · 3D 手办视图（SVG 之上位替换，模型缺失自动回退 SVG） ---- */
+.atl-map3d{position:relative;flex:none;width:236px;height:340px;border-radius:16px;overflow:hidden;
+  background:color-mix(in srgb,var(--ink) 4%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent)}
+.atl-map3d canvas{width:100%;height:100%;display:block;cursor:grab}
+.b3-badges{position:absolute;inset:0;pointer-events:none}
+.b3-badge{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;
+  min-width:17px;height:17px;border-radius:9px;background:var(--g-accent);color:#fff;text-align:center;
+  font-size:10px;font-weight:700;line-height:17px;padding:0 4px;
+  box-shadow:0 1px 5px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.5);transition:transform .15s}
+.b3-badge:hover{transform:translate(-50%,-50%) scale(1.25)}
+.b3-badge.on{outline:2px solid #fff;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--g-accent) 80%,transparent))}
+.b3-badge.zero{display:none}
+.atl-3dhint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:9.5px;color:var(--g-dim);
+  pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .atl-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:8px 6px;border-bottom:1px dashed color-mix(in srgb,var(--ink) 8%,transparent)}
 .atl-row>a{color:var(--g-text);text-decoration:none;font-size:12.5px;font-weight:600}
 .atl-row>a:hover{color:var(--g-accent-soft)}
@@ -1469,7 +1484,7 @@ async function atlasOpen() {
   $("#atlCat").innerHTML = '<option value="">全部品类</option>' + cats.map(c => '<option value="' + esc(c) + '">' + esc(c) + "</option>").join("");
   atlasRender();
 }
-function atlasClose() { $("#atlMask").classList.remove("on"); }
+function atlasClose() { $("#atlMask").classList.remove("on"); body3dStop(); }
 function atlasFiltered() {
   const q = ATLAS.q.trim().toLowerCase();
   return ATLAS.devices.filter(d => {
@@ -1549,10 +1564,16 @@ function atlasRender() {
   const shown = ATLAS.wear ? rows.filter(d => (d.wear || "其他") === ATLAS.wear) : rows;
   const side = ["环境家居", "宠物", "其他"].map(w =>
     '<button class="atl-chip' + (ATLAS.wear === w ? " on" : "") + '" data-wearchip="' + esc(w) + '">' + (w === "环境家居" ? "🏠 " : w === "宠物" ? "🐾 " : "📎 ") + w + " " + (counts[w] || 0) + "</button>").join("");
-  body.innerHTML = '<div class="atl-mapwrap"><div class="atl-map">' + atlasBodySvg(counts, ATLAS.wear) +
+  /* 3D 手办就绪 → 上位替换 SVG；模型缺失 / WebGL 不可用 → SVG 原样回退，线上永不空白 */
+  const use3d = B3.state === "ready";
+  body.innerHTML = '<div class="atl-mapwrap"><div class="atl-map">' +
+    (use3d ? '<div class="atl-map3d" id="atlMap3d"><div class="atl-3dhint">拖拽旋转 · 滚轮缩放 · 点部位看设备</div></div>'
+           : atlasBodySvg(counts, ATLAS.wear)) +
     '<div class="atl-mapchips"><button class="atl-chip' + (ATLAS.wear ? "" : " on") + '" data-wearchip="__all">全部 ' + rows.length + "</button>" + side + "</div></div>" +
     '<div class="atl-list">' + (shown.length ? atlasRows(shown) :
       '<div class="atl-empty">' + (ATLAS.wear ? "这个部位暂时没有设备" : "图鉴还是空的 —— 每日情报自动累积") + "</div>") + "</div></div>";
+  if (use3d) body3dMount($("#atlMap3d"), counts, ATLAS.wear);
+  else body3dLoad();   /* 首次打开异步加载，就绪后若弹窗仍开在身体视图会自动换上 3D */
 }
 $("#hwAtlasBtn").addEventListener("click", atlasOpen);
 $("#atlClose").addEventListener("click", atlasClose);
@@ -1560,6 +1581,8 @@ $("#atlMask").addEventListener("click", e => { if (e.target.id === "atlMask") at
 $("#atlViewBody").addEventListener("click", () => { ATLAS.view = "body"; atlasRender(); });
 $("#atlViewTable").addEventListener("click", () => { ATLAS.view = "table"; atlasRender(); });
 $("#atlBody").addEventListener("click", e => {
+  const b3b = e.target.closest(".b3-badge");
+  if (b3b) { ATLAS.wear = ATLAS.wear === b3b.dataset.wear ? null : b3b.dataset.wear; atlasRender(); return; }
   const part = e.target.closest(".bpart");
   if (part) { ATLAS.wear = ATLAS.wear === part.dataset.wear ? null : part.dataset.wear; atlasRender(); return; }
   const chip = e.target.closest("[data-wearchip]");
@@ -1577,6 +1600,206 @@ $("#atlQ").addEventListener("input", e => {
   clearTimeout(atlasQTimer);
   atlasQTimer = setTimeout(() => { ATLAS.q = e.target.value; atlasRender(); }, 250);
 });
+
+/* ================= 3D 手办视图（扫描 GLB · Three.js 本地化，不依赖外网 CDN）=================
+   一次性加载：模型归一化(脚底贴地/居中/身高1.7) → 三角形按身高比例分带拆进部位桶（共享顶点、
+   只拆索引，GPU 顶点数据不放大）→ 每部位一个 Mesh 供拾取与高亮。徽标 = 部位锚点每帧投影成 HTML。
+   模型缺失/WebGL 不可用/import 失败 → state=failed，atlasRender 自动回退 SVG。 */
+const BODY3D_URL = "assets/models/atlas-body.glb";
+const B3 = { state: "idle" };   /* idle → loading → ready | failed */
+/* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）——换手办后按比例微调 */
+const B3REG = {
+  headY: .855, eyeY: [.875, .945], eyeZ: .25, earY: [.855, .925], earX: .34,
+  neckY: .825, armX: .30, shoulderY: .60, wristY: .485, chestY: .60, legY: .44,
+};
+function b3RegionOf(x, y, z, dim) {
+  const yf = y / dim.h, ax = Math.abs(x) / dim.halfW, zf = z / dim.halfD;
+  if (yf > B3REG.headY) {
+    if (yf >= B3REG.eyeY[0] && yf <= B3REG.eyeY[1] && zf > B3REG.eyeZ) return "眼部";
+    if (yf >= B3REG.earY[0] && yf <= B3REG.earY[1] && ax > B3REG.earX) return "耳部";
+    return "头部";
+  }
+  if (yf > B3REG.neckY) return "颈部";
+  if (yf > B3REG.legY) {
+    if (ax > B3REG.armX) {
+      if (B3REG.tpose) return ax > .84 ? "手指" : ax > .6 ? "手腕" : "上臂";   /* 水平手臂：外=手指 中=手腕 内=上臂 */
+      return yf > B3REG.shoulderY ? "上臂" : yf > B3REG.wristY ? "手腕" : "手指";
+    }
+    return yf > B3REG.chestY ? "胸口" : "腰部";
+  }
+  return "腿脚";
+}
+async function body3dLoad() {
+  if (B3.state !== "idle") return B3;
+  B3.state = "loading";
+  try {
+    const res = await fetch(BODY3D_URL);
+    if (!res.ok) throw new Error("model " + res.status);
+    /* 三个类由静态模块垫片 assets/atlas3d.js 提供（defer 模块脚本晚于经典脚本，轮询等它） */
+    for (let i = 0; i < 40 && !window.body3dModules; i++) await sleep(100);
+    if (!window.body3dModules) throw new Error("3D 模块未就绪");
+    const { THREE, GLTFLoader, OrbitControls } = window.body3dModules;
+    const gltf = await new GLTFLoader().parseAsync(await res.arrayBuffer(), "");
+    /* 蒙皮模型取原始绑定姿态坐标（节点变换是给动画用的，直接烘会把人缩没）；静态模型（扫描件）烘矩阵世界。
+       归一化：脚底贴地、水平居中、身高统一 1.7 */
+    let skinned = false;
+    gltf.scene.traverse(o => { if (o.isSkinnedMesh) skinned = true; });
+    gltf.scene.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    if (skinned) gltf.scene.traverse(o => {
+      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+      o.geometry.computeBoundingBox();
+      box.union(o.geometry.boundingBox);
+    });
+    else box.setFromObject(gltf.scene);
+    const size = box.getSize(new THREE.Vector3());
+    const s = 1.7 / (size.y || 1);
+    const norm = new THREE.Matrix4().makeScale(s, s, s)
+      .multiply(new THREE.Matrix4().makeTranslation(-(box.min.x + size.x / 2), -box.min.y, -(box.min.z + size.z / 2)));
+    const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2 };
+    B3REG.tpose = size.x / (size.y || 1) > 1.5;   /* T-pose（水平展臂）：手臂部位改按横轴分段 */
+    /* 部位拆分：世界坐标烘进几何（骨骼绑定姿态定格成静态），三角形按质心分桶，顶点属性全桶共享 */
+    const group = new THREE.Group();
+    const pick = [];
+    gltf.scene.traverse(o => {
+      if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+      const g = o.geometry.clone();
+      if (!skinned) g.applyMatrix4(o.matrixWorld);
+      g.applyMatrix4(norm);
+      g.morphAttributes = {};
+      ["skinIndex", "skinWeight"].forEach(k => g.deleteAttribute && g.deleteAttribute(k));
+      if (!g.index) g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i));
+      const idx = g.index.array, pos = g.attributes.position;
+      const buckets = new Map();
+      const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+      for (let t = 0; t < idx.length; t += 3) {
+        a.fromBufferAttribute(pos, idx[t]); b.fromBufferAttribute(pos, idx[t + 1]); c.fromBufferAttribute(pos, idx[t + 2]);
+        const wear = b3RegionOf((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3, (a.z + b.z + c.z) / 3, dim);
+        let arr = buckets.get(wear);
+        if (!arr) { arr = []; buckets.set(wear, arr); }
+        arr.push(idx[t], idx[t + 1], idx[t + 2]);
+      }
+      const src = Array.isArray(o.material) ? o.material[0] : o.material;
+      for (const [wear, arr] of buckets) {
+        const geo = new THREE.BufferGeometry();
+        for (const k in g.attributes) geo.setAttribute(k, g.attributes[k]);
+        geo.setIndex(arr);
+        const mat = src.clone();
+        if (mat.emissive) { mat.emissive.set(0xff9d2e); mat.emissiveIntensity = 0; }
+        const m = new THREE.Mesh(geo, mat);
+        m.userData.wear = wear;
+        group.add(m); pick.push(m);
+      }
+    });
+    if (!pick.length) throw new Error("no mesh");
+    const scene = new THREE.Scene();
+    scene.add(group);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x59524a, 1.15));
+    const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(2.2, 3.4, 2.6); scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, .55); fill.position.set(-2.4, 1.6, -1.8); scene.add(fill);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.52, .52, .022, 48),   /* 脚下一片玻璃地台 */
+      new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .15, roughness: .25 }));
+    disc.position.y = -.011; scene.add(disc);
+    B3.THREE = THREE; B3.scene = scene; B3.pick = pick;
+    B3.cam = new THREE.PerspectiveCamera(34, 1, .1, 20);
+    B3.cam.position.set(.5, 1.08, 3.35);
+    B3.cam.lookAt(0, .85, 0);
+    B3.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    B3.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    B3.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    B3.controls = new OrbitControls(B3.cam, B3.renderer.domElement);
+    B3.controls.target.set(0, .85, 0);
+    B3.controls.enablePan = false;
+    B3.controls.enableDamping = true; B3.controls.dampingFactor = .08;
+    B3.controls.minDistance = 1.7; B3.controls.maxDistance = 5.4;
+    B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = 1.1;
+    B3.controls.addEventListener("start", () => { B3.controls.autoRotate = false; });   /* 一碰即停转 */
+    /* 部位徽标锚点（按模型归一化尺寸外扩，保证飘在身体外侧） */
+    const A = (fx, yf, fz) => new THREE.Vector3(fx * dim.halfW, yf * dim.h, fz * dim.halfD);
+    B3.anchors = {
+      "头部": A(0, .975, 0), "眼部": A(0, .915, .62), "耳部": A(.92, .885, 0), "颈部": A(0, .842, .68),
+      "胸口": A(0, .735, .66), "上臂": A(1.18, .69, .12), "手腕": A(1.3, .55, .18), "手指": A(1.08, .43, .24),
+      "腰部": A(0, .52, .66), "腿脚": A(.52, .24, .4),
+    };
+    /* 拾取：拖拽超过 6px 视为旋转不算点击；命中部位=切换，点空=清除 */
+    const ray = new THREE.Raycaster(), nd = new THREE.Vector2();
+    const cv = B3.renderer.domElement;
+    let downX = 0, downY = 0;
+    B3.rayAt = (cx, cy) => {
+      const r = cv.getBoundingClientRect();
+      nd.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(nd, B3.cam);
+      const hit = ray.intersectObjects(B3.pick, false)[0];
+      return hit ? hit.object.userData.wear : null;
+    };
+    cv.addEventListener("pointerdown", e => { downX = e.clientX; downY = e.clientY; });
+    cv.addEventListener("pointerup", e => {
+      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
+      const w = B3.rayAt(e.clientX, e.clientY);
+      ATLAS.wear = w ? (ATLAS.wear === w ? null : w) : null;
+      atlasRender();
+    });
+    B3.hoverW = null;
+    cv.addEventListener("pointermove", e => {
+      const w = B3.rayAt(e.clientX, e.clientY);
+      if (w !== B3.hoverW) { B3.hoverW = w; cv.style.cursor = w ? "pointer" : "grab"; }
+    });
+    B3.v = new THREE.Vector3();
+    B3.state = "ready";
+  } catch (e) { B3.state = "failed"; B3.err = (e && e.message) || String(e); console.warn("3D 手办视图不可用，回退 SVG:", B3.err); }
+  /* 就绪时若弹窗正开在身体视图 → 立即换上 3D（否则下次打开生效） */
+  if (B3.state === "ready" && ATLAS.view === "body" && $("#atlMask").classList.contains("on")) atlasRender();
+  return B3;
+}
+function body3dMount(box, counts, sel) {
+  box.appendChild(B3.renderer.domElement);
+  const layer = document.createElement("div");
+  layer.className = "b3-badges";
+  box.appendChild(layer);
+  B3.badges = {};
+  for (const w in B3.anchors) {
+    const el = document.createElement("div");
+    el.className = "b3-badge" + (counts[w] ? "" : " zero") + (sel === w ? " on" : "");
+    el.textContent = counts[w] || 0;
+    el.dataset.wear = w;
+    layer.appendChild(el);
+    B3.badges[w] = el;
+  }
+  body3dFit();
+  if (!B3.raf) B3.raf = requestAnimationFrame(body3dFrame);
+}
+function body3dFit() {
+  const box = B3.renderer.domElement.parentElement;
+  if (!box) return;
+  const w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  const pr = B3.renderer.getPixelRatio();
+  if (B3.renderer.domElement.width !== Math.round(w * pr)) B3.renderer.setSize(w, h, false);
+  if (Math.abs(B3.cam.aspect - w / h) > .001) { B3.cam.aspect = w / h; B3.cam.updateProjectionMatrix(); }
+}
+function body3dFrame() {
+  B3.raf = requestAnimationFrame(body3dFrame);
+  if (!$("#atlMask").classList.contains("on") || !B3.renderer.domElement.isConnected) { body3dStop(); return; }
+  body3dFit();
+  B3.controls.update();
+  for (const m of B3.pick) {
+    if (m.material.emissive) m.material.emissiveIntensity =
+      m.userData.wear === ATLAS.wear ? .55 : m.userData.wear === B3.hoverW ? .22 : 0;
+  }
+  B3.renderer.render(B3.scene, B3.cam);
+  /* 徽标 = 锚点每帧投影（转到背面的自动隐藏） */
+  const r = B3.renderer.domElement.getBoundingClientRect();
+  for (const w in B3.anchors) {
+    B3.v.copy(B3.anchors[w]).project(B3.cam);
+    const el = B3.badges[w];
+    if (!el) continue;
+    if (B3.v.z > 1 || B3.v.z < -1) { el.style.display = "none"; continue; }
+    el.style.display = "";
+    el.style.left = ((B3.v.x * .5 + .5) * r.width).toFixed(1) + "px";
+    el.style.top = ((-B3.v.y * .5 + .5) * r.height).toFixed(1) + "px";
+  }
+}
+function body3dStop() { if (B3.raf) { cancelAnimationFrame(B3.raf); B3.raf = 0; } }
 
 function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
@@ -1652,5 +1875,6 @@ async function loadAll() {
   }); });
 })();
 </script>
+<script type="module" src="assets/atlas3d.js"></script>
 </body>
 </html>
