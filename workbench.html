@@ -1607,10 +1607,12 @@ $("#atlQ").addEventListener("input", e => {
    模型缺失/WebGL 不可用/import 失败 → state=failed，atlasRender 自动回退 SVG。 */
 const BODY3D_URL = "assets/models/atlas-body.glb";
 const B3 = { state: "idle" };   /* idle → loading → ready | failed */
-/* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）——换手办后按比例微调 */
+/* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）。
+   当前按坐姿手办标定：头部带吞掉 yf>.60 全部（含垂落到肩的头发），臂带只在两侧 .30-.58，
+   箱座+盘腿归 yf<.30；站姿/T-pose 模型用 armX/tpose 分支，阈值届时按比例微调 */
 const B3REG = {
-  headY: .855, eyeY: [.875, .945], eyeZ: .25, earY: [.855, .925], earX: .34,
-  neckY: .825, armX: .30, shoulderY: .60, wristY: .485, chestY: .60, legY: .44,
+  headY: .60, eyeY: [.72, .84], eyeZ: .40, earY: [.70, .80], earX: .50,
+  neckY: .52, armX: .32, shoulderY: .46, wristY: .38, chestY: .40, legY: .30,
 };
 function b3RegionOf(x, y, z, dim) {
   const yf = y / dim.h, ax = Math.abs(x) / dim.halfW, zf = z / dim.halfD;
@@ -1694,33 +1696,50 @@ async function body3dLoad() {
     if (!pick.length) throw new Error("no mesh");
     const scene = new THREE.Scene();
     scene.add(group);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x59524a, 1.15));
-    const key = new THREE.DirectionalLight(0xffffff, 1.5); key.position.set(2.2, 3.4, 2.6); scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, .55); fill.position.set(-2.4, 1.6, -1.8); scene.add(fill);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x59524a, 2.0));
+    const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(2.2, 3.4, 2.6); scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 1.0); fill.position.set(-2.4, 1.6, -1.8); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, .8); rim.position.set(-1.2, 2.4, -3.0); scene.add(rim);
     const disc = new THREE.Mesh(new THREE.CylinderGeometry(.52, .52, .022, 48),   /* 脚下一片玻璃地台 */
       new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: .15, roughness: .25 }));
     disc.position.y = -.011; scene.add(disc);
     B3.THREE = THREE; B3.scene = scene; B3.pick = pick;
     B3.cam = new THREE.PerspectiveCamera(34, 1, .1, 20);
-    B3.cam.position.set(.5, 1.08, 3.35);
-    B3.cam.lookAt(0, .85, 0);
+    B3.cam.position.set(1.0, 1.2, 2.95);   /* 3/4 正面：脸、手臂徽标链、箱座同框 */
+    B3.cam.lookAt(0, .78, 0);
     B3.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     B3.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     B3.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    B3.renderer.toneMappingExposure = 1.25;
     B3.controls = new OrbitControls(B3.cam, B3.renderer.domElement);
-    B3.controls.target.set(0, .85, 0);
+    B3.controls.target.set(0, .78, 0);
     B3.controls.enablePan = false;
     B3.controls.enableDamping = true; B3.controls.dampingFactor = .08;
-    B3.controls.minDistance = 1.7; B3.controls.maxDistance = 5.4;
-    B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = 1.1;
+    B3.controls.minDistance = 1.5; B3.controls.maxDistance = 5.4;
+    B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = .75;
     B3.controls.addEventListener("start", () => { B3.controls.autoRotate = false; });   /* 一碰即停转 */
-    /* 部位徽标锚点（按模型归一化尺寸外扩，保证飘在身体外侧） */
-    const A = (fx, yf, fz) => new THREE.Vector3(fx * dim.halfW, yf * dim.h, fz * dim.halfD);
-    B3.anchors = {
-      "头部": A(0, .975, 0), "眼部": A(0, .915, .62), "耳部": A(.92, .885, 0), "颈部": A(0, .842, .68),
-      "胸口": A(0, .735, .66), "上臂": A(1.18, .69, .12), "手腕": A(1.3, .55, .18), "手指": A(1.08, .43, .24),
-      "腰部": A(0, .52, .66), "腿脚": A(.52, .24, .4),
-    };
+    /* 部位徽标锚点：部位自身索引到的顶点求包围盒（computeBoundingBox 会按共享属性全量算，各部位会同盒），
+       中心向外扩一截，自动适配任意姿态模型 */
+    const acc = {};
+    for (const m of pick) {
+      const idx = m.geometry.index.array, pos = m.geometry.attributes.position;
+      const bb = new THREE.Box3(), v = new THREE.Vector3();
+      for (let i = 0; i < idx.length; i++) {
+        v.fromBufferAttribute(pos, idx[i]);
+        bb.expandByPoint(v);
+      }
+      const c = bb.getCenter(new THREE.Vector3());
+      (acc[m.userData.wear] = acc[m.userData.wear] || { c: new THREE.Vector3(), n: 0 });
+      acc[m.userData.wear].c.add(c); acc[m.userData.wear].n++;
+    }
+    B3.anchors = {};
+    for (const w in acc) {
+      const c = acc[w].c.multiplyScalar(1 / acc[w].n);
+      let dx = c.x, dz = c.z;
+      const len = Math.hypot(dx, dz);
+      if (len < .05) { dx = 0; dz = 1; } else { dx /= len; dz /= len; }
+      B3.anchors[w] = new THREE.Vector3(c.x + dx * .17, c.y, c.z + dz * .17);
+    }
     /* 拾取：拖拽超过 6px 视为旋转不算点击；命中部位=切换，点空=清除 */
     const ray = new THREE.Raycaster(), nd = new THREE.Vector2();
     const cv = B3.renderer.domElement;
@@ -1784,7 +1803,7 @@ function body3dFrame() {
   B3.controls.update();
   for (const m of B3.pick) {
     if (m.material.emissive) m.material.emissiveIntensity =
-      m.userData.wear === ATLAS.wear ? .55 : m.userData.wear === B3.hoverW ? .22 : 0;
+      m.userData.wear === ATLAS.wear ? 1.25 : m.userData.wear === B3.hoverW ? .5 : 0;
   }
   B3.renderer.render(B3.scene, B3.cam);
   /* 徽标 = 锚点每帧投影（转到背面的自动隐藏） */
