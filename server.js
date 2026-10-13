@@ -186,6 +186,9 @@ function serveStatic(req, res, urlPath) {
   if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) return json(res, 404, { error: "not found" });
   const ext = path.extname(abs).toLowerCase();
   if (!MIME[ext]) return json(res, 404, { error: "not found" });
+  /* 大体积且低频变更的 3D 资源给 24h 缓存（模型更换时前端用 ?v=N 破缓存），其余一律 no-store */
+  const cacheable = rel.startsWith("assets/models/") || rel.startsWith("assets/vendor/");
+  const cacheHdr = cacheable ? { "Cache-Control": "public, max-age=86400" } : {};
   const data = fs.readFileSync(abs);
   const range = req.headers.range;                         // 视频拖动/Safari 播放需要 206
   if (range && /^bytes=/.test(range)) {
@@ -198,17 +201,17 @@ function serveStatic(req, res, urlPath) {
       return true;
     }
     if (end >= size) end = size - 1;
-    res.writeHead(206, {
+    res.writeHead(206, Object.assign({
       "Content-Type": MIME[ext],
       "Content-Range": `bytes ${start}-${end}/${size}`,
       "Accept-Ranges": "bytes",
       "Content-Length": end - start + 1,
       "Cache-Control": "no-store",
-    });
+    }, cacheHdr));
     res.end(data.subarray(start, end + 1));
     return true;
   }
-  send(res, 200, data, { "Content-Type": MIME[ext], "Accept-Ranges": "bytes" });
+  send(res, 200, data, Object.assign({ "Content-Type": MIME[ext], "Accept-Ranges": "bytes" }, cacheHdr));
   return true;
 }
 

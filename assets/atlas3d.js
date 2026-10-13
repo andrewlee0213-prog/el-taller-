@@ -4,6 +4,7 @@
 import * as THREE from "./vendor/three.module.min.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { OrbitControls } from "./vendor/OrbitControls.js";
+import { MeshoptDecoder } from "./vendor/meshopt_decoder.module.js";
 
-window.body3dModules = { THREE, GLTFLoader, OrbitControls };
+window.body3dModules = { THREE, GLTFLoader, OrbitControls, MeshoptDecoder };
 window.dispatchEvent(new Event("taller-3d-ready"));

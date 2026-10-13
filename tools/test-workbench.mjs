@@ -442,8 +442,10 @@ try {
     (r.text || "").includes("hw-devices") && (r.text || "").includes("智能硬件图鉴") && (r.text || "").includes("atlas"), (r.text || "").slice(0, 80));
   /* ---- 3D 手办视图静态资源（vendor 本地化 + glb MIME；模型文件本身不入库不部署） ---- */
   const v3 = await fetch(BASE + "/assets/vendor/three.module.min.js");
-  check("3D vendor：three 核心 200 + JS MIME",
-    v3.status === 200 && /javascript/.test(v3.headers.get("content-type") || ""), v3.status + " " + v3.headers.get("content-type"));
+  check("3D vendor：three 核心 200 + JS MIME + 24h 缓存",
+    v3.status === 200 && /javascript/.test(v3.headers.get("content-type") || "") &&
+    /max-age=86400/.test(v3.headers.get("cache-control") || ""),
+    v3.status + " " + v3.headers.get("cache-control"));
   const shim = await fetch(BASE + "/assets/atlas3d.js");
   check("3D 垫片：静态模块脚本可取", shim.status === 200, shim.status);
   const glbHead = await fetch(BASE + "/assets/models/atlas-body.glb");   /* GET 只看响应头，不读体 */

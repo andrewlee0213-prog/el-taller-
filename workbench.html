@@ -213,19 +213,39 @@ html[data-theme="crepusculo"]{
 .bcount.zero{display:none}
 .atl-mapchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 .atl-list{flex:1;min-width:0;overflow:auto;padding-right:4px}
-/* ---- 身体图 · 3D 手办视图（SVG 之上位替换，模型缺失自动回退 SVG） ---- */
+/* ---- 身体图 · 3D 居中舞台（SVG 之上位替换，模型缺失自动回退 SVG+列表） ---- */
+.atl-stage{display:flex;flex-direction:column;flex:1;min-height:0}
+.atl-sidechips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:2px 0 10px}
+.atl-stage3d{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;
+  background:color-mix(in srgb,var(--ink) 4%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent)}
+.atl-stage3d canvas{width:100%;height:100%;display:block;cursor:grab}
 .atl-map3d{position:relative;flex:none;width:236px;height:340px;border-radius:16px;overflow:hidden;
   background:color-mix(in srgb,var(--ink) 4%,transparent);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent)}
 .atl-map3d canvas{width:100%;height:100%;display:block;cursor:grab}
-.b3-badges{position:absolute;inset:0;pointer-events:none}
+.atl-mapwrap-map{position:relative}
+.b3-progress{position:absolute;left:0;right:0;bottom:36px;text-align:center;font-size:11px;color:var(--g-accent-soft);
+  background:color-mix(in srgb,var(--g-card) 78%,transparent);border-radius:999px;padding:5px 10px;
+  pointer-events:none;animation:b3pulse 1.6s ease-in-out infinite}
+@keyframes b3pulse{50%{opacity:.55}}
+.b3-badges,.b3-devs{position:absolute;inset:0;pointer-events:none}
 .b3-badge{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;
-  min-width:17px;height:17px;border-radius:9px;background:var(--g-accent);color:#fff;text-align:center;
-  font-size:10px;font-weight:700;line-height:17px;padding:0 4px;
+  background:var(--g-accent);color:#fff;text-align:center;font-size:10px;font-weight:500;
+  line-height:16px;padding:1px 8px;border-radius:999px;white-space:nowrap;
   box-shadow:0 1px 5px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.5);transition:transform .15s}
-.b3-badge:hover{transform:translate(-50%,-50%) scale(1.25)}
+.b3-badge b{font-weight:700}
+.b3-badge:hover{transform:translate(-50%,-50%) scale(1.12)}
 .b3-badge.on{outline:2px solid #fff;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--g-accent) 80%,transparent))}
 .b3-badge.zero{display:none}
+.b3-dev{position:absolute;display:flex;align-items:center;gap:5px;max-width:230px;padding:3px 11px;
+  border-radius:999px;background:color-mix(in srgb,var(--g-card) 92%,transparent);
+  border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);box-shadow:0 2px 8px rgba(0,0,0,.28);
+  font-size:11px;color:var(--g-text);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:auto;cursor:pointer;transition:border-color .15s,transform .15s}
+.b3-dev:hover{border-color:var(--g-accent);transform:translateX(2px)}
+.b3-dev .lens{flex:none;font-size:9px;font-weight:700;color:var(--g-accent-soft)}
+.b3-more{background:color-mix(in srgb,var(--g-accent) 16%,transparent);color:var(--g-accent-soft);font-weight:600}
 .atl-3dhint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:9.5px;color:var(--g-dim);
   pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 .atl-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;padding:8px 6px;border-bottom:1px dashed color-mix(in srgb,var(--ink) 8%,transparent)}
@@ -1558,22 +1578,32 @@ function atlasRender() {
       : '<div class="atl-empty">图鉴还是空的 —— Mac 收集任务每日推送后自动累积<br>透镜① = 让以往无法展现的数据可见 · 透镜② = 让以往无法收集的数据可持续收集</div>';
     return;
   }
-  /* 身体图：筛选作用于部位计数与右侧列表；非穿戴部位做补充 chips */
+  /* 身体图：筛选作用于部位计数；非穿戴部位做补充 chips */
   const counts = {};
   for (const d of rows) { const w = d.wear || "其他"; counts[w] = (counts[w] || 0) + 1; }
+  /* 3D 手办就绪 → 居中舞台：模型居中、部位徽标环绕身体、选中部位的设备在锚点旁展开；
+     模型缺失 / WebGL 不可用 → SVG + 右侧列表原样回退，线上永不空白 */
+  const use3d = B3.state === "ready";
+  const loading = B3.state === "loading";
   const shown = ATLAS.wear ? rows.filter(d => (d.wear || "其他") === ATLAS.wear) : rows;
   const side = ["环境家居", "宠物", "其他"].map(w =>
     '<button class="atl-chip' + (ATLAS.wear === w ? " on" : "") + '" data-wearchip="' + esc(w) + '">' + (w === "环境家居" ? "🏠 " : w === "宠物" ? "🐾 " : "📎 ") + w + " " + (counts[w] || 0) + "</button>").join("");
-  /* 3D 手办就绪 → 上位替换 SVG；模型缺失 / WebGL 不可用 → SVG 原样回退，线上永不空白 */
-  const use3d = B3.state === "ready";
+  const allChip = '<button class="atl-chip' + (ATLAS.wear ? "" : " on") + '" data-wearchip="__all">全部 ' + rows.length + "</button>";
+  if (use3d) {
+    body.innerHTML = '<div class="atl-stage">' +
+      '<div class="atl-sidechips">' + allChip + side + "</div>" +
+      '<div class="atl-stage3d" id="atlMap3d"><div class="atl-3dhint">' +
+      (ATLAS.wear ? "再点一次部位 / 全部 可取消筛选" : "拖拽旋转 · 滚轮缩放 · 点部位看对应设备") + "</div></div></div>";
+    body3dMount($("#atlMap3d"), counts, ATLAS.wear, shown);
+    return;
+  }
   body.innerHTML = '<div class="atl-mapwrap"><div class="atl-map">' +
-    (use3d ? '<div class="atl-map3d" id="atlMap3d"><div class="atl-3dhint">拖拽旋转 · 滚轮缩放 · 点部位看设备</div></div>'
-           : atlasBodySvg(counts, ATLAS.wear)) +
-    '<div class="atl-mapchips"><button class="atl-chip' + (ATLAS.wear ? "" : " on") + '" data-wearchip="__all">全部 ' + rows.length + "</button>" + side + "</div></div>" +
+    '<div class="atl-mapwrap-map">' + atlasBodySvg(counts, ATLAS.wear) +
+    (loading ? '<div class="b3-progress" id="b3Progress">⏳ 3D 手办下载中 ' + (B3.pct || 0) + '% — 下载完自动切换 …</div>' : "") + "</div>" +
+    '<div class="atl-mapchips">' + allChip + side + "</div></div>" +
     '<div class="atl-list">' + (shown.length ? atlasRows(shown) :
       '<div class="atl-empty">' + (ATLAS.wear ? "这个部位暂时没有设备" : "图鉴还是空的 —— 每日情报自动累积") + "</div>") + "</div></div>";
-  if (use3d) body3dMount($("#atlMap3d"), counts, ATLAS.wear);
-  else body3dLoad();   /* 首次打开异步加载，就绪后若弹窗仍开在身体视图会自动换上 3D */
+  body3dLoad();   /* 首次打开异步加载，就绪后若弹窗仍开在身体视图会自动换上 3D */
 }
 $("#hwAtlasBtn").addEventListener("click", atlasOpen);
 $("#atlClose").addEventListener("click", atlasClose);
@@ -1605,26 +1635,51 @@ $("#atlQ").addEventListener("input", e => {
    一次性加载：模型归一化(脚底贴地/居中/身高1.7) → 三角形按身高比例分带拆进部位桶（共享顶点、
    只拆索引，GPU 顶点数据不放大）→ 每部位一个 Mesh 供拾取与高亮。徽标 = 部位锚点每帧投影成 HTML。
    模型缺失/WebGL 不可用/import 失败 → state=failed，atlasRender 自动回退 SVG。 */
-const BODY3D_URL = "assets/models/atlas-body.glb";
+const BODY3D_URL = "assets/models/atlas-body.glb?v=8";
 const B3 = { state: "idle" };   /* idle → loading → ready | failed */
 /* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）。
-   当前按坐姿手办标定：头部带吞掉 yf>.60 全部（含垂落到肩的头发），臂带只在两侧 .30-.58，
-   箱座+盘腿归 yf<.30；站姿/T-pose 模型用 armX/tpose 分支，阈值届时按比例微调 */
+   眼带两侧计数判脸向用 eyeY/eyeZ；坐姿模型（宽>0.9m）走 B3ANCH 解剖锚点最近邻——
+   搭膝坐姿手臂在身前，横轴门限会把腿误判成手指；站姿模型保留身高比例分带 */
 const B3REG = {
-  headY: .60, eyeY: [.72, .84], eyeZ: .40, earY: [.70, .80], earX: .50,
-  neckY: .52, armX: .32, shoulderY: .46, wristY: .38, chestY: .40, legY: .30,
+  eyeY: [.72, .84], eyeZ: .40, earY: [.70, .80], earX: .50,
+  neckY: .825, armX: .30, shoulderY: .60, wristY: .485, chestY: .60, legY: .44,
 };
+const B3ANCH = {   /* 坐姿解剖锚点（米，规范朝向脸+z；中段 yf .30-.52 内最近锚竞技） */
+  head: { "头部": [[-.06, 1.50, .70], [-.04, 1.36, .05]], "眼部": [[-.06, 1.34, .88]], "耳部": [[-.17, 1.31, .20], [.10, 1.31, .20]] },
+  mid: { "胸口": [[0, .78, .50]], "腰部": [[0, .65, .22]],
+         "上臂": [[-.27, .88, .28], [.21, .88, .28]], "手腕": [[-.21, .75, .48], [.16, .75, .48]],
+         "手指": [[-.15, .63, .88], [.11, .63, .88]], "腿脚": [[0, .53, .62], [.20, .51, .92], [-.20, .51, .92], [0, .56, -.60]] },
+};
+function b3Nearest(table, x, y, z, guard) {
+  let best = null, bd = 1e9;
+  for (const w in table) {
+    if (guard && !guard(w, x, y, z)) continue;
+    for (const a of table[w]) {
+      const d = (x - a[0]) * (x - a[0]) + (y - a[1]) * (y - a[1]) + (z - a[2]) * (z - a[2]);
+      if (d < bd) { bd = d; best = w; }
+    }
+  }
+  return best;
+}
 function b3RegionOf(x, y, z, dim) {
   const yf = y / dim.h, ax = Math.abs(x) / dim.halfW, zf = z / dim.halfD;
-  if (yf > B3REG.headY) {
-    if (yf >= B3REG.eyeY[0] && yf <= B3REG.eyeY[1] && zf > B3REG.eyeZ) return "眼部";
-    if (yf >= B3REG.earY[0] && yf <= B3REG.earY[1] && ax > B3REG.earX) return "耳部";
+  if (dim.sit) {   /* 坐姿（搭膝）：头顶带 + 眼/耳守卫，颈带，中段锚点竞技，底带=箱座腿脚 */
+    if (yf > .60) return b3Nearest(B3ANCH.head, x, y, z, (w, _x, _y, _z) =>
+      w === "眼部" ? (yf >= .70 && yf <= .86 && z > .55) : w === "耳部" ? (yf >= .68 && yf <= .84) : true) || "头部";
+    if (yf > .52) return "颈部";
+    if (yf > .30) return b3Nearest(B3ANCH.mid, x, y, z) || "腰部";
+    return "腿脚";
+  }
+  /* 站姿：身高比例分带 */
+  if (yf > .855) {
+    if (yf >= .875 && yf <= .945 && zf > .25) return "眼部";
+    if (yf >= .855 && yf <= .925 && ax > .34) return "耳部";
     return "头部";
   }
   if (yf > B3REG.neckY) return "颈部";
   if (yf > B3REG.legY) {
     if (ax > B3REG.armX) {
-      if (B3REG.tpose) return ax > .84 ? "手指" : ax > .6 ? "手腕" : "上臂";   /* 水平手臂：外=手指 中=手腕 内=上臂 */
+      if (B3REG.tpose) return ax > .84 ? "手指" : ax > .6 ? "手腕" : "上臂";
       return yf > B3REG.shoulderY ? "上臂" : yf > B3REG.wristY ? "手腕" : "手指";
     }
     return yf > B3REG.chestY ? "胸口" : "腰部";
@@ -1634,14 +1689,37 @@ function b3RegionOf(x, y, z, dim) {
 async function body3dLoad() {
   if (B3.state !== "idle") return B3;
   B3.state = "loading";
+  B3.pct = 0;
   try {
     const res = await fetch(BODY3D_URL);
     if (!res.ok) throw new Error("model " + res.status);
+    /* 流式读给出下载进度（5MB 级模型在慢链路上要十几秒，兜底 SVG 期间必须有提示） */
+    const total = +(res.headers.get("content-length") || 0);
+    let buf;
+    if (res.body && res.body.getReader) {
+      const reader = res.body.getReader();
+      const chunks = [];
+      let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        got += value.length;
+        B3.pct = total ? Math.min(99, Math.round(got / total * 100)) : 0;
+        const el = document.getElementById("b3Progress");
+        if (el) el.textContent = "⏳ 3D 手办下载中 " + B3.pct + "% — 下载完自动切换 …";
+      }
+      buf = new Uint8Array(got);
+      let off = 0;
+      for (const c of chunks) { buf.set(c, off); off += c.length; }
+    } else buf = new Uint8Array(await res.arrayBuffer());
     /* 三个类由静态模块垫片 assets/atlas3d.js 提供（defer 模块脚本晚于经典脚本，轮询等它） */
     for (let i = 0; i < 40 && !window.body3dModules; i++) await sleep(100);
     if (!window.body3dModules) throw new Error("3D 模块未就绪");
-    const { THREE, GLTFLoader, OrbitControls } = window.body3dModules;
-    const gltf = await new GLTFLoader().parseAsync(await res.arrayBuffer(), "");
+    const { THREE, GLTFLoader, OrbitControls, MeshoptDecoder } = window.body3dModules;
+    const loader = new GLTFLoader();
+    if (MeshoptDecoder) loader.setMeshoptDecoder(MeshoptDecoder);   // EXT_meshopt_compression 解码
+    const gltf = await loader.parseAsync(buf.buffer, "");   // parseAsync 只认 ArrayBuffer（Uint8Array 会走 JSON 分支报错）
     /* 蒙皮模型取原始绑定姿态坐标（节点变换是给动画用的，直接烘会把人缩没）；静态模型（扫描件）烘矩阵世界。
        归一化：脚底贴地、水平居中、身高统一 1.7 */
     let skinned = false;
@@ -1658,7 +1736,7 @@ async function body3dLoad() {
     const s = 1.7 / (size.y || 1);
     const norm = new THREE.Matrix4().makeScale(s, s, s)
       .multiply(new THREE.Matrix4().makeTranslation(-(box.min.x + size.x / 2), -box.min.y, -(box.min.z + size.z / 2)));
-    const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2 };
+    const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2, sit: size.x * s > .9 };   /* 坐姿（模型宽>0.9m）→ 锚点最近邻分带 */
     B3REG.tpose = size.x / (size.y || 1) > 1.5;   /* T-pose（水平展臂）：手臂部位改按横轴分段 */
     /* 部位拆分：世界坐标烘进几何（骨骼绑定姿态定格成静态），三角形按质心分桶，顶点属性全桶共享。
        第一遍先烘坐标并数「眼带高度两侧 |z| 大的三角形」——多的一侧是脸（重解算朝向可能整体翻 180°），
@@ -1671,8 +1749,19 @@ async function body3dLoad() {
       const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
       gltf.scene.traverse(o => {
         if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-        const g = o.geometry.clone();
-        if (!skinned) g.applyMatrix4(o.matrixWorld);
+      const g = o.geometry.clone();
+      /* KHR_mesh_quantization：量化模型的顶点是归一化 short，applyMatrix4 直接写会把米制坐标截成整数
+         （部位分带全毁）——先把归一化属性反量化成 Float32（真实坐标随后由 matrixWorld 烘回） */
+      for (const k in g.attributes) {
+        const at = g.attributes[k];
+        if (at.normalized) {
+          const f = new Float32Array(at.count * at.itemSize);
+          for (let i = 0; i < at.count; i++)
+            for (let c = 0; c < at.itemSize; c++) f[i * at.itemSize + c] = at.getComponent(i, c);
+          g.setAttribute(k, new THREE.BufferAttribute(f, at.itemSize));
+        }
+      }
+      if (!skinned) g.applyMatrix4(o.matrixWorld);
         g.applyMatrix4(norm);
         g.morphAttributes = {};
         ["skinIndex", "skinWeight"].forEach(k => g.deleteAttribute && g.deleteAttribute(k));
@@ -1794,19 +1883,47 @@ async function body3dLoad() {
   if (B3.state === "ready" && ATLAS.view === "body" && $("#atlMask").classList.contains("on")) atlasRender();
   return B3;
 }
-function body3dMount(box, counts, sel) {
+function body3dMount(box, counts, sel, devs) {
   box.appendChild(B3.renderer.domElement);
   const layer = document.createElement("div");
   layer.className = "b3-badges";
   box.appendChild(layer);
   B3.badges = {};
   for (const w in B3.anchors) {
+    const n = counts[w] || 0;
     const el = document.createElement("div");
-    el.className = "b3-badge" + (counts[w] ? "" : " zero") + (sel === w ? " on" : "");
-    el.textContent = counts[w] || 0;
+    el.className = "b3-badge" + (n ? "" : " zero") + (sel === w ? " on" : "");
+    el.innerHTML = esc(w) + " <b>" + n + "</b>";
     el.dataset.wear = w;
     layer.appendChild(el);
     B3.badges[w] = el;
+  }
+  /* 选中部位的设备 chips：贴着该部位锚点展开（非穿戴部位贴舞台右缘），每帧跟随投影 */
+  B3.devs = null;
+  if (sel && devs && devs.length) {
+    const dv = document.createElement("div");
+    dv.className = "b3-devs";
+    box.appendChild(dv);
+    const lens = l => l === 3 ? "①②" : l === 1 ? "①" : l === 2 ? "②" : "";
+    const els = [];
+    devs.slice(0, 9).forEach(d => {
+      const a = document.createElement("a");
+      a.className = "b3-dev";
+      if (d.url) { a.href = d.url; a.target = "_blank"; a.rel = "noopener"; }
+      else { a.href = "#"; a.addEventListener("click", e => e.preventDefault()); }
+      a.innerHTML = (d.lens ? '<span class="lens">' + lens(d.lens) + "</span>" : "") + esc(d.name);
+      dv.appendChild(a);
+      els.push(a);
+    });
+    if (devs.length > 9) {
+      const more = document.createElement("button");
+      more.className = "b3-dev b3-more";
+      more.textContent = "还有 " + (devs.length - 9) + " 件 → 看表格";
+      more.addEventListener("click", () => { ATLAS.view = "table"; atlasRender(); });
+      dv.appendChild(more);
+      els.push(more);
+    }
+    B3.devs = { wear: sel, els };
   }
   body3dFit();
   if (!B3.raf) B3.raf = requestAnimationFrame(body3dFrame);
@@ -1840,6 +1957,28 @@ function body3dFrame() {
     el.style.display = "";
     el.style.left = ((B3.v.x * .5 + .5) * r.width).toFixed(1) + "px";
     el.style.top = ((-B3.v.y * .5 + .5) * r.height).toFixed(1) + "px";
+  }
+  /* 选中部位的设备 chips：跟随锚点，往舞台空的一侧展开成列；转到背面则隐藏 */
+  if (B3.devs && B3.devs.els.length) {
+    let sx = -1, sy = r.height / 2;
+    const a = B3.anchors[B3.devs.wear];
+    if (a) {
+      B3.v.copy(a).project(B3.cam);
+      if (B3.v.z <= 1 && B3.v.z >= -1) { sx = (B3.v.x * .5 + .5) * r.width; sy = (-B3.v.y * .5 + .5) * r.height; }
+    } else { sx = r.width - 12; }
+    const dir = sx >= 0 && sx < r.width / 2 ? 1 : -1;
+    B3.devs.els.forEach((el, i) => {
+      if (sx < 0) { el.style.display = "none"; return; }
+      el.style.display = "";
+      const dy = (i - (B3.devs.els.length - 1) / 2) * 30;
+      const w = el.offsetWidth || 120;
+      let left = a ? (dir > 0 ? sx + 78 : sx - 78 - w) : r.width - w - 10;
+      left = Math.max(4, Math.min(r.width - w - 4, left));
+      let top = sy + dy - 13;
+      top = Math.max(4, Math.min(r.height - 26, top));
+      el.style.left = left + "px";
+      el.style.top = top + "px";
+    });
   }
 }
 function body3dStop() { if (B3.raf) { cancelAnimationFrame(B3.raf); B3.raf = 0; } }
