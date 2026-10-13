@@ -1635,7 +1635,7 @@ $("#atlQ").addEventListener("input", e => {
    一次性加载：模型归一化(脚底贴地/居中/身高1.7) → 三角形按身高比例分带拆进部位桶（共享顶点、
    只拆索引，GPU 顶点数据不放大）→ 每部位一个 Mesh 供拾取与高亮。徽标 = 部位锚点每帧投影成 HTML。
    模型缺失/WebGL 不可用/import 失败 → state=failed，atlasRender 自动回退 SVG。 */
-const BODY3D_URL = "assets/models/atlas-body.glb?v=10";
+const BODY3D_URL = "assets/models/atlas-body.glb?off";   /* 模型已按站主指令清空；?off 保证所有旧缓存失效 → SVG 身体图兜底 */
 const B3 = { state: "idle" };   /* idle → loading → ready | failed */
 /* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）。
    眼带两侧计数判脸向用 eyeY/eyeZ；坐姿模型（宽>0.9m）走 B3ANCH 解剖锚点最近邻——
