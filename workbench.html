@@ -1821,18 +1821,21 @@ async function body3dLoad() {
     disc.position.y = -.011; scene.add(disc);
     B3.THREE = THREE; B3.scene = scene; B3.pick = pick;
     B3.cam = new THREE.PerspectiveCamera(34, 1, .1, 20);
-    B3.cam.position.set(1.0, 1.2, 2.95);   /* 3/4 正面：脸、手臂徽标链、箱座同框 */
-    B3.cam.lookAt(0, .78, 0);
+    B3.cam.position.set(.95, 1.3, 3.55);   /* 3/4 正面偏高：前倾坐姿读作「伏在箱上」，头顶留出余量 */
+    B3.cam.lookAt(0, .76, 0);
     B3.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     B3.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
     B3.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     B3.renderer.toneMappingExposure = 1.25;
     B3.controls = new OrbitControls(B3.cam, B3.renderer.domElement);
-    B3.controls.target.set(0, .78, 0);
+    B3.controls.target.set(0, .76, 0);
     B3.controls.enablePan = false;
     B3.controls.enableDamping = true; B3.controls.dampingFactor = .08;
-    B3.controls.minDistance = 1.5; B3.controls.maxDistance = 5.4;
-    B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = .75;
+    B3.controls.minDistance = 1.6; B3.controls.maxDistance = 5.8;
+    /* 俯仰钳制 ≈63°-86°：竖向拖拽只小幅仰俯（略俯视角最能读出前倾坐姿），
+       压不到脚下也翻不进身下——录屏里“整个人躺倒甩出画面”就是俯仰没限制 */
+    B3.controls.minPolarAngle = 1.1; B3.controls.maxPolarAngle = 1.5;
+    B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = .5;
     B3.controls.addEventListener("start", () => { B3.controls.autoRotate = false; });   /* 一碰即停转 */
     /* 部位徽标锚点：区域三角形质心（双侧部位取三角形多的一侧），从中轴向外出 .17。
        同时用上半身三角形质心中位数把整个模型平移到世界中轴上——旋转轴穿过人的躯干，
@@ -1861,6 +1864,7 @@ async function body3dLoad() {
     const ax = med(upXs), az = med(upZs);
     group.position.set(-ax, 0, -az);   /* 分带已完成不受影响；锚点/拾取走世界矩阵自动跟随 */
     B3.anchors = {};
+    B3.anchorOut = {};   /* 各锚点水平朝外方向：转到背面时徽标淡出，避免透过身体投影到弹药箱上 */
     const two = ["上臂", "手腕", "手指", "耳部", "腿脚"];
     for (const w in acc) {
       const a = acc[w];
@@ -1876,6 +1880,7 @@ async function body3dLoad() {
       B3.anchors[w] = len < .05
         ? new THREE.Vector3(dx, cy + .13, dz)                                   /* 贴中轴的（头/颈）往上飘 */
         : new THREE.Vector3(dx + dx / len * .17, cy, dz + dz / len * .17);      /* 其余从身体向外扩 */
+      B3.anchorOut[w] = len < .05 || w === "腿脚" ? null : { ox: dx / len, oz: dz / len };   /* 中轴/环绕部位永远可见 */
     }
     /* 拾取：拖拽超过 6px 视为旋转不算点击；命中部位=切换，点空=清除 */
     const ray = new THREE.Raycaster(), nd = new THREE.Vector2();
@@ -1971,25 +1976,28 @@ function body3dFrame() {
       m.userData.wear === ATLAS.wear ? 1.25 : m.userData.wear === B3.hoverW ? .5 : 0;
   }
   B3.renderer.render(B3.scene, B3.cam);
-  /* 徽标 = 锚点每帧投影（转到背面的自动隐藏） */
+  /* 徽标 = 锚点每帧投影；背朝相机的（朝外向量与视线反向）淡出，不再透过身体乱飘 */
   const r = B3.renderer.domElement.getBoundingClientRect();
+  const b3Vis = w => {
+    const a = B3.anchors[w], o = B3.anchorOut && B3.anchorOut[w];
+    if (o && o.ox * (B3.cam.position.x - a.x) + o.oz * (B3.cam.position.z - a.z) < 0) return false;
+    B3.v.copy(a).project(B3.cam);
+    return B3.v.z <= 1 && B3.v.z >= -1;
+  };
   for (const w in B3.anchors) {
-    B3.v.copy(B3.anchors[w]).project(B3.cam);
     const el = B3.badges[w];
     if (!el) continue;
-    if (B3.v.z > 1 || B3.v.z < -1) { el.style.display = "none"; continue; }
+    if (!b3Vis(w)) { el.style.display = "none"; continue; }
     el.style.display = "";
     el.style.left = ((B3.v.x * .5 + .5) * r.width).toFixed(1) + "px";
     el.style.top = ((-B3.v.y * .5 + .5) * r.height).toFixed(1) + "px";
   }
-  /* 选中部位的设备 chips：跟随锚点，往舞台空的一侧展开成列；转到背面则隐藏 */
+  /* 选中部位的设备 chips：跟随锚点，往舞台空的一侧展开成列；锚点转到背面则隐藏 */
   if (B3.devs && B3.devs.els.length) {
     let sx = -1, sy = r.height / 2;
-    const a = B3.anchors[B3.devs.wear];
-    if (a) {
-      B3.v.copy(a).project(B3.cam);
-      if (B3.v.z <= 1 && B3.v.z >= -1) { sx = (B3.v.x * .5 + .5) * r.width; sy = (-B3.v.y * .5 + .5) * r.height; }
-    } else { sx = r.width - 12; }
+    const a = B3.devs.wear && B3.anchors[B3.devs.wear];
+    if (a && b3Vis(B3.devs.wear)) { sx = (B3.v.x * .5 + .5) * r.width; sy = (-B3.v.y * .5 + .5) * r.height; }
+    if (!a) sx = r.width - 12;   /* 无锚点的部位（非身体穿戴位）：贴舞台右缘 */
     const dir = sx >= 0 && sx < r.width / 2 ? 1 : -1;
     B3.devs.els.forEach((el, i) => {
       if (sx < 0) { el.style.display = "none"; return; }
