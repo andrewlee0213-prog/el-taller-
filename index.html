@@ -544,7 +544,8 @@ const CONFIG = {
     { label: 'Email',   hint: '写信给我',   url: '#', icon: 'mail'   },
     { label: 'Bilibili',hint: '视频与日常', url: '#', icon: 'tv'     },
   ],
-  icp: '',   // 上线后填备案号，如 '沪ICP备2026xxxxxx号-1'，会自动挂到页脚
+  icp: '沪ICP备2026052139号-1',        // 工信部 ICP 备案号，页脚链接 beian.miit.gov.cn
+  gongan: '',                          // 公安备案号（审批通过后填，如 '沪公安网备2026xxxxxxxx号'），空则页脚不显示
 };
 
 /* ================= 工具 ================= */
@@ -567,7 +568,8 @@ function tickClock(){
 $('#tags').innerHTML = CONFIG.tags.map(t=>`<span class="tag">${t}</span>`).join('');
 $('#intro').textContent = CONFIG.intro;
 $('#footerMeta').innerHTML = '© '+new Date().getFullYear()+' El Taller de Andres'
-  + (CONFIG.icp ? ' · <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">'+CONFIG.icp+'</a>' : '');
+  + (CONFIG.icp ? ' · <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">'+CONFIG.icp+'</a>' : '')
+  + (CONFIG.gongan ? ' · <a href="https://beian.mps.gov.cn/" target="_blank" rel="noreferrer">'+CONFIG.gongan+'</a>' : '');
 
 /* ================= 链接区 ================= */
 const ICONS = {

@@ -1,7 +1,6 @@
 # El Taller de Andres · 服务器部署手册（腾讯云轻量 · Ubuntu 24.04）
 
-> **当前状态（2026-09-30）：已按第 0~3 步上线，IP 直访 http://110.40.209.237 正常运行（systemd 守护 + nginx 80 反代，SSH 密钥登录已配好）。**
-> 第 4~6 步（域名解析 → HTTPS → 备案号）等 ICP 备案通过后执行，完成后 IP 地址自动退役。
+> **当前状态（2026-10-13）：0~6 步全部完成。正式地址 https://tallerdeandres.cn（Let's Encrypt 证书，2027-01-11 到期，certbot 自动续期；HTTP 强制跳 HTTPS）。IP 直访已退役（certbot 80 端口对非域名 Host 返 404），SSH/上传仍走 110.40.209.237。**
 > 日常内容更新**不要重走本手册**，用 `tools/deploy.sh` 一条命令发布（快扫→打包→上传→重启→冒烟）。
 > 域名：tallerdeandres.cn。以下命令除标注「本地电脑执行」外，均在服务器上执行（控制台「登录」或 SSH）。
 

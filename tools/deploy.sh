@@ -48,9 +48,10 @@ ssh -o BatchMode=yes "$HOST" 'set -e
   sleep 1
   systemctl is-active --quiet taller && echo "  taller active ✓"'
 echo "── 5/5 冒烟 ──"
+# 2026-10-13 起 IP 直访退役（certbot 80 端口对非域名 Host 返 404），冒烟走正式域名
 for p in "" works.js poster-six.html posts/kb-engineering.html; do
-  printf "  /%s → %s\n" "$p" "$(curl -s -o /dev/null -w '%{http_code}' "http://110.40.209.237/$p")"
+  printf "  /%s → %s\n" "$p" "$(curl -s -o /dev/null -w '%{http_code}' "https://tallerdeandres.cn/$p")"
 done
-wbcode=$(curl -s -o /dev/null -w '%{http_code}' "http://110.40.209.237/workbench.html")
+wbcode=$(curl -s -o /dev/null -w '%{http_code}' "https://tallerdeandres.cn/workbench.html")
 echo "  /workbench.html → $wbcode（302=守卫生效 ✓ / 200=异常，立即检查！）"
-echo "完成。线上地址: http://110.40.209.237（备案后换 https://tallerdeandres.cn）"
+echo "完成。线上地址: https://tallerdeandres.cn（SSH/上传仍走 110.40.209.237）"
