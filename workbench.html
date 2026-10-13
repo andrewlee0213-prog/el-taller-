@@ -1635,7 +1635,7 @@ $("#atlQ").addEventListener("input", e => {
    一次性加载：模型归一化(脚底贴地/居中/身高1.7) → 三角形按身高比例分带拆进部位桶（共享顶点、
    只拆索引，GPU 顶点数据不放大）→ 每部位一个 Mesh 供拾取与高亮。徽标 = 部位锚点每帧投影成 HTML。
    模型缺失/WebGL 不可用/import 失败 → state=failed，atlasRender 自动回退 SVG。 */
-const BODY3D_URL = "assets/models/atlas-body.glb?v=8";
+const BODY3D_URL = "assets/models/atlas-body.glb?v=10";
 const B3 = { state: "idle" };   /* idle → loading → ready | failed */
 /* 归一化分带阈值（yf=身高比例 0脚底→1头顶, ax=|横|/半宽, zf=纵深/半深,前为正）。
    眼带两侧计数判脸向用 eyeY/eyeZ；坐姿模型（宽>0.9m）走 B3ANCH 解剖锚点最近邻——
@@ -1736,7 +1736,7 @@ async function body3dLoad() {
     const s = 1.7 / (size.y || 1);
     const norm = new THREE.Matrix4().makeScale(s, s, s)
       .multiply(new THREE.Matrix4().makeTranslation(-(box.min.x + size.x / 2), -box.min.y, -(box.min.z + size.z / 2)));
-    const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2, sit: size.x * s > .9 };   /* 坐姿（模型宽>0.9m）→ 锚点最近邻分带 */
+    const dim = { h: 1.7, halfW: size.x * s / 2, halfD: size.z * s / 2, sit: size.z * s > 1.2 };   /* 坐姿（腿前伸纵深>1.2m）→ 锚点最近邻分带；横轴门限会被肩宽卡死，纵深才稳 */
     B3REG.tpose = size.x / (size.y || 1) > 1.5;   /* T-pose（水平展臂）：手臂部位改按横轴分段 */
     /* 部位拆分：世界坐标烘进几何（骨骼绑定姿态定格成静态），三角形按质心分桶，顶点属性全桶共享。
        第一遍先烘坐标并数「眼带高度两侧 |z| 大的三角形」——多的一侧是脸（重解算朝向可能整体翻 180°），
@@ -1831,27 +1831,48 @@ async function body3dLoad() {
     B3.controls.minDistance = 1.5; B3.controls.maxDistance = 5.4;
     B3.controls.autoRotate = true; B3.controls.autoRotateSpeed = .75;
     B3.controls.addEventListener("start", () => { B3.controls.autoRotate = false; });   /* 一碰即停转 */
-    /* 部位徽标锚点：部位自身索引到的顶点求包围盒（computeBoundingBox 会按共享属性全量算，各部位会同盒），
-       中心向外扩一截，自动适配任意姿态模型 */
+    /* 部位徽标锚点：区域三角形质心（双侧部位取三角形多的一侧），从中轴向外出 .17。
+       同时用上半身三角形质心中位数把整个模型平移到世界中轴上——旋转轴穿过人的躯干，
+       而不是包围盒中心（腿前伸会把盒中心拽到人背后/膝前，旋转起来像绕着背转） */
     const acc = {};
-    for (const m of pick) {
-      const idx = m.geometry.index.array, pos = m.geometry.attributes.position;
-      const bb = new THREE.Box3(), v = new THREE.Vector3();
-      for (let i = 0; i < idx.length; i++) {
-        v.fromBufferAttribute(pos, idx[i]);
-        bb.expandByPoint(v);
+    const upXs = [], upZs = [];
+    {
+      const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+      for (const m of pick) {
+        const idx = m.geometry.index.array, pos = m.geometry.attributes.position;
+        const w = m.userData.wear;
+        let sx = 0, sy = 0, sz = 0, n = 0;
+        let lx = 0, ly = 0, lz = 0, ln = 0, rx = 0, ry = 0, rz = 0, rn = 0;
+        for (let t = 0; t < idx.length; t += 3) {
+          va.fromBufferAttribute(pos, idx[t]); vb.fromBufferAttribute(pos, idx[t + 1]); vc.fromBufferAttribute(pos, idx[t + 2]);
+          const cx = (va.x + vb.x + vc.x) / 3, cy = (va.y + vb.y + vc.y) / 3, cz = (va.z + vb.z + vc.z) / 3;
+          sx += cx; sy += cy; sz += cz; n++;
+          if (cx < 0) { lx += cx; ly += cy; lz += cz; ln++; }
+          else { rx += cx; ry += cy; rz += cz; rn++; }
+          if (cy > .95) { upXs.push(cx); upZs.push(cz); }   /* 肩以上：上半身中轴采样 */
+        }
+        acc[w] = { sx, sy, sz, n, lx, ly, lz, ln, rx, ry, rz, rn };
       }
-      const c = bb.getCenter(new THREE.Vector3());
-      (acc[m.userData.wear] = acc[m.userData.wear] || { c: new THREE.Vector3(), n: 0 });
-      acc[m.userData.wear].c.add(c); acc[m.userData.wear].n++;
     }
+    const med = arr => { const a = [...arr].sort((p, q) => p - q); return a[a.length >> 1]; };
+    const ax = med(upXs), az = med(upZs);
+    group.position.set(-ax, 0, -az);   /* 分带已完成不受影响；锚点/拾取走世界矩阵自动跟随 */
     B3.anchors = {};
+    const two = ["上臂", "手腕", "手指", "耳部", "腿脚"];
     for (const w in acc) {
-      const c = acc[w].c.multiplyScalar(1 / acc[w].n);
-      let dx = c.x, dz = c.z;
+      const a = acc[w];
+      let cx, cy, cz;
+      if (two.includes(w) && a.ln && a.rn) {
+        const L = a.ln >= a.rn;
+        cx = (L ? a.lx : a.rx) / (L ? a.ln : a.rn);
+        cy = (L ? a.ly : a.ry) / (L ? a.ln : a.rn);
+        cz = (L ? a.lz : a.rz) / (L ? a.ln : a.rn);
+      } else { cx = a.sx / a.n; cy = a.sy / a.n; cz = a.sz / a.n; }
+      const dx = cx - ax, dz = cz - az;
       const len = Math.hypot(dx, dz);
-      if (len < .05) { dx = 0; dz = 1; } else { dx /= len; dz /= len; }
-      B3.anchors[w] = new THREE.Vector3(c.x + dx * .17, c.y, c.z + dz * .17);
+      B3.anchors[w] = len < .05
+        ? new THREE.Vector3(dx, cy + .13, dz)                                   /* 贴中轴的（头/颈）往上飘 */
+        : new THREE.Vector3(dx + dx / len * .17, cy, dz + dz / len * .17);      /* 其余从身体向外扩 */
     }
     /* 拾取：拖拽超过 6px 视为旋转不算点击；命中部位=切换，点空=清除 */
     const ray = new THREE.Raycaster(), nd = new THREE.Vector2();
