@@ -31,6 +31,7 @@ echo "── 2/5 打包 ──"
 HTMLS=$(ls *.html)
 tar --no-xattrs --no-mac-metadata -czf /tmp/taller.tar.gz \
   $HTMLS kb-data.js works.js notes.js server.js \
+  --exclude='assets/models' \
   assets posts \
   data/kb-content.json \
   deploy/taller.service deploy/nginx-taller.conf
