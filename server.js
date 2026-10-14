@@ -891,6 +891,13 @@ function oilUpcoming(month, day) {
   d = new Date(now.getFullYear() + 1, month - 1, day);
   return d >= today;
 }
+/* 调价窗口 [月,日] → "YYYY-MM-DD"（北京墙钟推断年份：今年已过即明年；调价窗口 ~10 个工作日一开，跨年仅 Dec→Jan 一种） */
+function oilAdjISO(month, day) {
+  const w = bjWall(Date.now());
+  let y = w.y;
+  if (month < w.m || (month === w.m && day < w.d)) y += 1;
+  return y + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+}
 function oilForecast(dirn, amt, range) {
   if (!dirn) return "";
   let f = "预计" + (dirn === "上调" ? "涨" : dirn === "下调" ? "跌" : "搁浅");
@@ -972,18 +979,21 @@ async function wbFetchOil() {
     }
     let win = null;
     if (win2) {
-      const wm = reFirst(win2, /(\d{1,2})月(\d{1,2})日/);
+      const wm = reFirst(win2, /(\d{1,2})月(\d{1,2}日)/);
       if (wm) win = [parseInt(wm[0], 10), parseInt(wm[1], 10)];
-      if (win && oilUpcoming(win[0], win[1])) info.next = "下次调价 " + win2;
-      else info.expired = true;   // 网站数据滞后，窗口已过
+      if (win && oilUpcoming(win[0], win[1])) {
+        info.next = "下次调价 " + win2;
+        info.adj = oilAdjISO(win[0], win[1]);   // 结构化调价日落盘：调度按 [adj-1, adj+1] 三天窗口走
+      } else info.expired = true;   // 网站数据滞后，窗口已过
     }
     const ftxt = oilForecast(dirn, amt, range);
     if (ftxt) info.next += (info.next ? " · " : "") + ftxt;
   } catch {}
+  const prevOil = wbCache.oil;
   if (!info.next && !info.expired) {
-    const prev = wbCache.oil;
-    if (prev && prev.next && !prev.expired) info.next = prev.next;   // 旧窗口未过期则保留
+    if (prevOil && prevOil.next && !prevOil.expired) info.next = prevOil.next;   // 旧窗口未过期则保留
   }
+  if (!info.adj && prevOil && prevOil.adj) info.adj = prevOil.adj;   // 本次没解析出新窗口 → 沿用旧 adj（调价节奏不变）
   return info;
 }
 
@@ -1260,15 +1270,59 @@ async function wbFetchF1() {
   };
 }
 
-/* ---------------- 调度（各板块独立节奏，失败分级重试，缓存落盘回放） ---------------- */
+/* ---------------- 调度（定点每日 + 条件触发，失败分级重试，缓存落盘回放） ----------------
+   2026-10-14 起部分板块从「固定间隔」改为「北京墙钟定点/条件窗口」：
+   bili 每天 11:00；anth/arxiv 每天 05:00；oil 只在调价日 ±1 天窗口内每天 05:00（窗口外睡到前夜）；
+   f1 只在未来 session 的前一天 05:00 抓（休赛期每周兜底一次）。全部显式 +8 计算，不依赖服务器时区。 */
+const bjWall = ms => {   // 北京墙钟分量（getUTC* 读 now+8h）
+  const d = new Date(ms + 8 * 3600e3);
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), hh: d.getUTCHours(), mm: d.getUTCMinutes() };
+};
+const bjDayKey = ms => { const w = bjWall(ms); return w.y + "-" + String(w.m).padStart(2, "0") + "-" + String(w.d).padStart(2, "0"); };
+const bjDayStart = dateStr => { const [y, m, d] = dateStr.split("-").map(Number); return Date.UTC(y, m - 1, d) - 8 * 3600e3; };   // 北京某日 00:00
+function bjNextDailyAt(hh, mm, afterMs) {   // 严格晚于 afterMs 的下一个北京定点时刻（重启/手动刷新不重抓当天已抓）
+  const w = bjWall(afterMs);
+  let t = Date.UTC(w.y, w.m - 1, w.d, hh, mm, 0, 0) - 8 * 3600e3;
+  if (t <= afterMs) t += 24 * 3600e3;
+  return t;
+}
 const WB_INTERVALS = {
   glm:   { ok: 5 * 60e3,    fail: 2 * 60e3 },
-  oil:   { ok: 24 * 3600e3, fail: 30 * 60e3, stale: 2 * 3600e3 },
-  bili:  { ok: 144 * 60e3,  fail: 3 * 60e3, failRisk: 60 * 60e3 },
-  anth:  { ok: 24 * 3600e3, fail: 20 * 60e3 },
-  arxiv: { ok: 24 * 3600e3, fail: 20 * 60e3 },
-  f1:    { ok: 24 * 3600e3, fail: 6 * 3600e3 },
+  oil:   { dailyAt: "05:00", fail: 30 * 60e3, stale: 2 * 3600e3 },
+  bili:  { dailyAt: "11:00", fail: 3 * 60e3, failRisk: 60 * 60e3 },
+  anth:  { dailyAt: "05:00", fail: 20 * 60e3 },
+  arxiv: { dailyAt: "05:00", fail: 20 * 60e3 },
+  f1:    { dailyAt: "05:00", fail: 6 * 3600e3 },
 };
+/* 成功后的下一次运行时刻（lastAt = 该板块缓存 at；失败仍走 WB_INTERVALS.fail 短重试） */
+function wbNextRun(section, lastAt) {
+  const now = Date.now();
+  const iv = WB_INTERVALS[section];
+  if (section === "glm") return Math.max(now, lastAt + iv.ok);
+  const [hh, mm] = (iv.dailyAt || "05:00").split(":").map(Number);
+  if (section === "oil") {
+    const adj = (wbCache.oil && wbCache.oil.adj) || "";        // 下次调价日 "YYYY-MM-DD"（fetch 落盘）
+    if (!adj) return bjNextDailyAt(hh, mm, lastAt);            // 窗口未知 → 每天兜底，抓到就进窗口节奏
+    const winStart = bjDayStart(adj) - 86400e3;                // adj-1 天 00:00
+    if (now >= winStart && now < winStart + 3 * 86400e3) return bjNextDailyAt(hh, mm, lastAt);   // 窗口内：每天一次
+    if (now < winStart) return bjNextDailyAt(hh, mm, winStart - 1);   // 窗口未到：直接睡到 adj-1 的 05:00
+    return bjNextDailyAt(hh, mm, lastAt);                      // 窗口已过（网站滞后）→ 每天等新 adj
+  }
+  if (section === "f1") {
+    const today0 = bjDayStart(bjDayKey(now));
+    const futures = new Set();
+    for (const r of (wbCache.f1 && wbCache.f1.races) || [])
+      for (const ss of r.sessions || []) { const t0 = bjDayStart(ss.date); if (t0 >= today0) futures.add(t0); }
+    if (!futures.size) return Math.max(now, lastAt + 7 * 24 * 3600e3);   // 无未来 session（休赛期/缓存旧）→ 每周兜底
+    for (const t0 of [...futures].sort((a, b) => a - b)) {
+      const cand = t0 - 86400e3 + 5 * 3600e3;                  // session 前一天 05:00（北京）
+      if (cand <= lastAt) continue;                            // 该前夜已抓过 → 顺延到下一个 session 前夜
+      return Math.max(cand, now);                              // 错过（停机/睡过）则醒来立即补
+    }
+    return Math.max(now, lastAt + 7 * 24 * 3600e3);
+  }
+  return bjNextDailyAt(hh, mm, lastAt);                        // bili / anth / arxiv：每天定点
+}
 let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
 let wbSched = {};
 function wbInitSchedule() {
@@ -1280,7 +1334,7 @@ function wbInitSchedule() {
   const now = Date.now();
   for (const k of Object.keys(WB_INTERVALS)) {
     const last = (wbCache[k] && wbCache[k].at) || 0;
-    wbSched[k] = { busy: false, nextAt: Math.max(now, last + WB_INTERVALS[k].ok) };
+    wbSched[k] = { busy: false, nextAt: wbNextRun(k, last) };
     if (!wbCache[k]) wbSched[k].nextAt = now;   // 冷启动立即抓
   }
   /* 错峰：glm 立即，oil/bili/anth/arxiv/f1 依次让路 */
@@ -1300,36 +1354,37 @@ async function wbRun(section) {
   if (!s || s.busy) return false;
   s.busy = true;
   const iv = WB_INTERVALS[section];
-  const done = delay => { s.busy = false; s.nextAt = Date.now() + delay; saveJson(WB_FILE.cache, wbCache); };
+  const done = delay => { s.busy = false; s.nextAt = Date.now() + delay; saveJson(WB_FILE.cache, wbCache); };   // 失败/滞后的短重试
+  const okNext = () => { s.busy = false; s.nextAt = wbNextRun(section, Date.now()); saveJson(WB_FILE.cache, wbCache); };   // 成功：定点/条件节奏
   try {
     if (section === "glm") {
       const d = await wbFetchGLM();
-      if (d.ok) { wbCache.glm = d; done(iv.ok); } else { wbFail("glm", d.error); done(iv.fail); }
+      if (d.ok) { wbCache.glm = d; okNext(); } else { wbFail("glm", d.error); done(iv.fail); }
     } else if (section === "oil") {
       const d = await wbFetchOil();
-      if (d.ok) { wbCache.oil = d; done(d.expired ? iv.stale : iv.ok); }
+      if (d.ok) { wbCache.oil = d; if (d.expired) done(iv.stale); else okNext(); }   // 网站滞后（窗口已过未上新）→ 2h 后重查
       else { wbFail("oil", d.error); done(iv.fail); }
     } else if (section === "bili") {
       const d = await wbFetchBiliAll();
-      if (d.ok) { wbCache.bili = d; done(iv.ok); }
+      if (d.ok) { wbCache.bili = d; okNext(); }
       else { wbFail("bili", d.error); done(d.risky ? iv.failRisk : iv.fail); }
     } else if (section === "anth") {
       const d = await wbFetchAnth();
-      if (d.ok) { wbCache.anth = d; done(iv.ok); readerPrefetch("anth"); }
+      if (d.ok) { wbCache.anth = d; okNext(); readerPrefetch("anth"); }
       else { wbFail("anth", d.error); done(iv.fail); }
     } else if (section === "arxiv") {
       console.log("[workbench] arxiv 五段选文开始");
       const d = await wbFetchArxiv();
-      if (d.ok) { wbCache.arxiv = d; console.log("[workbench] arxiv 终选: " + d.items.map(x => x.zh).join(" / ")); done(iv.ok); readerPrefetch("arxiv"); }
+      if (d.ok) { wbCache.arxiv = d; console.log("[workbench] arxiv 终选: " + d.items.map(x => x.zh).join(" / ")); okNext(); readerPrefetch("arxiv"); }
       else { wbFail("arxiv", d.error); done(iv.fail); }
     } else if (section === "f1") {
       const d = await wbFetchF1();
-      if (d.ok) { wbCache.f1 = d; console.log("[workbench] f1 赛程 " + d.races.length + " 站"); done(iv.ok); }
+      if (d.ok) { wbCache.f1 = d; console.log("[workbench] f1 赛程 " + d.races.length + " 站"); okNext(); }
       else { wbFail("f1", d.error); done(iv.fail); }
     }
   } catch (e) {
     wbFail(section, e.name === "TimeoutError" || e.name === "AbortError" ? "网络超时" : (e.message || "抓取失败"));
-    done(iv.fail || Math.round(iv.ok / 6));
+    done(iv.fail || 15 * 60e3);
   }
   return true;
 }
@@ -2223,7 +2278,9 @@ const server = http.createServer(async (req, res) => {
         up: v.name, title: v.title, url: "https://www.bilibili.com/video/" + v.bv,
       }));
       json(res, 200, {
-        ok: true, need: !(latest && latest.date === hwToday()), date: hwToday(),
+        /* 出报时点拦门：北京时间 05:00 前不算「今日缺报」——Mac 端 30 分钟轮询零改动，05:00 后首次轮询触发出报；
+           Mac 睡过 05:00 则唤醒后的首次轮询补跑，不丢天 */
+        ok: true, need: !(latest && latest.date === hwToday()) && bjWall(Date.now()).hh >= 5, date: hwToday(),
         ups: wbCfg.biliUps, watch: hwStore.watch, recentUrls, bili,
         devices: hwDevices.devices.map(d => ({ name: d.name, cat: d.cat, lens: d.lens, status: d.status, firstSeen: d.firstSeen })),
       });

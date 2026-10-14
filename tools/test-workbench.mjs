@@ -74,6 +74,23 @@ fs.writeFileSync(path.join(tmpData, "kb-categories.json"), JSON.stringify({
   "interview-bank": { cat: "职场与商业", by: "manual", at: 1 },
   "video-scripts": { cat: "视频与创作", by: "auto", at: 1 },
 }));
+/* 预置调度缓存（定点制断言用）：全部 at=30 秒前；oil 给远期 adj=2099-06-01（窗口外→睡到 2099-05-31 05:00）；
+   f1 给后天+8 天后两个 session（后天 session 的前夜=明天 05:00 恒在未来，断言免时钟竞态） */
+const seedAt = Date.now() - 30e3;
+const bjDate = off => new Date(Date.now() + 8 * 3600e3 + off * 86400e3).toISOString().slice(0, 10);
+fs.writeFileSync(path.join(tmpData, "workbench-cache.json"), JSON.stringify({
+  glm: { ok: true, at: seedAt },
+  oil: { ok: true, at: seedAt, adj: "2099-06-01", price: "8.10", prices: [], note: "seed", next: "seed", expired: false, hist: [] },
+  bili: { ok: true, at: seedAt, items: [] },
+  anth: { ok: true, at: seedAt, items: [] },
+  arxiv: { ok: true, at: seedAt, items: [] },
+  f1: { ok: true, at: seedAt, races: [
+    { round: 98, raceName: "种子站A", locality: "测试", date: bjDate(2), time: "20:00", sprint: "", sprintTime: "",
+      sessions: [{ k: "R", label: "正赛", date: bjDate(2), hm: "20:00" }] },
+    { round: 99, raceName: "种子站B", locality: "测试", date: bjDate(8), time: "20:00", sprint: "", sprintTime: "",
+      sessions: [{ k: "R", label: "正赛", date: bjDate(8), hm: "20:00" }] },
+  ] },
+}));
 console.log("临时数据目录: " + tmpData);
 console.log("测试端口: " + PORT);
 const child = spawn(NODE24, ["server.js"], {
@@ -126,6 +143,22 @@ try {
   check("admin /api/workbench/data → 200 且含五板块键", r.status === 200 &&
     ["glm", "oil", "bili", "anth", "arxiv"].every(k => k in (r.json.data || {})), JSON.stringify(r.json).slice(0, 120));
   check("data.cfg 含 ups/profile", Array.isArray(r.json.cfg.ups) && typeof r.json.cfg.profile === "string");
+
+  /* ---- 定点调度断言（2026-10-14 起定点每日制）：sched.nextAt 与测试端同式重算比对 ----
+     注：bili/anth/arxiv 的断言在定点时刻前后 ~1 分钟内跑会有时钟竞态（板块到点真去抓），避开整点跑测试即可 */
+  {
+    const sched = r.json.sched || {};
+    const expNext = (hh, mm, after) => { const w = new Date(after + 8 * 3600e3); let t = Date.UTC(w.getUTCFullYear(), w.getUTCMonth(), w.getUTCDate(), hh, mm) - 8 * 3600e3; if (t <= after) t += 86400e3; return t; };
+    const fmt = v => v == null ? "无" : new Date(v).toISOString();
+    check("调度：glm 仍 5 分钟间隔", sched.glm && sched.glm.nextAt === seedAt + 5 * 60e3, fmt(sched.glm && sched.glm.nextAt));
+    check("调度：bili 每天 11:00 定点", sched.bili && sched.bili.nextAt === expNext(11, 0, seedAt), fmt(sched.bili && sched.bili.nextAt));
+    check("调度：anth 每天 05:00 定点", sched.anth && sched.anth.nextAt === expNext(5, 0, seedAt), fmt(sched.anth && sched.anth.nextAt));
+    check("调度：arxiv 每天 05:00 定点", sched.arxiv && sched.arxiv.nextAt === expNext(5, 0, seedAt), fmt(sched.arxiv && sched.arxiv.nextAt));
+    check("调度：oil 窗口外睡到 adj-1 的 05:00", sched.oil && sched.oil.nextAt === expNext(5, 0, Date.UTC(2099, 4, 31) - 8 * 3600e3 - 1), fmt(sched.oil && sched.oil.nextAt));
+    const dayStart = ds => { const [y, m, d] = ds.split("-").map(Number); return Date.UTC(y, m - 1, d) - 8 * 3600e3; };
+    const expF1 = dayStart(bjDate(2)) - 86400e3 + 5 * 3600e3;   // 后天 session → 明天 05:00（恒在未来，无竞态）
+    check("调度：f1 只在 session 前一天 05:00", sched.f1 && sched.f1.nextAt === expF1, fmt(sched.f1 && sched.f1.nextAt));
+  }
 
   /* ---- 工作记录 ---- */
   r = await req("POST", "/api/workbench/log", { text: "测试：写了一行工作记录", date: "2026-10-09" });
@@ -354,9 +387,11 @@ try {
   let hpr = await fetch(BASE + "/api/workbench/hw/pending?token=" + hwTok);
   let hpj = await hpr.json();
   const hwDate = hpj.date;
-  check("hw pending 领取（need + UP/机型/近链/B站视频/图鉴名单）", hpj.ok === true && hpj.need === true && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
+  /* 2026-10-14 起 need 加北京时间 05:00 拦门：凌晨 0-5 点期望 false（今日缺报但未到出报时点） */
+  const bjHourNow = new Date(Date.now() + 8 * 3600e3).getUTCHours();
+  check("hw pending 领取（need 按 05:00 拦门 + UP/机型/近链/B站视频/图鉴名单）", hpj.ok === true && hpj.need === (bjHourNow >= 5) && /^\d{4}-\d{2}-\d{2}$/.test(hwDate) &&
     Array.isArray(hpj.ups) && Array.isArray(hpj.watch) && Array.isArray(hpj.recentUrls) && Array.isArray(hpj.bili) &&
-    Array.isArray(hpj.devices) && hpj.devices.length === 500, JSON.stringify(hpj).slice(0, 140));
+    Array.isArray(hpj.devices) && hpj.devices.length === 500, "need=" + hpj.need + " bjHour=" + bjHourNow);
   hd = await fetch(BASE + "/api/workbench/hw/done", {
     method: "POST", headers: { "Content-Type": "application/json", "x-hw-token": hwTok },
     body: "not-json{",
