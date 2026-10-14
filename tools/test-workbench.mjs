@@ -470,27 +470,34 @@ try {
   check("首页节气模块（clockTerm + Meeus 视黄经）",
     (r.text || "").includes('id="clockTerm"') && (r.text || "").includes("solarLongitude") && (r.text || "").includes("TERM_NAMES"));
 
-  /* ---- 小红书粉丝监控（服务器侧抓取；本机无 Cookie → needCookie 降级，失败不阻塞） ---- */
+  /* ---- 小红书粉丝监控（Mac 推送模式：xhsToken 回传，同 hw 情报） ---- */
   r = await req("GET", "/api/workbench/data");
   const xhs0 = (r.json && r.json.xhs) || {};
-  check("小红书快照带出（账号 kg12141706 + days 结构）", xhs0.account === "kg12141706" && Array.isArray(xhs0.days),
+  check("小红书快照带出（主页 ID + days 结构）", xhs0.account === "5ae9132b11be103284ad135c" && Array.isArray(xhs0.days),
     JSON.stringify(xhs0).slice(0, 90));
-  check("小红书未配 Cookie → needCookie 降级", xhs0.needCookie === true, JSON.stringify(xhs0.error));
-  await req("POST", "/api/workbench/refresh", { section: "xhs" });
-  let xhsAt = xhs0.at || null;
-  for (let i = 0; i < 12 && !xhsAt; i++) {   /* 等首次抓取收口（本机到不了小红书 → 必失败，但要落盘状态） */
-    await new Promise(rs => setTimeout(rs, 2500));
-    r = await req("GET", "/api/workbench/data");
-    xhsAt = (((r.json && r.json.xhs) || {}).at) || null;
-  }
+  const xhsTok = JSON.parse(fs.readFileSync(path.join(tmpData, "server-config.json"), "utf8")).xhsToken;
+  let xp = await fetch(BASE + "/api/workbench/xhs/done", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fans: 4577, redId: "kg12141706", nickname: "测试昵称" }) });
+  check("小红书回传 无 token → 401", xp.status === 401, xp.status);
+  xp = await fetch(BASE + "/api/workbench/xhs/done", { method: "POST", headers: { "Content-Type": "application/json", "x-xhs-token": xhsTok },
+    body: JSON.stringify({}) });
+  check("小红书回传 缺 fans → 400", xp.status === 400, xp.status);
+  const xhsYesterday = new Date(Date.now() - 86400e3).toISOString().slice(0, 10);
+  xp = await fetch(BASE + "/api/workbench/xhs/done", { method: "POST", headers: { "Content-Type": "application/json", "x-xhs-token": xhsTok },
+    body: JSON.stringify({ fans: 4560, date: xhsYesterday, redId: "kg12141706", nickname: "测试昵称" }) });
+  check("小红书回传 昨日点 → 200", xp.status === 200 && (await xp.json()).ok === true, xp.status);
+  xp = await fetch(BASE + "/api/workbench/xhs/done", { method: "POST", headers: { "Content-Type": "application/json", "x-xhs-token": xhsTok },
+    body: JSON.stringify({ fans: 4577, redId: "kg12141706", nickname: "测试昵称" }) });
+  check("小红书回传 今日点 → 200", xp.status === 200, xp.status);
   r = await req("GET", "/api/workbench/data");
   const xhs1 = (r.json && r.json.xhs) || {};
-  check("小红书失败也落盘状态（at + error，不阻塞其它板块）", !!xhs1.at && xhs1.ok === false && typeof xhs1.error === "string",
-    JSON.stringify(xhs1).slice(0, 90));
+  check("小红书快照：粉丝/redId/涨跌齐出", xhs1.ok === true && xhs1.fans === 4577 && xhs1.redId === "kg12141706" &&
+    xhs1.delta1 === 17 && Array.isArray(xhs1.days) && xhs1.days.length === 2,
+    JSON.stringify({ ok: xhs1.ok, fans: xhs1.fans, delta1: xhs1.delta1, days: xhs1.days.length }));
+  xp = await fetch(BASE + "/api/workbench/xhs/done", { method: "POST", headers: { "Content-Type": "application/json", "x-xhs-token": xhsTok },
+    body: JSON.stringify({ fans: 4580, date: "2026-01-01" }) });
+  check("小红书回传 远古日期 → 400", xp.status === 400, xp.status);
   check("xhs-fans.json 落在隔离 data/（不入部署包）", fs.existsSync(path.join(tmpData, "xhs-fans.json")));
-  r = await req("POST", "/api/workbench/config", { xhsCookie: "web_session=test-dummy" });
-  check("小红书 Cookie 可保存（hasXhsCookie 回显）", r.json && r.json.ok === true && r.json.hasXhsCookie === true,
-    JSON.stringify(r.json));
 
   /* ---- Biblioteca 书本删除（静态书=屏蔽名单 / lectura 清空 / 图鉴拒删） ---- */
   cookie = "";

@@ -580,7 +580,7 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
       <div class="g-card wbcard" id="card-xhs" style="--c:#ff2442">
         <div class="chead"><span class="cbar"></span><b>小红书 · 粉丝监控</b>
           <span class="upd" id="xhsUpd"></span>
-          <button class="rfbtn" data-sec="xhs" title="立即刷新（服务器侧抓取）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+          <button class="rfbtn" data-sec="xhs" title="重新拉取（数据由 Mac 收集任务推送，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody" id="xhsBody"><span class="dim">等待首轮抓取…</span></div>
       </div>
 
@@ -667,11 +667,10 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 
     <!-- ============ Ajustes ============ -->
     <details class="settings" id="settings">
-      <summary><b>Ajustes · 设置</b> —— GLM Key / B站 Cookie / 小红书 Cookie / UP 清单 / arXiv 兴趣画像</summary>
+      <summary><b>Ajustes · 设置</b> —— GLM Key / B站 Cookie / UP 清单 / arXiv 兴趣画像</summary>
       <div class="setgrid">
         <label>GLM API Key（留空 = 不修改）<input type="password" id="cfgKey" placeholder="粘贴 open.bigmodel.cn 的 API Key"></label>
         <label>B站 Cookie（留空 = 不修改）<input type="text" id="cfgCookie" placeholder="SESSDATA=xxx; buvid3=xxx（浏览器 F12 复制整串）"></label>
-        <label>小红书 Cookie（粉丝监控 · 留空 = 不修改）<input type="text" id="cfgXhsCookie" placeholder="web_session=xxx; a1=xxx（电脑登录 xiaohongshu.com 后 F12 复制整串）"></label>
         <label class="full">B站 UP 清单（JSON）<textarea id="cfgUps" placeholder='[{"uid":"520155988","name":"示例UP主"}]'></textarea></label>
         <label class="full">arXiv 兴趣画像（选文漏斗的打分依据，你的评论也会自动并入）<textarea id="cfgProfile" placeholder="一行一个方向…"></textarea></label>
         <div class="setnote">Key 与 Cookie 只存服务器 data/ 目录（有访问封锁、永不对外、部署不覆盖）。保存后各板块按各自节奏自动刷新，也可点卡片右上角 ↻ 立即刷新。</div>
@@ -1124,8 +1123,8 @@ document.addEventListener("click", async e => {
   }
 });
 
-/* ================= 刷新按钮：触发 + 轮询（hw 除外——它的数据由 Mac 收集任务推送，↻ 只重拉展示） ================= */
-document.querySelectorAll('.rfbtn:not([data-sec="hw"])').forEach(btn => btn.addEventListener("click", async () => {
+/* ================= 刷新按钮：触发 + 轮询（hw/xhs 除外——数据由 Mac 收集任务推送，↻ 只重拉展示） ================= */
+document.querySelectorAll('.rfbtn:not([data-sec="hw"]):not([data-sec="xhs"])').forEach(btn => btn.addEventListener("click", async () => {
   if (btn.disabled) return;
   const sec = btn.dataset.sec;
   btn.disabled = true;
@@ -1154,6 +1153,22 @@ $("#card-hw .rfbtn").addEventListener("click", async function () {
     HW = d.hw || null;
     renderHw();
     toast(HW ? "已重拉：" + HW.date : "今日尚未生成");
+  } catch (_) {}
+  await sleep(600);
+  this.disabled = false;
+  this.classList.remove("spin");
+});
+
+/* 小红书 ↻：同 hw —— 数据由 Mac 收集任务推送，只重拉展示 */
+$("#card-xhs .rfbtn").addEventListener("click", async function () {
+  if (this.disabled) return;
+  this.disabled = true;
+  this.classList.add("spin");
+  try {
+    const d = await api("GET", "/api/workbench/data");
+    if (d.xhs) XHS = d.xhs;
+    renderXhs();
+    toast(XHS && XHS.fans != null ? "已重拉：" + xhsFmt(XHS.fans) + " 粉丝" : "尚无推送数据");
   } catch (_) {}
   await sleep(600);
   this.disabled = false;
@@ -1217,17 +1232,16 @@ $("#cfgSave").addEventListener("click", async () => {
   const body = { biliUps: Array.isArray(ups) ? ups : [] };
   if ($("#cfgKey").value.trim()) body.glmKey = $("#cfgKey").value.trim();
   if ($("#cfgCookie").value.trim()) body.biliCookie = $("#cfgCookie").value.trim();
-  if ($("#cfgXhsCookie").value.trim()) body.xhsCookie = $("#cfgXhsCookie").value.trim();
   if ($("#cfgProfile").value.trim()) body.arxivProfile = $("#cfgProfile").value.trim();
   const r = await api("POST", "/api/workbench/config", body);
   btn.disabled = false;
   if (r.ok) {
-    $("#cfgKey").value = ""; $("#cfgCookie").value = ""; $("#cfgXhsCookie").value = "";
+    $("#cfgKey").value = ""; $("#cfgCookie").value = "";
     $("#cfgSaved").textContent = "已保存 ✓ " + hm(Date.now()) + "，板块自动刷新";
     const d = await api("GET", "/api/workbench/data");
     CFG = d.cfg;
     renderBanner();
-    ["glm", "oil", "bili", "anth", "xhs"].forEach(sec => api("POST", "/api/workbench/refresh", { section: sec }));
+    ["glm", "oil", "bili", "anth"].forEach(sec => api("POST", "/api/workbench/refresh", { section: sec }));
     toast("设置已保存，板块刷新中");
   } else toast(r.error || "保存失败");
 });
@@ -1498,7 +1512,7 @@ function renderHw() {
   body.innerHTML = html;
 }
 
-/* ================= 小红书粉丝监控（服务器侧抓取：Mac 网络到不了小红书） ================= */
+/* ================= 小红书粉丝监控（Mac 推送：小红书只认真浏览器上下文，launchd 每 2h 登录态 Chrome 抓了推上来） ================= */
 let XHS = null;
 const xhsFmt = n => n == null ? "—" : n.toLocaleString("zh-Hans");
 function renderXhs() {
@@ -1506,15 +1520,14 @@ function renderXhs() {
   if (!body) return;
   if (!XHS) { $("#xhsUpd").textContent = ""; body.innerHTML = '<span class="dim">等待首轮抓取…</span>'; return; }
   $("#xhsUpd").textContent = XHS.at ? hm(XHS.at) + " 更新" : "";
-  if (XHS.needCookie || (XHS.fans == null && !XHS.days.length)) {
-    body.innerHTML = '<div class="xhs-err"><b>需要小红书 Cookie</b> —— 小红书对服务器 IP 强制登录（Mac 也到不了小红书）。' +
-      '任意电脑登录 xiaohongshu.com → F12 → Network 任一请求 → 复制请求头里整串 Cookie（含 <b>web_session=…</b>）→ 粘贴到页面底部 <b>Ajustes · 设置</b> 保存即可，服务器每 2 小时自动抓一次。' +
-      (XHS.error ? '<br>最近一次：' + esc(XHS.error) : "") + "</div>";
+  if (XHS.fans == null && !XHS.days.length) {
+    body.innerHTML = '<div class="xhs-err">等待 Mac 收集任务首次推送 —— 每 2 小时用登录态浏览器读一次粉丝数自动推上来（小红书反爬只认真浏览器，服务器/裸抓一律被拦）。</div>';
     return;
   }
   const fans = XHS.fans;
+  const handle = XHS.redId || XHS.account;   /* 展示用小红书号；redId 缺省回落主页 ID */
   let html = '<div class="xhs-num">' + xhsFmt(fans) + "<small>粉丝</small></div>" +
-    '<div class="xhs-name"><b>' + esc(XHS.nickname || XHS.account) + "</b> · @" + esc(XHS.account) + " · <a href=\"https://www.xiaohongshu.com/user/profile/" + esc(XHS.account) + "\" target=\"_blank\" rel=\"noopener\">主页 ↗</a></div>";
+    '<div class="xhs-name"><b>' + esc(XHS.nickname || XHS.account) + "</b> · @" + esc(handle) + " · <a href=\"https://www.xiaohongshu.com/user/profile/" + esc(XHS.account) + "\" target=\"_blank\" rel=\"noopener\">主页 ↗</a></div>";
   const chips = [];
   if (typeof XHS.delta1 === "number") chips.push('<span class="xhs-delta ' + (XHS.delta1 > 0 ? "up" : XHS.delta1 < 0 ? "down" : "") + '">今日 ' + (XHS.delta1 > 0 ? "+" : "") + XHS.delta1 + "</span>");
   if (typeof XHS.delta7 === "number") chips.push('<span class="xhs-delta ' + (XHS.delta7 > 0 ? "up" : XHS.delta7 < 0 ? "down" : "") + '">7 天 ' + (XHS.delta7 > 0 ? "+" : "") + XHS.delta7 + "</span>");
@@ -1532,7 +1545,7 @@ function renderXhs() {
       '<polyline points="' + pts + '" fill="none" stroke="var(--c,#ff2442)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
       '<title>' + esc(days[0].date + " " + lo + " → " + days[days.length - 1].date + " " + hi) + "</title></svg>";
   }
-  if (!XHS.ok && XHS.error) html += '<div class="xhs-err"><b>最近一次抓取失败</b>：' + esc(XHS.error) + "（展示上次读数）</div>";
+  if (!XHS.ok && XHS.error) html += '<div class="xhs-err"><b>最近一次异常</b>：' + esc(XHS.error) + "（展示上次读数）</div>";
   body.innerHTML = html;
 }
 

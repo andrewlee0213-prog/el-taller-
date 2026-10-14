@@ -595,82 +595,57 @@ const WB_DEFAULTS = {
     "video generation", "diffusion model", "speech", "audio", "remote sensing",
     "graph neural network", "federated", "hardware", "circuit", "optical", "quantum",
     "protein", "molecule", "weather", "satellite", "3D reconstruction", "SLAM", "drug discovery"],
-  xhsAccount: "kg12141706",                              // 小红书粉丝监控的账号（server-config.json 可覆盖）
+  xhsAccount: "5ae9132b11be103284ad135c",                // 小红书粉丝监控的主页用户 ID（hex；小红书号如 kg12141706 在 URL 里 404，须先登录态搜索解析）
 };
 const wbCfg = Object.assign({}, WB_DEFAULTS, loadJson(WB_FILE.cfg, {}));
 if (!Array.isArray(wbCfg.biliUps)) wbCfg.biliUps = [];
 
-/* ---------------- 小红书粉丝监控（服务器侧抓取：Mac 网络到不了小红书，只有服务器能抓） ----------------
-   data/xhs-fans.json = { account, current:{ok,fans,nickname,at,error,needCookie}, days:[{date,fans}]（日点留 120 天） }
-   抓取：个人主页 HTML 内嵌 __INITIAL_STATE__.userPageData.userInfo（fansCount/nickname）；
-   小红书对数据中心 IP 强制登录 → 需在设置里粘贴整串 Cookie（同 B站 Cookie 模式，只存服务器 data/） */
+/* ---------------- 小红书粉丝监控（Mac 推送；2026-10-14 实测小红书只认真浏览器上下文，
+   服务器/裸客户端带有效 Cookie 也一律 302→登录页，curl-impersonate 同样无效 → 与 hw 情报同架构） ----------------
+   data/xhs-fans.json = { account, current:{ok,fans,nickname,redId,at}, days:[{date,fans}]（日点留 120 天） }
+   Mac launchd「taller-小红书粉丝」每 2h 用登录态 Chrome 读主页 __INITIAL_STATE__
+   （userInfo.interactions[type=fans].count，2026-10 字段；redId=小红书号）→ POST /api/workbench/xhs/done（xhsToken） */
 let xhsStore = loadJson(WB_FILE.xhs, null);
 if (!xhsStore || !Array.isArray(xhsStore.days)) xhsStore = { account: "", current: null, days: [] };
-const xhsAccount = () => String(wbCfg.xhsAccount || "kg12141706").replace(/[^\w-]/g, "") || "kg12141706";
+const xhsAccount = () => String(wbCfg.xhsAccount || "5ae9132b11be103284ad135c").replace(/[^\w-]/g, "") || "5ae9132b11be103284ad135c";
 const xhsDateStr = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-async function xhsFetchProfile() {
-  const h = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    Referer: "https://www.xiaohongshu.com/",
-  };
-  if (wbCfg.xhsCookie) h.Cookie = wbCfg.xhsCookie;
-  const r = await fetch("https://www.xiaohongshu.com/user/profile/" + xhsAccount(), {
-    headers: h, redirect: "manual", signal: AbortSignal.timeout(15000),
-  });
-  if (r.status >= 300 && r.status < 400) { const e = new Error("未登录（302→登录页）：小红书需要 Cookie"); e.needCookie = true; throw e; }
-  if (!r.ok) { const e = new Error("小红书 HTTP " + r.status); if (r.status === 461) e.needCookie = true; throw e; }
-  const html = await r.text();
-  const anchor = html.indexOf('"userPageData"');
-  const seg = html.slice(anchor >= 0 ? anchor : 0);
-  const fansM = seg.match(/"fansCount"\s*:\s*"?(\d+)"?/);
-  const nickM = seg.match(/"nickname"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  if (!fansM) {
-    const e = new Error(/login|captcha|verify/i.test(html.slice(0, 6000)) ? "小红书要求登录：Cookie 未配或已失效" : "页面解析不到粉丝数（账号不存在或页面结构变化）");
-    e.needCookie = /login|captcha|verify/i.test(html.slice(0, 6000));
-    throw e;
-  }
-  return { fans: Number(fansM[1]), nickname: nickM ? JSON.parse('"' + nickM[1] + '"') : xhsAccount() };
-}
-async function xhsTick() {
-  try {
-    const d = await xhsFetchProfile();
-    xhsStore.account = xhsAccount();
-    xhsStore.current = { ok: true, fans: d.fans, nickname: d.nickname, at: Date.now() };
-    const today = xhsDateStr(new Date());
-    const last = xhsStore.days[xhsStore.days.length - 1];
-    if (last && last.date === today) last.fans = d.fans;
-    else xhsStore.days.push({ date: today, fans: d.fans });
-    if (xhsStore.days.length > 120) xhsStore.days = xhsStore.days.slice(-120);
-    saveJson(WB_FILE.xhs, xhsStore);
-    wbCache.xhs = { ok: true, at: xhsStore.current.at };
-    console.log("[workbench] xhs 粉丝 " + d.fans + "（" + d.nickname + "）");
-    return { ok: true };
-  } catch (err) {
-    const msg = err.name === "TimeoutError" ? "小红书超时（15s）" : err.message;
-    xhsStore.account = xhsAccount();
-    xhsStore.current = Object.assign({}, xhsStore.current, { ok: false, error: msg, needCookie: !!err.needCookie, at: Date.now() });
-    saveJson(WB_FILE.xhs, xhsStore);
-    wbCache.xhs = { ok: false, error: msg, at: xhsStore.current.at };
-    console.log("[workbench] xhs 失败: " + msg);
-    return { ok: false, error: msg, needCookie: !!err.needCookie };
-  }
+function xhsApply(body) {
+  const fans = Number(body.fans);
+  if (!Number.isFinite(fans) || fans < 0 || fans > 1e9) return { ok: false, error: "fans 非法" };
+  let date = String(body.date || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = xhsDateStr(new Date());
+  const today = xhsDateStr(new Date()), yesterday = xhsDateStr(new Date(Date.now() - 86400e3));
+  if (date !== today && date !== yesterday) return { ok: false, error: "date 仅允许今/昨日" };
+  const redId = String(body.redId || "").replace(/\s+/g, "").slice(0, 32);
+  const nickname = String(body.nickname || "").replace(/\s+/g, " ").trim().slice(0, 40);
+  const n = Math.round(fans);
+  xhsStore.account = xhsAccount();
+  xhsStore.current = { ok: true, fans: n, nickname, redId, at: Date.now() };
+  const last = xhsStore.days[xhsStore.days.length - 1];
+  if (last && last.date === date) last.fans = n;
+  else xhsStore.days.push({ date, fans: n });
+  xhsStore.days.sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (xhsStore.days.length > 120) xhsStore.days = xhsStore.days.slice(-120);
+  saveJson(WB_FILE.xhs, xhsStore);
+  console.log("[workbench] xhs 粉丝 " + n + "（" + (nickname || redId || xhsStore.account) + "）");
+  return { ok: true };
 }
 function xhsSnapshot() {
   const days = xhsStore.days || [];
   const cur = xhsStore.current || null;
-  const fans = cur && cur.ok ? cur.fans : (cur ? cur.fans : null);   /* 失败时保留上次读数展示 */
+  const fans = cur ? cur.fans : null;
   let delta1 = null, delta7 = null;
   if (typeof fans === "number") {
     const d1 = days[days.length - 2];                                  /* 昨日点 */
     if (d1 && typeof d1.fans === "number") delta1 = fans - d1.fans;
-    const d7 = days[Math.max(0, days.length - 8)];                     /* 7 天前点 */
-    if (d7 && typeof d7.fans === "number") delta7 = fans - d7.fans;
+    if (days.length >= 8) {                                            /* 满一整周才报 7 日涨跌，避免拿今天对比今天 */
+      const d7 = days[days.length - 8];
+      if (d7 && typeof d7.fans === "number") delta7 = fans - d7.fans;
+    }
   }
   return {
     account: xhsStore.account || xhsAccount(), ok: !!(cur && cur.ok), fans,
-    nickname: cur ? cur.nickname : null, at: cur ? cur.at : null,
-    error: cur ? cur.error || null : null, needCookie: !!(cur && cur.needCookie) || !wbCfg.xhsCookie,
+    nickname: cur ? cur.nickname : null, redId: cur ? (cur.redId || "") : "", at: cur ? cur.at : null,
     days, delta1, delta7,
   };
 }
@@ -1293,7 +1268,6 @@ const WB_INTERVALS = {
   anth:  { ok: 24 * 3600e3, fail: 20 * 60e3 },
   arxiv: { ok: 24 * 3600e3, fail: 20 * 60e3 },
   f1:    { ok: 24 * 3600e3, fail: 6 * 3600e3 },
-  xhs:   { ok: 2 * 3600e3,  fail: 30 * 60e3 },   /* 粉丝数变化慢：2h 一抓，失败 30min 后重试 */
 };
 let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
 let wbSched = {};
@@ -1309,13 +1283,12 @@ function wbInitSchedule() {
     wbSched[k] = { busy: false, nextAt: Math.max(now, last + WB_INTERVALS[k].ok) };
     if (!wbCache[k]) wbSched[k].nextAt = now;   // 冷启动立即抓
   }
-  /* 错峰：glm 立即，oil/bili/anth/arxiv/f1/xhs 依次让路 */
+  /* 错峰：glm 立即，oil/bili/anth/arxiv/f1 依次让路 */
   if (!wbCache.oil) wbSched.oil.nextAt = now + 8e3;
   if (!wbCache.bili) wbSched.bili.nextAt = now + 16e3;
   if (!wbCache.anth) wbSched.anth.nextAt = now + 30e3;
   if (!wbCache.arxiv) wbSched.arxiv.nextAt = now + 45e3;
   if (!wbCache.f1) wbSched.f1.nextAt = now + 60e3;
-  if (!wbCache.xhs) wbSched.xhs.nextAt = now + 75e3;
 }
 function wbFail(section, msg) {
   console.log("[workbench] " + section + " 失败: " + msg);
@@ -1353,9 +1326,6 @@ async function wbRun(section) {
       const d = await wbFetchF1();
       if (d.ok) { wbCache.f1 = d; console.log("[workbench] f1 赛程 " + d.races.length + " 站"); done(iv.ok); }
       else { wbFail("f1", d.error); done(iv.fail); }
-    } else if (section === "xhs") {
-      const d = await xhsTick();   /* xhsTick 自己维护 xhsStore 与 wbCache.xhs 状态 */
-      done(d.ok ? iv.ok : iv.fail);
     }
   } catch (e) {
     wbFail(section, e.name === "TimeoutError" || e.name === "AbortError" ? "网络超时" : (e.message || "抓取失败"));
@@ -2295,6 +2265,23 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- 小红书粉丝监控（Mac launchd「taller-小红书粉丝」回传，xhsToken 鉴权；必须在 admin 守卫之前） ---- */
+    if (p === "/api/workbench/xhs/done" && req.method === "POST") {
+      const tok = String(req.headers["x-xhs-token"] || "");
+      const expect = String(wbCfg.xhsToken || "");
+      const a = Buffer.from(tok), b = Buffer.from(expect);
+      if (!expect || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        json(res, 401, { ok: false, error: "unauthorized" });
+        return log(401);
+      }
+      let body;
+      try { body = JSON.parse((await readRawBody(req, 8 * 1024)).toString("utf8")); }
+      catch (e) { json(res, 400, { ok: false, error: "bad json" }); return log(400); }
+      const r = xhsApply(body);
+      json(res, r.ok ? 200 : 400, r);
+      return log(r.ok ? 200 : 400);
+    }
+
     /* ---- 工作台 API（仅 admin） ---- */
     if (p.startsWith("/api/workbench/")) {
       const ws = readSession(req);
@@ -2305,7 +2292,7 @@ const server = http.createServer(async (req, res) => {
       if (p === "/api/workbench/data" && req.method === "GET") {
         const upBooks = kbUploadBooks();
         json(res, 200, {
-          cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, hasXhsCookie: !!wbCfg.xhsCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
+          cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
           data: wbCache,
           hw: hwLatest(),
           xhs: xhsSnapshot(),
@@ -2340,8 +2327,6 @@ const server = http.createServer(async (req, res) => {
         const body = await readJson(req);
         if (typeof body.glmKey === "string" && body.glmKey.trim()) wbCfg.glmKey = body.glmKey.trim();
         if (typeof body.biliCookie === "string" && body.biliCookie.trim()) wbCfg.biliCookie = body.biliCookie.trim();
-        let xhsCookieSet = false;
-        if (typeof body.xhsCookie === "string" && body.xhsCookie.trim()) { wbCfg.xhsCookie = body.xhsCookie.trim(); xhsCookieSet = true; }
         if (Array.isArray(body.biliUps)) {
           wbCfg.biliUps = body.biliUps
             .map(u => ({ uid: String((u && u.uid) || "").trim(), name: String((u && u.name) || "").trim() }))
@@ -2349,8 +2334,7 @@ const server = http.createServer(async (req, res) => {
         }
         if (typeof body.arxivProfile === "string" && body.arxivProfile.trim()) wbCfg.arxivProfile = body.arxivProfile.trim();
         saveJson(WB_FILE.cfg, wbCfg);
-        if (xhsCookieSet) wbRun("xhs").catch(e => console.error("[workbench] xhs", e.message));   /* 新 Cookie 落地 → 立即试抓一把 */
-        json(res, 200, { ok: true, hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, hasXhsCookie: !!wbCfg.xhsCookie, ups: wbCfg.biliUps.length });
+        json(res, 200, { ok: true, hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps.length });
         return log(200);
       }
 
@@ -2746,6 +2730,11 @@ if (!wbCfg.collectToken) {
 /* 确保 hwToken 存在（Mac openclaw 硬件情报站领取/回传用，三 token 分权） */
 if (!wbCfg.hwToken) {
   wbCfg.hwToken = crypto.randomBytes(16).toString("hex");
+  saveJson(WB_FILE.cfg, wbCfg);
+}
+/* 确保 xhsToken 存在（Mac launchd 小红书粉丝监控回传用，四 token 分权） */
+if (!wbCfg.xhsToken) {
+  wbCfg.xhsToken = crypto.randomBytes(16).toString("hex");
   saveJson(WB_FILE.cfg, wbCfg);
 }
 setInterval(() => {
