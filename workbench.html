@@ -577,7 +577,9 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
         <div class="cbody ilist" id="hwBody"><span class="dim">等待首份情报…</span></div>
       </div>
 
-      <div class="g-card wbcard" id="card-xhs" style="--c:#ff2442">
+      <!-- 小红书粉丝卡：2026-10-14 站主要求暂停（隐藏不删）——恢复=去掉 hidden 属性，并把 Mac 端
+           launchd 任务重新启用：launchctl enable gui/$(id -u)/cn.andrewlee0213.taller-xhs-fans && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/cn.andrewlee0213.taller-xhs-fans.plist -->
+      <div class="g-card wbcard" id="card-xhs" style="--c:#ff2442" hidden>
         <div class="chead"><span class="cbar"></span><b>小红书 · 粉丝监控</b>
           <span class="upd" id="xhsUpd"></span>
           <button class="rfbtn" data-sec="xhs" title="重新拉取（数据由 Mac 收集任务推送，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
