@@ -28,14 +28,16 @@ echo "  零命中 ✓"
 
 echo "── 2/5 打包 ──"
 # 根目录 HTML 自动收集（新页面不再漏打包）；assets 走 find 白名单（models/ 扫描件不上线）；
+# ._*/.DS_Store 一律滤掉（Finder 复制会凭空造出来，2026-10-14 曾上过服务器）；
 # 不用 tar --exclude：bsdtar 3.5.3 与 --no-xattrs 同用时解析错乱
-HTMLS=$(ls *.html)
-ASSETS=$(find assets -type f ! -path 'assets/models/*')
+HTMLS=$(ls *.html | grep -v '^\._')
+ASSETS=$(find assets -type f ! -path 'assets/models/*' ! -name '._*')
+POSTS=$(find posts -type f ! -name '._*')
 tar --no-xattrs --no-mac-metadata -czf /tmp/taller.tar.gz \
   $HTMLS kb-data.js works.js notes.js server.js \
-  $ASSETS posts \
+  $ASSETS $POSTS \
   data/kb-content.json \
-  deploy/taller.service deploy/nginx-taller.conf
+  deploy/taller.service deploy/nginx-taller.conf deploy/nginx-yoyo.conf
 echo "  /tmp/taller.tar.gz ✓（含 $HTMLS）"
 
 echo "── 3/5 上传 ──"
