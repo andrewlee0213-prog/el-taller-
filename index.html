@@ -136,6 +136,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .status-card{border-radius:34px;padding:24px;display:flex;flex-direction:column;gap:14px}
 .status-card .clock b{font-size:44px;font-weight:600;line-height:1;letter-spacing:1px;font-variant-numeric:tabular-nums}
 .status-card .clock span{display:block;font-size:12.5px;color:var(--g-dim);margin-top:6px}
+.status-card .clock .term{margin-top:5px;font-size:12px;letter-spacing:.3px;
+  color:color-mix(in srgb,var(--g-accent) 72%,var(--g-text));cursor:default}
 .divider{height:1px;background:color-mix(in srgb,var(--ink) 12%,transparent)}
 .weather{display:flex;align-items:center;gap:14px}
 .weather .ic{width:44px;height:44px;border-radius:14px;background:color-mix(in srgb,var(--ink) 10%,transparent);display:grid;place-items:center;flex:none}
@@ -422,6 +424,7 @@ html[data-theme="negro"]{
         <div class="clock">
           <b id="clockTime">--:--:--</b>
           <span id="clockDate">—</span>
+          <span id="clockTerm" class="term">—</span>
         </div>
         <div class="divider"></div>
         <div class="weather">
@@ -552,6 +555,44 @@ const CONFIG = {
 const $ = s => document.querySelector(s);
 const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
 
+/* ================= 中国节气（Meeus 太阳视黄经精确解，分钟级；北京时区） ================= */
+const TERM_NAMES = ['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至',
+  '小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
+function solarLongitude(jde){           /* 太阳视黄经（度），jde=儒略历书日 */
+  const T=(jde-2451545)/36525;
+  const L0=280.46646+36000.76983*T+0.0003032*T*T;
+  const M=(357.52911+35999.05029*T-0.0001537*T*T)*Math.PI/180;
+  const C=(1.914602-0.004817*T-0.000014*T*T)*Math.sin(M)+(0.019993-0.000101*T)*Math.sin(2*M)+0.000289*Math.sin(3*M);
+  const om=(125.04-1934.136*T)*Math.PI/180;
+  return (((L0+C-0.00569-0.00478*Math.sin(om))%360)+360)%360;
+}
+function termTime(year,n){              /* year 年第 n 个节气（0=小寒），返回 UTC 毫秒；牛顿迭代到分钟级 */
+  const toJde=ms=>ms/86400000+2440587.5, fromJde=j=>(j-2440587.5)*86400000;
+  const norm=x=>((x+540)%360)-180;
+  let j=toJde(Date.UTC(year,0,5)+n*15.2184*86400000);
+  for(let i=0;i<6;i++) j-=norm(solarLongitude(j)-(285+15*n))/0.98565;
+  return fromJde(j);
+}
+let termCache={key:'',html:''};
+function termLine(now){
+  const key=now.toISOString().slice(0,10);
+  if(termCache.key===key) return termCache.html;
+  const y=now.getFullYear();
+  let cur=null,nxt=null;
+  for(let yy=y-1;yy<=y+1;yy++) for(let n=0;n<24;n++){
+    const t=termTime(yy,n);
+    if(t<=now.getTime()){ if(!cur||t>cur.t) cur={t,name:TERM_NAMES[n]}; }
+    else if(!nxt||t<nxt.t) nxt={t,name:TERM_NAMES[n]};
+  }
+  /* 按北京自然日计数：交节当天=第 1 天；下一节气=日历差 */
+  const bjDay=ms=>Math.floor((ms+8*3600e3)/86400000);
+  const dayNo=bjDay(now.getTime())-bjDay(cur.t)+1;
+  const days=bjDay(nxt.t)-bjDay(now.getTime());
+  const bj=new Date(nxt.t+8*3600e3);   /* 节气交接时刻 → 北京时间 */
+  termCache={key,html:cur.name+' 第 '+dayNo+' 天 · '+nxt.name+' 还有 '+days+' 天（'+(bj.getUTCMonth()+1)+'月'+bj.getUTCDate()+'日）'};
+  return termCache.html;
+}
+
 /* ================= 时钟与问候 ================= */
 function tickClock(){
   const d = new Date();
@@ -559,6 +600,8 @@ function tickClock(){
   $('#clockTime').textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
   const wk = ['日','一','二','三','四','五','六'][d.getDay()];
   $('#clockDate').textContent = d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月 '+d.getDate()+' 日 · 周'+wk;
+  $('#clockTerm').textContent = termLine(d);
+  $('#clockTerm').title = '节气按太阳视黄经每 15° 划分（Meeus 算法，分钟级；交接时刻为北京时间）';
   const h = d.getHours();
   const [es, zh] = h>=5&&h<12 ? ['Buenos días','早上好'] : h<19 ? ['Buenas tardes','下午好'] : ['Buenas noches','晚上好'];
   $('#greet').textContent = es+', '+CONFIG.name+' · '+zh;

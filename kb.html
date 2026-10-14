@@ -231,6 +231,15 @@ html[data-theme="negro"]{
 .back-shelf{width:100%;margin-bottom:10px;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;font:inherit;font-size:12.5px;
   color:var(--g-dim);background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .back-shelf:hover{color:var(--g-accent-soft)}
+
+/* ---- 全站导航（与首页顶栏同款） ---- */
+.g-pill{display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;margin-left:auto;
+  background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
+.g-pill a{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 15px;border-radius:999px;text-decoration:none;transition:.25s}
+.g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:.25s}
+.g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
+.g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
+@media (max-width:680px){.g-pill{display:none}}
 </style>
 </head>
 <body>
@@ -240,7 +249,17 @@ html[data-theme="negro"]{
     <header class="top">
       <a class="back" href="index.html">← Taller</a>
       <div class="brand"><b>La Biblioteca</b><small>Estudio · 个人 AI 学习知识库</small></div>
-<div class="themedots" role="group" aria-label="配色 · Tema">
+
+      <nav class="g-pill" aria-label="站点导航 · Navegación">
+        <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
+        <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
+        <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
+        <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
+        <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
+      </nav>
+
+      <div class="themedots" role="group" aria-label="配色 · Tema">
         <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
         <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
         <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>

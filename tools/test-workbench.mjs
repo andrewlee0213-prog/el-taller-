@@ -458,6 +458,40 @@ try {
   hpj = await hpr.json();
   check("推送后 pending.need=false（今日已完成）", hpj.ok === true && hpj.need === false, JSON.stringify(hpj).slice(0, 80));
 
+  /* ---- 全站导航条 + 首页节气（静态结构） ---- */
+  for (const pg of ["kb.html", "workbench.html", "kids-english.html", "kindle-dashboard.html",
+    "openclaw.html", "poster-six.html", "reader.html", "video-scripts.html", "about-site.html"]) {
+    r = await req("GET", "/" + pg, undefined, "follow");
+    check("全站导航条 " + pg,
+      r.status === 200 && (r.text || "").includes('class="g-pill"') && (r.text || "").includes("Inicio") && (r.text || "").includes("index.html#cuaderno"),
+      r.status);
+  }
+  r = await req("GET", "/index.html", undefined, "follow");
+  check("首页节气模块（clockTerm + Meeus 视黄经）",
+    (r.text || "").includes('id="clockTerm"') && (r.text || "").includes("solarLongitude") && (r.text || "").includes("TERM_NAMES"));
+
+  /* ---- 小红书粉丝监控（服务器侧抓取；本机无 Cookie → needCookie 降级，失败不阻塞） ---- */
+  r = await req("GET", "/api/workbench/data");
+  const xhs0 = (r.json && r.json.xhs) || {};
+  check("小红书快照带出（账号 kg12141706 + days 结构）", xhs0.account === "kg12141706" && Array.isArray(xhs0.days),
+    JSON.stringify(xhs0).slice(0, 90));
+  check("小红书未配 Cookie → needCookie 降级", xhs0.needCookie === true, JSON.stringify(xhs0.error));
+  await req("POST", "/api/workbench/refresh", { section: "xhs" });
+  let xhsAt = xhs0.at || null;
+  for (let i = 0; i < 12 && !xhsAt; i++) {   /* 等首次抓取收口（本机到不了小红书 → 必失败，但要落盘状态） */
+    await new Promise(rs => setTimeout(rs, 2500));
+    r = await req("GET", "/api/workbench/data");
+    xhsAt = (((r.json && r.json.xhs) || {}).at) || null;
+  }
+  r = await req("GET", "/api/workbench/data");
+  const xhs1 = (r.json && r.json.xhs) || {};
+  check("小红书失败也落盘状态（at + error，不阻塞其它板块）", !!xhs1.at && xhs1.ok === false && typeof xhs1.error === "string",
+    JSON.stringify(xhs1).slice(0, 90));
+  check("xhs-fans.json 落在隔离 data/（不入部署包）", fs.existsSync(path.join(tmpData, "xhs-fans.json")));
+  r = await req("POST", "/api/workbench/config", { xhsCookie: "web_session=test-dummy" });
+  check("小红书 Cookie 可保存（hasXhsCookie 回显）", r.json && r.json.ok === true && r.json.hasXhsCookie === true,
+    JSON.stringify(r.json));
+
   /* ---- Biblioteca 书本删除（静态书=屏蔽名单 / lectura 清空 / 图鉴拒删） ---- */
   cookie = "";
   r = await req("DELETE", "/api/kb/book?id=agent-handbook");

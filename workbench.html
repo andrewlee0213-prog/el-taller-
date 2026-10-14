@@ -170,6 +170,19 @@ html[data-theme="crepusculo"]{
 .hw-atlasbtn{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 8%,transparent);
   color:var(--g-text);cursor:pointer;font-size:11px;border-radius:999px;padding:4px 12px;flex:none;transition:.25s;white-space:nowrap}
 .hw-atlasbtn:hover{background:color-mix(in srgb,var(--ink) 16%,transparent)}
+/* ---- 小红书粉丝监控 ---- */
+.xhs-num{font-size:38px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.xhs-num small{font-size:13px;font-weight:400;color:var(--g-dim);margin-left:4px}
+.xhs-name{font-size:12px;color:var(--g-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xhs-name b{color:var(--g-text);font-weight:600}
+.xhs-deltas{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.xhs-delta{font-size:11px;border-radius:999px;padding:3px 11px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--g-dim)}
+.xhs-delta.up{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.xhs-delta.down{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+.xhs-spark{display:block;width:100%;height:52px;margin-top:11px}
+.xhs-err{margin-top:9px;font-size:11.5px;line-height:1.75;color:var(--g-dim);
+  border-radius:12px;padding:9px 12px;background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.xhs-err b{color:var(--warn)}
 /* ---- 硬件图鉴弹窗（复用 kbin 弹层形态） ---- */
 .atl-mask{position:fixed;inset:0;z-index:900;background:rgba(8,5,2,.6);backdrop-filter:blur(7px);
   display:none;align-items:center;justify-content:center;padding:3vh 3vw}
@@ -468,6 +481,15 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
   .calday b{font-size:11px}
   .callegend{margin-left:0}
 }
+
+/* ---- 全站导航（与首页顶栏同款） ---- */
+.g-pill{display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;margin-left:auto;
+  background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
+.g-pill a{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 15px;border-radius:999px;text-decoration:none;transition:.25s}
+.g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:.25s}
+.g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
+.g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
+@media (max-width:680px){.g-pill{display:none}}
 </style>
 </head>
 <body>
@@ -477,6 +499,16 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
     <header class="top">
       <a class="back" href="index.html">← Taller</a>
       <div class="brand"><b>El Estudio · 工作台</b><small>Banco de trabajo</small></div>
+      
+      <nav class="g-pill" aria-label="站点导航 · Navegación">
+        <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
+        <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
+        <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
+        <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
+        <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
+      </nav>
+
       <div class="themedots" role="group" aria-label="配色 · Tema">
         <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
         <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
@@ -543,6 +575,13 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
           <button class="hw-atlasbtn" id="hwAtlasBtn" title="累积的硬件目录（每日情报自动沉淀）">📔 图鉴</button>
           <button class="rfbtn" data-sec="hw" title="重新拉取（情报由 Mac 收集任务生成，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody ilist" id="hwBody"><span class="dim">等待首份情报…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-xhs" style="--c:#ff2442">
+        <div class="chead"><span class="cbar"></span><b>小红书 · 粉丝监控</b>
+          <span class="upd" id="xhsUpd"></span>
+          <button class="rfbtn" data-sec="xhs" title="立即刷新（服务器侧抓取）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody" id="xhsBody"><span class="dim">等待首轮抓取…</span></div>
       </div>
 
       <div class="g-card wbcard" id="card-kbin" style="--c:#8b7cf6">
@@ -628,10 +667,11 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 
     <!-- ============ Ajustes ============ -->
     <details class="settings" id="settings">
-      <summary><b>Ajustes · 设置</b> —— GLM Key / B站 Cookie / UP 清单 / arXiv 兴趣画像</summary>
+      <summary><b>Ajustes · 设置</b> —— GLM Key / B站 Cookie / 小红书 Cookie / UP 清单 / arXiv 兴趣画像</summary>
       <div class="setgrid">
         <label>GLM API Key（留空 = 不修改）<input type="password" id="cfgKey" placeholder="粘贴 open.bigmodel.cn 的 API Key"></label>
         <label>B站 Cookie（留空 = 不修改）<input type="text" id="cfgCookie" placeholder="SESSDATA=xxx; buvid3=xxx（浏览器 F12 复制整串）"></label>
+        <label>小红书 Cookie（粉丝监控 · 留空 = 不修改）<input type="text" id="cfgXhsCookie" placeholder="web_session=xxx; a1=xxx（电脑登录 xiaohongshu.com 后 F12 复制整串）"></label>
         <label class="full">B站 UP 清单（JSON）<textarea id="cfgUps" placeholder='[{"uid":"520155988","name":"示例UP主"}]'></textarea></label>
         <label class="full">arXiv 兴趣画像（选文漏斗的打分依据，你的评论也会自动并入）<textarea id="cfgProfile" placeholder="一行一个方向…"></textarea></label>
         <div class="setnote">Key 与 Cookie 只存服务器 data/ 目录（有访问封锁、永不对外、部署不覆盖）。保存后各板块按各自节奏自动刷新，也可点卡片右上角 ↻ 立即刷新。</div>
@@ -1096,6 +1136,7 @@ document.querySelectorAll('.rfbtn:not([data-sec="hw"])').forEach(btn => btn.addE
     await sleep(2000);
     const d = await api("GET", "/api/workbench/data");
     WB = d.data; SCHED = d.sched; CFG = d.cfg; DIS = d.dislikes || {};
+    if (d.xhs) XHS = d.xhs;
     renderAll();
     if ((WB[sec] || {}).at !== startAt && !(SCHED[sec] || {}).busy) break;
   }
@@ -1176,16 +1217,17 @@ $("#cfgSave").addEventListener("click", async () => {
   const body = { biliUps: Array.isArray(ups) ? ups : [] };
   if ($("#cfgKey").value.trim()) body.glmKey = $("#cfgKey").value.trim();
   if ($("#cfgCookie").value.trim()) body.biliCookie = $("#cfgCookie").value.trim();
+  if ($("#cfgXhsCookie").value.trim()) body.xhsCookie = $("#cfgXhsCookie").value.trim();
   if ($("#cfgProfile").value.trim()) body.arxivProfile = $("#cfgProfile").value.trim();
   const r = await api("POST", "/api/workbench/config", body);
   btn.disabled = false;
   if (r.ok) {
-    $("#cfgKey").value = ""; $("#cfgCookie").value = "";
+    $("#cfgKey").value = ""; $("#cfgCookie").value = ""; $("#cfgXhsCookie").value = "";
     $("#cfgSaved").textContent = "已保存 ✓ " + hm(Date.now()) + "，板块自动刷新";
     const d = await api("GET", "/api/workbench/data");
     CFG = d.cfg;
     renderBanner();
-    ["glm", "oil", "bili", "anth"].forEach(sec => api("POST", "/api/workbench/refresh", { section: sec }));
+    ["glm", "oil", "bili", "anth", "xhs"].forEach(sec => api("POST", "/api/workbench/refresh", { section: sec }));
     toast("设置已保存，板块刷新中");
   } else toast(r.error || "保存失败");
 });
@@ -1456,6 +1498,44 @@ function renderHw() {
   body.innerHTML = html;
 }
 
+/* ================= 小红书粉丝监控（服务器侧抓取：Mac 网络到不了小红书） ================= */
+let XHS = null;
+const xhsFmt = n => n == null ? "—" : n.toLocaleString("zh-Hans");
+function renderXhs() {
+  const body = $("#xhsBody");
+  if (!body) return;
+  if (!XHS) { $("#xhsUpd").textContent = ""; body.innerHTML = '<span class="dim">等待首轮抓取…</span>'; return; }
+  $("#xhsUpd").textContent = XHS.at ? hm(XHS.at) + " 更新" : "";
+  if (XHS.needCookie || (XHS.fans == null && !XHS.days.length)) {
+    body.innerHTML = '<div class="xhs-err"><b>需要小红书 Cookie</b> —— 小红书对服务器 IP 强制登录（Mac 也到不了小红书）。' +
+      '任意电脑登录 xiaohongshu.com → F12 → Network 任一请求 → 复制请求头里整串 Cookie（含 <b>web_session=…</b>）→ 粘贴到页面底部 <b>Ajustes · 设置</b> 保存即可，服务器每 2 小时自动抓一次。' +
+      (XHS.error ? '<br>最近一次：' + esc(XHS.error) : "") + "</div>";
+    return;
+  }
+  const fans = XHS.fans;
+  let html = '<div class="xhs-num">' + xhsFmt(fans) + "<small>粉丝</small></div>" +
+    '<div class="xhs-name"><b>' + esc(XHS.nickname || XHS.account) + "</b> · @" + esc(XHS.account) + " · <a href=\"https://www.xiaohongshu.com/user/profile/" + esc(XHS.account) + "\" target=\"_blank\" rel=\"noopener\">主页 ↗</a></div>";
+  const chips = [];
+  if (typeof XHS.delta1 === "number") chips.push('<span class="xhs-delta ' + (XHS.delta1 > 0 ? "up" : XHS.delta1 < 0 ? "down" : "") + '">今日 ' + (XHS.delta1 > 0 ? "+" : "") + XHS.delta1 + "</span>");
+  if (typeof XHS.delta7 === "number") chips.push('<span class="xhs-delta ' + (XHS.delta7 > 0 ? "up" : XHS.delta7 < 0 ? "down" : "") + '">7 天 ' + (XHS.delta7 > 0 ? "+" : "") + XHS.delta7 + "</span>");
+  if (XHS.days && XHS.days.length) chips.push('<span class="xhs-delta">记录 ' + XHS.days.length + " 天</span>");
+  if (chips.length) html += '<div class="xhs-deltas">' + chips.join("") + "</div>";
+  /* 近 30 天折线（无涨跌也画基线；两点起画） */
+  const days = (XHS.days || []).slice(-30);
+  if (days.length >= 2) {
+    const vals = days.map(d => d.fans);
+    const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(1, hi - lo);
+    const W = 300, H = 52, PAD = 4;
+    const pts = vals.map((v, i) =>
+      (PAD + i * (W - 2 * PAD) / (vals.length - 1)).toFixed(1) + "," + (H - PAD - (v - lo) * (H - 2 * PAD) / span).toFixed(1)).join(" ");
+    html += '<svg class="xhs-spark" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polyline points="' + pts + '" fill="none" stroke="var(--c,#ff2442)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<title>' + esc(days[0].date + " " + lo + " → " + days[days.length - 1].date + " " + hi) + "</title></svg>";
+  }
+  if (!XHS.ok && XHS.error) html += '<div class="xhs-err"><b>最近一次抓取失败</b>：' + esc(XHS.error) + "（展示上次读数）</div>";
+  body.innerHTML = html;
+}
+
 /* ================= 硬件图鉴弹窗（每日情报自动沉淀的累积目录，筛选全在客户端） ================= */
 let ATLAS = { devices: [], filter: "all", cat: "", q: "", view: "body", wear: null };
 const HW_WEARS_UI = ["头部", "眼部", "耳部", "颈部", "胸口", "上臂", "手腕", "手指", "腰部", "腿脚", "环境家居", "宠物", "其他"];
@@ -1585,7 +1665,7 @@ function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
 }
 function renderAll() {
-  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderHw(); renderKbInbox();
+  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderHw(); renderXhs(); renderKbInbox();
   renderLog(); renderWeekly(); renderPanelHint();
   renderCalendar(); renderMemos();
 }
@@ -1600,6 +1680,7 @@ async function loadAll() {
   CFG = d.cfg; WB = d.data; SCHED = d.sched; DIS = d.dislikes || {};
   INBOX = d.kbInbox || [];
   HW = d.hw || null;
+  XHS = d.xhs || null;
   const btn = $("#hwAtlasBtn");
   if (btn) btn.textContent = "📔 图鉴" + (d.hwDevices ? " · " + d.hwDevices + " 件" : "");
   LOG = log.items || [];

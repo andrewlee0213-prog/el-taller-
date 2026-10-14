@@ -165,6 +165,15 @@ html[data-theme="negro"]{
 .tdot:hover{transform:scale(1.18)}
 .tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
 @media (max-width:680px){ .themedots{display:none} }
+
+/* ---- 全站导航（与首页顶栏同款） ---- */
+.g-pill{display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;margin-left:auto;
+  background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
+.g-pill a{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 15px;border-radius:999px;text-decoration:none;transition:.25s}
+.g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:.25s}
+.g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
+.g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
+@media (max-width:680px){.g-pill{display:none}}
 </style>
 </head>
 <body>
@@ -176,6 +185,16 @@ html[data-theme="negro"]{
         <div class="mark"><svg viewBox="0 0 24 24"><path d="M14 4l6 6-3 3-6-6z"/><path d="M11 7L4 14v6h6l7-7"/></svg></div>
         <div><b>El Taller de Andres</b></div>
       </div>
+      
+      <nav class="g-pill" aria-label="站点导航 · Navegación">
+        <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
+        <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
+        <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
+        <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
+        <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
+      </nav>
+
       <div class="themedots" role="group" aria-label="配色 · Tema">
         <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
         <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
