@@ -141,6 +141,7 @@ html[data-theme="crepusculo"]{
 /* ---- Panel 五卡 ---- */
 .wbgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
 .wbcard{border-radius:26px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.wbcard[hidden]{display:none}   /* display:flex 会压过 hidden 的 UA 隐藏，需显式声明（同 .wbgrid[hidden] 先例） */
 /* arXiv 卡横跨两列：右缘与第一行 B站卡对齐（手机档还原单列） */
 #card-arxiv{grid-column:span 2}
 #card-kbin{grid-column:1/-1}   /* 待处理块通栏：右缘与 arXiv（占两列到网格右缘）上下对齐 */
