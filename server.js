@@ -400,6 +400,21 @@ const KB_CATS = ["AI与智能体", "职场与商业", "设计与审美", "视频
 const KB_CAT_FILE = path.join(DATA, "kb-categories.json");
 let kbCats = loadJson(KB_CAT_FILE, {});
 if (!kbCats || typeof kbCats !== "object" || Array.isArray(kbCats)) kbCats = {};
+/* 划线/页边问答/每日回顾（gloss 式）：按用户名隔离，存 data/kb-marks.json（运行时，部署不覆盖）。
+   quote=选中原文；pre/suf=前后文锚（重锚定高亮用）；ask/answer=页边问答；box/due=Leitner 盒子 */
+const KB_MARKS_FILE = path.join(DATA, "kb-marks.json");
+let kbMarks = loadJson(KB_MARKS_FILE, { marks: [] });
+if (!kbMarks || !Array.isArray(kbMarks.marks)) kbMarks = { marks: [] };
+const kbMarkSave = () => saveJson(KB_MARKS_FILE, kbMarks);
+const kbMarkId = () => "m" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36);
+const KB_MARKS_CAP = 2000;            /* 每用户划线上限 */
+const KB_ASK_GAP_MS = 8000;           /* 页边问答每用户冷却 */
+const KB_SRS_DAYS = [0, 1, 3, 7, 16, 35];   /* 盒子 0-5 的复习间隔（天） */
+const kbAskLast = new Map();          /* u → 上次提问 ts（-1 = 回答中） */
+/* 阅读进度（每用户最后读位）：data/kb-progress.json */
+const KB_PROGRESS_FILE = path.join(DATA, "kb-progress.json");
+let kbProgress = loadJson(KB_PROGRESS_FILE, {});
+if (!kbProgress || typeof kbProgress !== "object" || Array.isArray(kbProgress)) kbProgress = {};
 let kbClassifyBusy = false;
 function kbCatOf(b) {
   if (b.atlas) return "硬件与设备";
@@ -436,6 +451,7 @@ function kbAllBooks() {
     id: "lectura", title: "阅读精选 · 对照阅读", es: "📖 Lectura",
     desc: "Anthropic 研究与 arXiv 论文的全文中英对照。工作台里评论过的文章自动收进本书（未评论的 3 天后清除）。",
     intro: "El Estudio 对照阅读评论过的文章，带着评论收录于此；中文在上、原文在下。",
+    at: arts[0].promotedAt || Date.now(),
     chapters: arts.map(a => ({ id: a.id, title: a.title, html: a.html, text: a.text })),
   });
   /* 一个视频一本书：md 的 ## 节拆成章（多分P 每节一章；单P 一章） */
@@ -456,7 +472,7 @@ function kbAllBooks() {
       id: "col-" + it.id, title: it.title || "未命名视频", es: "📼 " + (it.title || "视频").slice(0, 10),
       desc: "个人收集 · B 站视频转录 · " + new Date(it.doneAt || it.at).toLocaleDateString() + " · " + chapters.length + " 节",
       intro: "由 openclaw + getnote 自动转录收录；每节对应一个分P。",
-      chapters, collected: true, note: "",
+      at: it.doneAt || it.at, chapters, collected: true, note: "",
     });
   }
   /* 智能硬件图鉴（动态书：每品类一章，渲染时从 hw-devices.json 生成——每日情报 done 合并后自动更新，零迁移） */
@@ -496,11 +512,11 @@ function kbUploadBooks() {
         cached = kbUploadParsed[u.id] = { chapters, intro: parsed.intro };
       }
       return { id: "up-" + u.id, title: u.title.replace(/\.md$/i, ""), es, desc: "上传收录 · " + new Date(u.at).toLocaleDateString(),
-        intro: cached.intro, chapters: cached.chapters, uploaded: true, note: u.note || "" };
+        intro: cached.intro, at: u.at, chapters: cached.chapters, uploaded: true, note: u.note || "" };
     }
     return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: "上传收录 · PDF 原文",
       intro: "PDF 原文内嵌查看（浏览器原生渲染）。",
-      chapters: [{ id: "pdf", title: "查看 PDF 原文",
+      at: u.at, chapters: [{ id: "pdf", title: "查看 PDF 原文",
         html: '<iframe src="/api/kb/file/' + u.file + '" style="width:100%;height:72vh;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;background:var(--g-bg-base)"></iframe>' +
           '<p style="margin-top:10px"><a href="/api/kb/file/' + u.file + '" target="_blank" rel="noopener">↗ 新窗口打开 / 下载</a></p>',
         text: "" }], uploaded: true, note: u.note || "" };
@@ -510,7 +526,7 @@ function kbUploadBooks() {
 function kbCatalog() {
   return kbAllBooks().map(b => ({
     id: b.id, title: b.title, es: b.es, desc: b.desc, uploaded: !!b.uploaded, collected: !!b.collected, atlas: !!b.atlas, note: b.note || "",
-    cat: kbCatOf(b),
+    cat: kbCatOf(b), at: b.at || 0,
     chapters: b.chapters.map(c => ({ id: c.id, title: c.title })),
   }));
 }
@@ -829,6 +845,29 @@ async function glmTranslateLines(lines) {
     if (m) { const i = parseInt(m[1], 10); if (i >= 1 && i <= lines.length) out[i - 1] = keepEnglishTerms(m[2].trim()); }
   }
   return out;
+}
+
+/* ---------------- Biblioteca 页边问读（gloss 式）：整章分段 + GLM 作答 ---------------- */
+/* 章节正文按块（p/h/li/blockquote/pre/tr…）切成带 [¶n] 锚的纯文本段，供模型引用 */
+function kbChapterParas(c) {
+  let s = "";
+  const html = String(c.html || "");
+  if (html) {
+    s = html.replace(/<\/(?:p|div|h[1-6]|li|blockquote|pre|tr|table|ul|ol)\s*>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n");
+  } else s = String(c.text || "");
+  const text = s.replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"');
+  return text.split(/\n+/).map(x => x.replace(/\s+/g, " ").trim()).filter(x => x.length > 1).slice(0, 300);
+}
+async function kbAskAnswer(book, ci, c, quote, question) {
+  const paras = kbChapterParas(c);
+  let full = paras.map((t, i) => "[¶" + (i + 1) + "] " + t).join("\n");
+  if (full.length > 16000) full = full.slice(0, 16000) + "\n……（后文过长已省略）";
+  const prompt =
+    "你是「El Taller」书库的页边答疑助手。下面是《" + book.title + "》第 " + (ci + 1) + " 章「" + c.title + "」的全文，段落已用 [¶n] 标号：\n\n" + full +
+    "\n\n————\n读者在文中选中了这段文字：\n「" + quote + "」\n\n读者的问题：" + question +
+    "\n\n请结合全章内容回答：中文，不超过 200 字，直接给答案不要客套；引用原文时标注段落号（如 [¶3]）；术语保留英文。";
+  return (await glmChat(prompt, { temperature: 0.3, timeoutMs: 60000 })).trim().slice(0, 800);
 }
 function extractJSON(s) {
   const a = s.indexOf("{"), b = s.lastIndexOf("}");
@@ -1996,9 +2035,10 @@ const server = http.createServer(async (req, res) => {
       const s = readSession(req);
       if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
       const q = (u.searchParams.get("q") || "").trim().toLowerCase();
-      if (q.length < 2) { json(res, 200, { ok: true, total: 0, results: [] }); return log(200); }
+      if (q.length < 2) { json(res, 200, { ok: true, total: 0, results: [], marks: [] }); return log(200); }
+      const allBooks = kbAllBooks();
       const out = [];
-      for (const b of kbAllBooks()) {
+      for (const b of allBooks) {
         b.chapters.forEach((c, ci) => {
           const inTitle = c.title.toLowerCase().includes(q);
           const text = c.text || c.html || "";
@@ -2011,7 +2051,16 @@ const server = http.createServer(async (req, res) => {
         });
         if (out.length >= 200) break;
       }
-      json(res, 200, { ok: true, total: out.length, results: out.slice(0, 80) });
+      /* 我的划线也进搜索（quote/note/ask/answer 命中，跳深链定位高亮） */
+      const smarks = kbMarks.marks
+        .filter(m => m.u === s.u && (m.quote + "\n" + m.note + "\n" + m.ask + "\n" + m.answer).toLowerCase().includes(q))
+        .sort((a, b) => b.at - a.at).slice(0, 20)
+        .map(m => {
+          const b = allBooks.find(x => x.id === m.b);
+          return { id: m.id, b: m.b, c: m.c, bTitle: b ? b.title : "（书已移除）",
+            cTitle: b && b.chapters[m.c] ? b.chapters[m.c].title : "", quote: m.quote, note: m.note || "", ask: m.ask || "" };
+        });
+      json(res, 200, { ok: true, total: out.length, results: out.slice(0, 80), marks: smarks });
       return log(200);
     }
 
@@ -2220,6 +2269,181 @@ const server = http.createServer(async (req, res) => {
         "Content-Disposition": "inline; filename*=UTF-8''" + encodeURIComponent(file),
         "Cache-Control": "no-store",
       });
+      return log(200);
+    }
+
+    /* ---- Biblioteca 划线/页边问答/回顾/进度（gloss 式；登录即可用，按用户名隔离） ---- */
+    if (p === "/api/kb/marks" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      let rows = kbMarks.marks.filter(m => m.u === s.u);
+      const b = u.searchParams.get("b");
+      if (b) {
+        const c = u.searchParams.get("c");
+        rows = rows.filter(m => m.b === b && (!c || m.c === parseInt(c, 10)));
+      }
+      json(res, 200, { ok: true, marks: rows });
+      return log(200);
+    }
+    if (p === "/api/kb/marks" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      if (kbMarks.marks.filter(m => m.u === s.u).length >= KB_MARKS_CAP) {
+        json(res, 400, { ok: false, error: "划线已达上限（" + KB_MARKS_CAP + " 条），请先清理" }); return log(400);
+      }
+      const body = await readJson(req);
+      const b = String(body.b || ""), c = parseInt(body.c, 10);
+      const book = kbAllBooks().find(x => x.id === b);
+      if (!book || !(c >= 0) || !book.chapters[c]) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      const quote = String(body.quote || "").trim().slice(0, 200);
+      if (!quote) { json(res, 400, { ok: false, error: "划线内容为空" }); return log(400); }
+      const m = { id: kbMarkId(), u: s.u, b, c,
+        quote, pre: String(body.pre || "").slice(0, 30), suf: String(body.suf || "").slice(0, 30),
+        note: String(body.note || "").trim().slice(0, 500), ask: "", answer: "",
+        at: Date.now(), box: 0, due: Date.now(), ok: 0, miss: 0 };
+      kbMarks.marks.push(m);
+      kbMarkSave();
+      json(res, 200, { ok: true, mark: m });
+      return log(200);
+    }
+    if (p === "/api/kb/marks" && req.method === "PUT") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const body = await readJson(req);
+      const m = kbMarks.marks.find(x => x.id === String(body.id || "") && x.u === s.u);
+      if (!m) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      m.note = String(body.note || "").trim().slice(0, 500);
+      kbMarkSave();
+      json(res, 200, { ok: true, mark: m });
+      return log(200);
+    }
+    if (p === "/api/kb/marks" && req.method === "DELETE") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const i = kbMarks.marks.findIndex(x => x.id === String(u.searchParams.get("id") || "") && x.u === s.u);
+      if (i < 0) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      kbMarks.marks.splice(i, 1);
+      kbMarkSave();
+      json(res, 200, { ok: true });
+      return log(200);
+    }
+    /* 页边问读：整章上下文 GLM 作答，自动存成带问答的划线（每用户冷却 + in-flight 互斥） */
+    if (p === "/api/kb/ask" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const last = kbAskLast.get(s.u);
+      if (last === -1) { json(res, 429, { ok: false, error: "上一个问题还在回答中，稍候片刻" }); return log(429); }
+      if (last && Date.now() - last < KB_ASK_GAP_MS) {
+        json(res, 429, { ok: false, error: "提问太快啦，歇 " + Math.ceil((KB_ASK_GAP_MS - (Date.now() - last)) / 1000) + " 秒再问" }); return log(429);
+      }
+      if (kbMarks.marks.filter(m => m.u === s.u).length >= KB_MARKS_CAP) {
+        json(res, 400, { ok: false, error: "划线已达上限（" + KB_MARKS_CAP + " 条），请先清理" }); return log(400);
+      }
+      const body = await readJson(req);
+      const b = String(body.b || ""), c = parseInt(body.c, 10);
+      const book = kbAllBooks().find(x => x.id === b);
+      if (!book || !(c >= 0) || !book.chapters[c]) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      const quote = String(body.quote || "").trim().slice(0, 200), question = String(body.question || "").trim().slice(0, 200);
+      if (!quote || !question) { json(res, 400, { ok: false, error: "缺少选中文字或问题" }); return log(400); }
+      if (!wbCfg.glmKey) { json(res, 503, { ok: false, error: "服务端未配置 GLM Key" }); return log(503); }
+      kbAskLast.set(s.u, -1);
+      try {
+        const answer = await kbAskAnswer(book, c, book.chapters[c], quote, question);
+        const m = { id: kbMarkId(), u: s.u, b, c,
+          quote, pre: String(body.pre || "").slice(0, 30), suf: String(body.suf || "").slice(0, 30),
+          note: "", ask: question, answer, at: Date.now(), box: 0, due: Date.now(), ok: 0, miss: 0 };
+        kbMarks.marks.push(m);
+        kbMarkSave();
+        kbAskLast.set(s.u, Date.now());
+        json(res, 200, { ok: true, mark: m });
+        return log(200);
+      } catch (e) {
+        kbAskLast.set(s.u, Date.now() - KB_ASK_GAP_MS + 2000);   /* 失败只缓 2 秒再试 */
+        json(res, 502, { ok: false, error: "GLM 暂时不可用：" + ((e && e.message) || "未知错误") });
+        return log(502);
+      }
+    }
+    /* 每日回顾：Leitner 盒子（ok=升盒按间隔排期 / so=原地 1 天 / miss=归零当天再来） */
+    if (p === "/api/kb/marks/review" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const body = await readJson(req);
+      const m = kbMarks.marks.find(x => x.id === String(body.id || "") && x.u === s.u);
+      const g = String(body.grade || "");
+      if (!m || !["ok", "so", "miss"].includes(g)) { json(res, 400, { ok: false, error: "bad request" }); return log(400); }
+      if (g === "ok") { m.ok = (m.ok || 0) + 1; m.box = Math.min(5, (m.box || 0) + 1); m.due = Date.now() + KB_SRS_DAYS[m.box] * 86400e3; }
+      else if (g === "so") { m.due = Date.now() + 86400e3; }
+      else { m.miss = (m.miss || 0) + 1; m.box = 0; m.due = Date.now(); }
+      kbMarkSave();
+      json(res, 200, { ok: true, box: m.box, due: m.due });
+      return log(200);
+    }
+    /* 今日到期队列（≤5 条，不足用最近的划线补——gloss：每天都有回顾） */
+    if (p === "/api/kb/marks/due" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const mine = kbMarks.marks.filter(m => m.u === s.u);
+      const due = mine.filter(m => (m.due || 0) <= Date.now()).sort((a, b) => (a.due || 0) - (b.due || 0));
+      const list = due.slice(0, 5);
+      if (list.length < 5) {
+        for (const m of mine.slice().sort((a, b) => (b.at || 0) - (a.at || 0))) {
+          if (list.length >= 5) break;
+          if (!list.includes(m) && Date.now() - (m.at || 0) > 600e3) list.push(m);
+        }
+      }
+      const books = kbAllBooks();
+      const out = list.map(m => {
+        const b = books.find(x => x.id === m.b);
+        return Object.assign({}, m, { bTitle: b ? b.title : "（书已移除）", cTitle: b && b.chapters[m.c] ? b.chapters[m.c].title : "" });
+      });
+      json(res, 200, { ok: true, dueTotal: due.length, marks: out });
+      return log(200);
+    }
+    /* 划线导出：Obsidian 友好的 Markdown 附件（书/章分组 + 深链 + 问答/笔记） */
+    if (p === "/api/kb/marks/export" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      const books = kbAllBooks();
+      const host = String(req.headers.host || "tallerdeandres.cn");
+      const mine = kbMarks.marks.filter(m => m.u === s.u)
+        .sort((a, b) => (a.b === b.b ? (a.c - b.c || (a.at || 0) - (b.at || 0)) : (a.b < b.b ? -1 : 1)));
+      const L = ["# La Biblioteca · 我的划线", "", "> 导出于 " + new Date().toLocaleString("zh-CN") + " · 共 " + mine.length + " 条 · El Taller", ""];
+      let curB = "", curC = -1;
+      for (const m of mine) {
+        const b = books.find(x => x.id === m.b);
+        const cTitle = b && b.chapters[m.c] ? b.chapters[m.c].title : "（章节已移除）";
+        if (m.b !== curB) { curB = m.b; curC = -1; L.push("", "## 📖 " + (b ? b.title : m.b), ""); }
+        if (m.c !== curC) { curC = m.c; L.push("### 第 " + (m.c + 1) + " 章 · " + cTitle, ""); }
+        L.push("> " + m.quote, "");
+        if (m.ask) L.push("**❓ " + m.ask + "**", "", m.answer || "", "");
+        if (m.note) L.push("**📝 笔记：**" + m.note, "");
+        L.push("🔗 [跳转原文](https://" + host + "/kb.html#b=" + m.b + "&c=" + m.c + "&m=" + m.id + ") · " +
+          new Date(m.at || 0).toLocaleDateString("zh-CN") + ((m.box || 0) ? " · 复习盒子 " + m.box : ""), "");
+      }
+      send(res, 200, L.join("\n"), {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="biblioteca-marcas-' + new Date().toISOString().slice(0, 10) + '.md"',
+      });
+      return log(200);
+    }
+    /* 阅读进度：每用户最后读位（GET 查 / POST 记） */
+    if (p === "/api/kb/progress" && (req.method === "GET" || req.method === "POST")) {
+      const s = readSession(req);
+      if (!s) { json(res, 401, { ok: false, error: "unauthorized" }); return log(401); }
+      if (req.method === "GET") {
+        json(res, 200, { ok: true, progress: kbProgress[s.u] || null });
+        return log(200);
+      }
+      const body = await readJson(req);
+      const b = String(body.b || ""), c = parseInt(body.c, 10);
+      const book = kbAllBooks().find(x => x.id === b);
+      if (!book || !(c >= 0) || !book.chapters[c]) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      /* 进度 v2：last=书架「继续上次」；books=每书最后读位（书卡「读到第 N 章」+「最近读」排序） */
+      const prev = kbProgress[s.u] || {};
+      const now = Date.now();
+      kbProgress[s.u] = { b, c, at: now, books: Object.assign({}, prev.books, { [b]: { c, at: now } }) };
+      saveJson(KB_PROGRESS_FILE, kbProgress);
+      json(res, 200, { ok: true });
       return log(200);
     }
 

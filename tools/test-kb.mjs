@@ -1,4 +1,5 @@
 /* 知识库权限测试：未登录 302/401 → 临时账号登录可读 → 登出，最后删除临时账号
+   gloss 式扩展：划线 CRUD / 双用户隔离 / 回顾盒子 / 到期队列 / 导出 / 进度
    用法: node tools/test-kb.mjs  （需服务已启动） */
 const BASE = 'http://localhost:8891';
 const { DatabaseSync } = await import('node:sqlite');
@@ -18,7 +19,8 @@ async function req(method, path, body, redirect = 'manual') {
   if (setc) cookie = setc.split(';')[0];
   const text = await r.text();
   let j = null; try { j = JSON.parse(text); } catch {}
-  return { status: r.status, json: j, text, location: r.headers.get('location') };
+  return { status: r.status, json: j, text, location: r.headers.get('location'),
+    disposition: r.headers.get('content-disposition') };
 }
 const dbPath = await import('node:url').then(u => u.fileURLToPath(new URL('../data/users.db', import.meta.url)));
 const db = new DatabaseSync(dbPath);
@@ -60,6 +62,69 @@ check('章节端点未登录 401', await (async () => {
 })(), '');
 r = await req('GET', '/kb.html', null, 'follow');
 check('登录后 /kb.html 200 含 Biblioteca', r.status === 200 && r.text.includes('La Biblioteca'), r.status);
+
+/* ---- gloss 式：划线 / 回顾 / 进度（按用户隔离；ask 只测守卫，不打真 GLM） ---- */
+console.log('\n— 划线 · 回顾 · 进度 —');
+const QUOTE = '划线测试引用-' + Date.now().toString(36);
+r = await req('POST', '/api/kb/marks', { b: 'agent-handbook', c: 0, quote: QUOTE, pre: '', suf: '', note: '测试笔记' });
+check('建划线（带笔记）', r.json && r.json.ok === true && r.json.mark.note === '测试笔记', JSON.stringify(r.json).slice(0, 80));
+const MID = r.json && r.json.mark ? r.json.mark.id : '';
+r = await req('GET', '/api/kb/marks?b=agent-handbook&c=0');
+check('查章内划线', r.json && r.json.ok === true && r.json.marks.some(m => m.id === MID), '');
+r = await req('PUT', '/api/kb/marks', { id: MID, note: '改过的笔记' });
+check('改自己笔记', r.json && r.json.ok === true && r.json.mark.note === '改过的笔记', '');
+r = await req('GET', '/api/kb/search?q=' + encodeURIComponent(QUOTE));
+check('搜索并入我的划线', r.json && (r.json.marks || []).some(m => m.id === MID), JSON.stringify((r.json || {}).marks || []).slice(0, 80));
+r = await req('POST', '/api/kb/marks/review', { id: MID, grade: 'ok' });
+check('回顾·记得 → 盒子 1', r.json && r.json.ok === true && r.json.box === 1, JSON.stringify(r.json));
+r = await req('POST', '/api/kb/marks/review', { id: MID, grade: 'miss' });
+check('回顾·忘了 → 归零', r.json && r.json.ok === true && r.json.box === 0, JSON.stringify(r.json));
+r = await req('GET', '/api/kb/marks/due');
+check('到期队列可达', r.json && r.json.ok === true && Array.isArray(r.json.marks), '');
+r = await req('POST', '/api/kb/progress', { b: 'agent-handbook', c: 2 });
+r = await req('GET', '/api/kb/progress');
+check('进度记录与读取（含每书读位）', r.json && r.json.progress && r.json.progress.b === 'agent-handbook' && r.json.progress.c === 2 &&
+  r.json.progress.books && r.json.progress.books['agent-handbook'] && r.json.progress.books['agent-handbook'].c === 2, JSON.stringify(r.json));
+{
+  const keep = cookie; cookie = '';
+  const rr = await req('GET', '/api/kb/marks');
+  const ra = await req('POST', '/api/kb/ask', { b: 'agent-handbook', c: 0, quote: QUOTE, question: '测试' });
+  cookie = keep;
+  check('未登录 marks / ask → 401', rr.status === 401 && ra.status === 401, rr.status + '/' + ra.status);
+}
+r = await req('POST', '/api/kb/marks', { b: 'agent-handbook', c: 0, quote: '' });
+check('空划线 400', r.status === 400, r.status);
+r = await req('POST', '/api/kb/marks', { b: 'no-such-book', c: 0, quote: 'x' });
+check('不存在的书 404', r.status === 404, r.status);
+
+/* 双用户隔离：tmp2 看不见也动不了 tmp1 的划线 */
+console.log('\n— 双用户隔离 —');
+const salt2 = crypto.randomBytes(16).toString('hex');
+db.prepare('INSERT OR REPLACE INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,0)')
+  .run('kbtest-tmp2', crypto.scryptSync('kbtest-pass-2026', salt2, 64).toString('hex'), salt2, 'user');
+const cookie1 = cookie;
+r = await req('POST', '/api/login', { username: 'kbtest-tmp2', password: 'kbtest-pass-2026' });
+check('第二账号登录', r.json && r.json.ok === true, '');
+r = await req('GET', '/api/kb/marks');
+check('隔离：看不到他人划线', r.json && r.json.ok === true && !(r.json.marks || []).some(m => m.id === MID), '');
+r = await req('DELETE', '/api/kb/marks?id=' + MID);
+check('隔离：删他人划线 404', r.status === 404, r.status);
+r = await req('PUT', '/api/kb/marks', { id: MID, note: '越权' });
+check('隔离：改他人划线 404', r.status === 404, r.status);
+r = await req('POST', '/api/kb/marks/review', { id: MID, grade: 'ok' });
+check('隔离：替他人回顾 400', r.status === 400, r.status);
+r = await req('POST', '/api/logout');
+cookie = cookie1;
+db.prepare('DELETE FROM users WHERE username=?').run('kbtest-tmp2');
+
+/* 导出附件 + 清理 */
+r = await req('GET', '/api/kb/marks/export');
+check('导出 Markdown 附件', r.status === 200 && (r.disposition || '').includes('attachment') &&
+  r.text.includes('我的划线') && r.text.includes(QUOTE), r.status + ' ' + (r.disposition || ''));
+r = await req('DELETE', '/api/kb/marks?id=' + MID);
+check('删除自己划线', r.json && r.json.ok === true, '');
+r = await req('GET', '/api/kb/marks?b=agent-handbook&c=0');
+check('删后查无此条', r.json && !(r.json.marks || []).some(m => m.id === MID), '');
 
 cookie = '';
 r = await req('POST', '/api/logout');

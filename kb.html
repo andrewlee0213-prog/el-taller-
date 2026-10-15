@@ -232,6 +232,103 @@ html[data-theme="negro"]{
   color:var(--g-dim);background:color-mix(in srgb,var(--ink) 7%,transparent)}
 .back-shelf:hover{color:var(--g-accent-soft)}
 
+/* ================= gloss 式页边问读：高亮 / 选中工具条 / 弹层 / 页边卡片 / 回顾 ================= */
+.article{position:relative}
+mark.kb-hl{background:color-mix(in srgb,var(--g-accent) 26%,transparent);color:inherit;border-radius:4px;padding:1px 0;
+  box-shadow:inset 0 -0.62em 0 color-mix(in srgb,var(--g-accent) 15%,transparent);cursor:pointer}
+mark.kb-hl.flash{animation:kbflash 1.7s ease}
+@keyframes kbflash{0%,100%{background:color-mix(in srgb,var(--g-accent) 26%,transparent)}
+  25%,60%{background:color-mix(in srgb,var(--g-accent) 60%,transparent)}}
+.kb-selbar{position:fixed;z-index:60;display:none;gap:4px;padding:5px;border-radius:999px;transform:translate(-50%,-100%);
+  background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);
+  border:1px solid var(--g-brd);box-shadow:0 14px 40px var(--g-drop),inset 0 1px 0 rgba(255,255,255,.25)}
+.kb-selbar button{border:0;background:none;color:var(--g-text);font:inherit;font-size:12px;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.kb-selbar button:hover{background:var(--g-accent);color:var(--g-on-accent)}
+.kb-pop{position:fixed;z-index:61;width:min(380px,92vw);border-radius:18px;padding:14px;display:none;flex-direction:column;gap:9px;
+  background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
+  -webkit-backdrop-filter:blur(30px) saturate(1.7);backdrop-filter:blur(30px) saturate(1.7);
+  border:1px solid var(--g-brd);box-shadow:0 24px 70px var(--g-drop),inset 0 1px 0 rgba(255,255,255,.3)}
+.kb-pop.on{display:flex}
+.kb-pop .sel{font-size:11.5px;color:var(--g-dim);line-height:1.6;max-height:52px;overflow:hidden;
+  border-left:2px solid var(--g-accent);padding-left:9px}
+.kb-pop textarea{width:100%;min-height:64px;resize:vertical;background:color-mix(in srgb,var(--ink) 8%,transparent);
+  border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:10px;color:var(--g-text);
+  font:inherit;font-size:12.5px;padding:9px 11px;outline:0}
+.kb-pop textarea:focus{border-color:color-mix(in srgb,var(--g-accent) 55%,transparent)}
+.kb-pop .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.kb-pop .row small{margin-right:auto;color:var(--g-dim);font-size:10.5px}
+.kb-pop .go,.kb-pop .no{border:0;border-radius:999px;padding:8px 18px;font:inherit;font-size:12.5px;cursor:pointer}
+.kb-pop .go{background:var(--g-accent);color:var(--g-on-accent)}
+.kb-pop .go:disabled{opacity:.55;cursor:default}
+.kb-pop .no{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--g-dim)}
+.kb-pop .err{font-size:11.5px;color:var(--warn,#ff9d8a);display:none}
+/* 页边卡片（桌面）/ 行内卡片（窄屏）；卡片只放问答/笔记/元信息 */
+.kb-notecard{border-radius:14px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;
+  background:linear-gradient(150deg,var(--g-card-hi),var(--g-card-lo));border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
+  box-shadow:0 10px 30px var(--g-drop);font-size:12px;line-height:1.65}
+.kb-notecard.abs{position:absolute;right:24px;width:246px;z-index:3}
+.kb-notecard.inline{margin:12px 0;max-width:640px}
+.kb-notecard .q{color:var(--g-accent-soft);font-weight:600;font-size:11.5px}
+.kb-notecard .a{color:color-mix(in srgb,var(--g-text) 90%,transparent)}
+.kb-notecard .nt{color:var(--g-text);background:color-mix(in srgb,var(--g-tint) 40%,transparent);
+  border-left:2px solid var(--g-accent);padding:6px 9px;border-radius:6px;white-space:pre-wrap;cursor:pointer;font-size:11.5px}
+.kb-notecard .nt.empty{opacity:.55}
+.kb-notecard textarea{width:100%;min-height:56px;resize:vertical;background:color-mix(in srgb,var(--ink) 8%,transparent);
+  border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:8px;color:var(--g-text);font:inherit;font-size:12px;padding:7px 9px;outline:0}
+.kb-notecard .meta{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--g-dim)}
+.kb-notecard .meta .x{margin-left:auto;border:0;background:none;color:var(--g-dim);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:6px}
+.kb-notecard .meta .x:hover{color:var(--warn,#ff9d8a);background:color-mix(in srgb,var(--warn,#ff9d8a) 14%,transparent)}
+.kb-notecard [data-act="save"],.kb-notecard [data-act="cancel"]{border:0;background:none;color:var(--g-accent-soft);cursor:pointer;font:inherit;font-size:11.5px;padding:2px 6px}
+.kb-anchorless{margin-top:28px;padding-top:14px;border-top:1px dashed color-mix(in srgb,var(--ink) 14%,transparent);
+  display:flex;flex-direction:column;gap:9px}
+.kb-anchorless>b{display:block;font-size:12px;color:var(--g-accent-soft);margin-bottom:2px}
+@media (min-width:1240px){ .article.kb-margin{padding-right:296px} .kb-notecard.abs{right:26px;width:252px} }
+/* 书架 gloss 化：彩脊封面（书名哈希出稳定色）/ 排序组 / 徽标 / 回顾导出并入 chips */
+.kbchip{display:inline-flex;align-items:center;gap:5px;text-decoration:none}
+.kbchip .badge{min-width:17px;height:17px;border-radius:999px;background:var(--g-accent);color:var(--g-on-accent);
+  font-size:10px;display:inline-grid;place-items:center;padding:0 5px;font-weight:600}
+.kbsort{margin-left:auto;display:inline-flex;gap:6px;align-items:center;padding-left:12px;flex-wrap:wrap;
+  border-left:1px solid color-mix(in srgb,var(--ink) 12%,transparent)}
+.kbsort i{font-style:normal;font-size:10px;color:var(--g-dim);letter-spacing:1.5px}
+.bcard{--bk:var(--g-accent)}
+.bcard .bspine{position:absolute;left:0;top:12px;bottom:12px;width:5px;border-radius:99px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--bk) 92%,transparent),color-mix(in srgb,var(--bk) 22%,transparent))}
+.bic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;line-height:1;
+  background:color-mix(in srgb,var(--bk) 24%,transparent);border:1px solid color-mix(in srgb,var(--bk) 46%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.bmeta .kbm{color:var(--g-accent-soft);font-weight:600}
+.toc button .tmark{flex:none;margin-left:auto;font-size:10px;color:var(--g-accent-soft);opacity:.92}
+.kb-cont{display:none;align-items:center;gap:10px;width:100%;margin:2px 0 6px;border:1px solid color-mix(in srgb,var(--g-accent) 35%,transparent);
+  background:color-mix(in srgb,var(--g-accent) 9%,transparent);border-radius:16px;padding:12px 16px;cursor:pointer;
+  font:inherit;font-size:13px;color:var(--g-text);text-align:left;transition:.2s}
+.kb-cont:hover{background:color-mix(in srgb,var(--g-accent) 16%,transparent)}
+.kb-cont small{color:var(--g-dim);font-size:11.5px;margin-left:auto;flex:none}
+/* 回顾闪卡浮层 */
+.kb-rev-mask{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--g-bg-base) 55%,transparent);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:20px}
+.kb-rev-mask.on{display:flex}
+.kb-rev{width:min(560px,94vw);border-radius:26px;padding:22px 24px 20px;display:flex;flex-direction:column;gap:14px;max-height:86vh;overflow-y:auto}
+.kb-rev .hd{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--g-accent-soft);font-weight:600}
+.kb-rev .hd .n{color:var(--g-dim);font-weight:400;font-size:11.5px}
+.kb-rev .hd .cl{margin-left:auto;border:0;background:none;color:var(--g-dim);font-size:15px;cursor:pointer;padding:4px 8px;border-radius:8px}
+.kb-rev .hd .cl:hover{color:var(--g-text);background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.kb-rev .src{font-size:11.5px;color:var(--g-dim)}
+.kb-rev .src a{color:var(--g-accent-soft);cursor:pointer}
+.kb-rev .card{min-height:150px;border-radius:16px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px;justify-content:center;
+  background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px dashed color-mix(in srgb,var(--ink) 16%,transparent)}
+.kb-rev .card .qq{font-size:15px;line-height:1.85;color:var(--g-text)}
+.kb-rev .card .aa{font-size:13px;line-height:1.8;color:color-mix(in srgb,var(--g-text) 88%,transparent)}
+.kb-rev .card .hint{font-size:10.5px;color:var(--g-dim);letter-spacing:1.5px}
+.kb-rev .grades{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.kb-rev .grades button{border:0;border-radius:12px;padding:11px 0;font:inherit;font-size:12.5px;cursor:pointer;transition:.2s}
+.kb-rev .g-ok{background:color-mix(in srgb,#3aa76d 30%,transparent);color:var(--g-text)}
+.kb-rev .g-so{background:color-mix(in srgb,#d9a714 26%,transparent);color:var(--g-text)}
+.kb-rev .g-miss{background:color-mix(in srgb,#c7503e 26%,transparent);color:var(--g-text)}
+.kb-rev .grades button:hover{transform:translateY(-2px)}
+.kb-rev .empty{text-align:center;color:var(--g-dim);font-size:13px;line-height:2;padding:26px 0}
+
 /* ---- 全站导航（与首页顶栏同款） ---- */
 .g-pill{display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;margin-left:auto;
   background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
@@ -269,7 +366,7 @@ html[data-theme="negro"]{
       </div>
       <label class="search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-        <input type="text" id="searchBox" placeholder="搜索章节与知识点…">
+        <input type="text" id="searchBox" placeholder="搜索章节与我的划线…">
       </label>
     </header>
 
@@ -278,6 +375,7 @@ html[data-theme="negro"]{
         <b id="shelfCount"></b>
         <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，可一次多选，每份 ≤25MB">＋ 上传 PDF / MD</button><button class="book-tab upbtn" id="kbCollectBtn" style="margin-left:8px" title="提交 B 站视频链接，家中 openclaw + getnote 自动转录，收录进「个人收集 · 视频集」">＋ 收视频</button></span>
       </div>
+      <button class="kb-cont" id="kbContinue"></button>
       <div class="kbchips" id="kbChips"></div>
       <div class="shelf" id="shelfGrid"></div>
     </div>
@@ -285,7 +383,7 @@ html[data-theme="negro"]{
     <div class="layout" id="bookLayout" style="display:none">
       <aside class="sidebar g-glass">
         <button class="back-shelf" id="backShelf">← 📚 书架</button>
-        <div class="toc-head"><b id="bookTitle"></b><span class="bookcat" id="bookCat" style="display:none" title="书本分类"></span><small id="bookDesc"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
+        <div class="toc-head"><b id="bookTitle"></b><span class="bookcat" id="bookCat" style="display:none" title="书本分类"></span><small id="bookDesc"></small><small id="bookStudy" style="display:none"></small><button id="kbDel" style="display:none;margin-top:6px;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn);border-radius:999px;padding:4px 12px;font:inherit;font-size:11px;cursor:pointer">删除本书</button></div>
         <div class="kbcatmenu" id="kbCatMenu" style="display:none"></div>
         <ul class="toc" id="toc"></ul>
         <div class="toc-hint" id="tocHint">💡 内容为个人学习笔记，请勿外传。素材更新后经维护机制并入。</div>
@@ -315,16 +413,32 @@ const bookById = id => window.KB.books.find(b => b.id === id);
 const KBCATS = [['AI与智能体','🤖'],['职场与商业','💼'],['设计与审美','🎨'],['视频与创作','🎬'],['硬件与设备','🔬'],['学习与语言','📚'],['其他','📎']];
 let KB_CAT_SEL = 'all';
 try { const v = localStorage.getItem('taller-kb-cat'); if (v) KB_CAT_SEL = v; } catch(e) {}
+/* 排序（gloss 书架）：分类（默认分组）/最近读/最新收录/划线/彩虹（按彩脊色相）；选择记 localStorage */
+let KB_SORT = 'cat';
+try { const v = localStorage.getItem('taller-kb-sort'); if (v) KB_SORT = v; } catch(e) {}
+const KB_SORTS = [['cat','分类'],['recent','最近读'],['new','最新收录'],['marks','✍ 划线'],['rainbow','🌈 彩虹']];
+/* 我的划线计数与读位（gloss 脚本维护，首绘无徽标、数据到位自动重渲） */
+window.KB_MARK_INFO = window.KB_MARK_INFO || { byBook: {}, byChapter: {}, ts: 0 };
+window.KB_PROG = window.KB_PROG || { books: {} };
+const kbHue = t => { let h = 0; for (const ch of String(t || '')) h = (h * 31 + ch.codePointAt(0)) >>> 0; return h % 360; };
 const kbCatIco = c => { const h = KBCATS.find(x => x[0] === c); return h ? h[1] + ' ' + c : (c === '未分类' ? '❓ 未分类' : c); };
-const cardHtml = b =>
-  '<button class="bcard" data-bid="' + esc(b.id) + '">' +
+const cardHtml = b => {
+  const n = window.KB_MARK_INFO.byBook[b.id] || 0;
+  const p = window.KB_PROG.books[b.id];
+  return '<button class="bcard" data-bid="' + esc(b.id) + '" style="--bk:hsl(' + kbHue(b.title || b.id) + ',62%,56%)">' +
   (IS_ADMIN && !b.atlas ? '<span class="bdel" data-bid="' + esc(b.id) + '" title="删除本书">✕</span>' : '') +
+  '<span class="bspine"></span>' +
   '<span class="bic">' + bookIcon(b) + '</span>' +
   '<b>' + esc(b.title) + '</b><small>' + esc(b.desc || '') + '</small>' +
-  '<span class="bmeta">' + b.chapters.length + ' 章' + (b.atlas ? ' · 图鉴' : (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : ''))) + '</span></button>';
+  '<span class="bmeta">' + b.chapters.length + ' 章' + (b.atlas ? ' · 图鉴' : (b.uploaded ? ' · 上传' : (b.collected ? ' · 收集' : ''))) +
+    (n ? ' · <span class="kbm">✍ ' + n + '</span>' : '') +
+    (p && p.c != null ? ' · 读到 ' + (p.c + 1) : '') + '</span></button>';
+};
 document.getElementById('kbChips').addEventListener('click', e => {
+  const srt = e.target.closest('[data-ksort]');
+  if (srt) { KB_SORT = srt.dataset.ksort; try { localStorage.setItem('taller-kb-sort', KB_SORT); } catch(err) {} renderShelf(); return; }
   const chip = e.target.closest('.kbchip');
-  if (!chip) return;
+  if (!chip || !chip.dataset.kcat) return;   /* 排序/回顾/导出 chips 无 kcat，不进分类逻辑 */
   KB_CAT_SEL = chip.dataset.kcat;
   try { localStorage.setItem('taller-kb-cat', KB_CAT_SEL); } catch(err) {}
   renderShelf();
@@ -371,9 +485,19 @@ function renderShelf(){
     if (c === '未分类') { if (uncat) chips += '<button class="kbchip' + (KB_CAT_SEL === '__uncat' ? ' on' : '') + '" data-kcat="__uncat">❓ 未分类 ' + uncat + '</button>'; }
     else if (counts[c]) chips += '<button class="kbchip' + (KB_CAT_SEL === c ? ' on' : '') + '" data-kcat="' + esc(c) + '">' + ico + ' ' + c + ' ' + counts[c] + '</button>';
   }
+  /* 排序组 + 回顾/导出（gloss 脚本监听 data-kbrev；导出为原生下载链接） */
+  chips += '<span class="kbsort"><i>排序</i>' +
+    KB_SORTS.map(([k, l]) => '<button class="kbchip' + (KB_SORT === k ? ' on' : '') + '" data-ksort="' + k + '">' + l + '</button>').join('') + '</span>' +
+    '<button class="kbchip" data-kbrev title="每日回顾 · 到期划线像闪卡一样回来（间隔重复）">🔁 Revisión<span class="badge" data-revbadge></span></button>' +
+    '<a class="kbchip" href="/api/kb/marks/export" download title="导出我的全部划线（Obsidian Markdown，含原文深链）">⬇ Exportar</a>';
   document.getElementById('kbChips').innerHTML = chips;
+  /* 分类筛选先行；「全部+分类」= 按类分组，其余排序平铺 */
+  const inCat = KB_CAT_SEL === 'all' ? books : (KB_CAT_SEL === '__uncat' ? books.filter(b => !b.cat) : books.filter(b => b.cat === KB_CAT_SEL));
+  const PG = window.KB_PROG.books || {};
+  const readAt = b => (PG[b.id] && PG[b.id].at) || 0;
+  const bookAt = b => b.at || 0;
   let html = '';
-  if (KB_CAT_SEL === 'all') {          /* 全部 = 按类分组；无 cat 的书归「未分类」等自动分类跑完自然归位 */
+  if (KB_CAT_SEL === 'all' && KB_SORT === 'cat') {   /* 全部+分类 = 按类分组；无 cat 的书归「未分类」等自动分类跑完自然归位 */
     for (const [c, ico] of KBCATS.slice(0, 7)) {
       const g = books.filter(b => b.cat === c);
       if (g.length) html += '<div class="cathead">' + ico + ' ' + esc(c) + ' <small>' + g.length + ' 本</small></div>' + g.map(cardHtml).join('');
@@ -381,8 +505,12 @@ function renderShelf(){
     const u = books.filter(b => !b.cat);
     if (u.length) html += '<div class="cathead">❓ 未分类 <small>' + u.length + ' 本</small></div>' + u.map(cardHtml).join('');
   } else {
-    const g = KB_CAT_SEL === '__uncat' ? books.filter(b => !b.cat) : books.filter(b => b.cat === KB_CAT_SEL);
-    html = g.map(cardHtml).join('');
+    let list = inCat.slice();
+    if (KB_SORT === 'recent') list.sort((x, y) => readAt(y) - readAt(x) || bookAt(y) - bookAt(x));
+    else if (KB_SORT === 'new') list.sort((x, y) => bookAt(y) - bookAt(x));
+    else if (KB_SORT === 'marks') list.sort((x, y) => (window.KB_MARK_INFO.byBook[y.id] || 0) - (window.KB_MARK_INFO.byBook[x.id] || 0) || readAt(y) - readAt(x));
+    else if (KB_SORT === 'rainbow') list.sort((x, y) => kbHue(x.title || x.id) - kbHue(y.title || y.id));
+    html = list.map(cardHtml).join('');
   }
   document.getElementById('shelfGrid').innerHTML = html;
 }
@@ -448,18 +576,28 @@ async function doSearch(q){
     const j = await r.json();
     if (seq !== searchSeq) return;
     const rows = j.results || [];
-    const head = '搜索「' + q + '」· ' + (j.total || 0) + ' 个匹配章节' + ((j.total || 0) > 80 ? '（显示前 80）' : '');
+    const mks = j.marks || [];
+    const mrows = mks.map(h =>
+      '<button class="srow" data-sb="' + esc(h.b) + '" data-sc="' + h.c + '" data-mid="' + esc(h.id) + '">' +
+      '<b>“' + esc(h.quote.slice(0, 90)) + '”</b>' +
+      '<small>✍ ' + esc(h.bTitle) + ' · ' + esc(h.cTitle) + (h.ask ? ' · ❓ ' + esc(h.ask.slice(0, 40)) : '') + '</small>' +
+      (h.note ? '<span>📝 ' + esc(h.note.slice(0, 60)) + '</span>' : '') + '</button>').join('');
+    const head = '搜索「' + q + '」· ' + (j.total || 0) + ' 个匹配章节' + (mks.length ? ' · ' + mks.length + ' 条我的划线' : '') + ((j.total || 0) > 80 ? '（显示前 80）' : '');
     if (view === 'shelf') {
       document.getElementById('shelfCount').textContent = head;
       document.getElementById('shelfUp').style.display = 'none';
       document.getElementById('shelfGrid').innerHTML = '<div class="sres">' + (rows.map(h =>
         '<button class="srow" data-sb="' + esc(h.b) + '" data-sc="' + h.c + '"><b>' + esc(h.cTitle) + '</b>' +
         '<small>' + esc(h.bTitle) + '</small>' + (h.snip ? '<span>' + esc(h.snip) + '</span>' : '') + '</button>').join('')
-        || '<span style="opacity:.6;padding:10px">没有匹配的章节</span>') + '</div>';
+        || '<span style="opacity:.6;padding:10px">没有匹配的章节</span>') +
+        (mrows ? '<div class="cathead" style="padding:12px 2px 2px">✍ 我的划线 <small>' + mks.length + '</small></div>' + mrows : '') + '</div>';
     } else {
       document.getElementById('toc').innerHTML = rows.map(h =>
         '<li><button data-sb="' + esc(h.b) + '" data-sc="' + h.c + '"><span><div>' + esc(h.cTitle) + '</div>' +
-        '<small style="opacity:.6;font-size:11px;display:block;margin-top:2px">' + esc(h.bTitle) + '</small></span></button></li>').join('')
+        '<small style="opacity:.6;font-size:11px;display:block;margin-top:2px">' + esc(h.bTitle) + '</small></span></button></li>').join('') +
+        mks.map(h =>
+          '<li><button data-sb="' + esc(h.b) + '" data-sc="' + h.c + '" data-mid="' + esc(h.id) + '"><span><div>✍ ' + esc(h.quote.slice(0, 44)) + '</div>' +
+          '<small style="opacity:.6;font-size:11px;display:block;margin-top:2px">' + esc(h.bTitle) + ' · ' + esc(h.cTitle) + '</small></span></button></li>').join('')
         || '<li class="search-results">没有匹配的章节</li>';
       document.getElementById('tocHint').textContent = head;
     }
@@ -488,13 +626,13 @@ document.getElementById('shelfGrid').addEventListener('click', e => {
   const card = e.target.closest('[data-bid]');
   if (card) { view = 'book'; bookId = card.dataset.bid; chapterIdx = 0; render(); return; }
   const row = e.target.closest('[data-sb]');
-  if (row) { view = 'book'; bookId = row.dataset.sb; chapterIdx = +row.dataset.sc; render(); }
+  if (row) { view = 'book'; bookId = row.dataset.sb; chapterIdx = +row.dataset.sc; window.KB_PENDING_MID = row.dataset.mid || ''; render(); }
 });
 document.getElementById('toc').addEventListener('click', e => {
   const btn = e.target.closest('button');
   if (!btn) return;
   if (btn.dataset.c != null && btn.dataset.c !== '') { chapterIdx = +btn.dataset.c; }
-  else if (btn.dataset.sb) { bookId = btn.dataset.sb; chapterIdx = +btn.dataset.sc; }
+  else if (btn.dataset.sb) { bookId = btn.dataset.sb; chapterIdx = +btn.dataset.sc; window.KB_PENDING_MID = btn.dataset.mid || ''; }
   else return;
   document.getElementById('searchBox').value = '';
   renderBook();
@@ -585,11 +723,12 @@ document.getElementById('shelfView').addEventListener('click', async e => {
   }
 })();
 function hashState(){
-  const m = /^#b=([\w-]+)&c=(\d+)$/.exec(location.hash);
+  const m = /^#b=([\w-]+)&c=(\d+)(?:&m=(\w+))?$/.exec(location.hash);
   if (!m) return null;
   const bi = window.KB.books.findIndex(b => b.id === m[1]);
   const ci = parseInt(m[2], 10);
   if (bi < 0 || !window.KB.books[bi].chapters[ci]) return null;
+  window.KB_PENDING_MID = m[3] || "";   /* 深链定位到某条划线（gloss 式） */
   return { b: m[1], c: ci };
 }
 
@@ -608,6 +747,481 @@ window.addEventListener('hashchange', () => {
   render();
 })();
 fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); if (IS_ADMIN) loadCollect(); }).catch(()=>{});
+</script>
+<script>
+/* ================= gloss 式页边问读：划线 / 问 AI / 笔记 / 每日回顾 / 阅读进度 =================
+   登录用户可用、按账户隔离（服务端 s.u）；kb-margin 预留页边（≥1240px），窄屏卡片转行内 */
+window.KB_PENDING_MID = '';
+(function(){
+  const body = document.getElementById('chapterBody');
+  const article = document.querySelector('.article');
+  if (!body || !article) return;
+  const norm = s => String(s).replace(/\s+/g, ' ').trim();
+  const BLOCK_SEL = 'p,h1,h2,h3,h4,li,blockquote,pre,td,th,dt,dd';
+  const DESKTOP = window.matchMedia('(min-width:1240px)');
+  let MY = [];            /* 当前章我的划线 */
+  let markSeq = 0;        /* 切章竞态守卫 */
+  let lastProgKey = '';
+
+  /* ---------- 归一化文本 + 每字符源映射（跨 text node 也能精确包 mark） ---------- */
+  function blockMap(el){
+    const map = []; let text = ''; let lastSp = true;
+    (function walk(n){
+      for (const c of n.childNodes){
+        if (c.nodeType === 3){
+          for (let i = 0; i < c.data.length; i++){
+            const ch = c.data[i];
+            if (/\s/.test(ch)) { if (!lastSp) { text += ' '; map.push({ node: c, off: i }); lastSp = true; } }
+            else { text += ch; map.push({ node: c, off: i }); lastSp = false; }
+          }
+        } else if (c.nodeType === 1){
+          if (c.tagName === 'BR') { if (!lastSp) { text += ' '; map.push({ node: c, off: 0 }); lastSp = true; } }
+          else if (c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') walk(c);
+        }
+      }
+    })(el);
+    return { text, map };
+  }
+  function leafBlocks(){
+    return Array.from(body.querySelectorAll(BLOCK_SEL)).filter(el =>
+      !el.closest('.kb-notecard,.kb-anchorless') && !el.querySelector(BLOCK_SEL));
+  }
+  /* ---------- 锚定：quote 整体落在同一块内才算锚到；pre/suf 用于多候选择优 ---------- */
+  function anchorMark(m){
+    const q = norm(m.quote);
+    if (!q || q.length < 2) return null;
+    const pre = norm(m.pre), suf = norm(m.suf);
+    let best = null;
+    for (const el of leafBlocks()){
+      const bm = blockMap(el);
+      let idx = bm.text.indexOf(q);
+      while (idx >= 0){
+        let sc = 0;
+        if (pre && bm.text.slice(Math.max(0, idx - 30), idx).endsWith(pre.slice(-30))) sc += 2;
+        if (suf && bm.text.slice(idx + q.length, idx + q.length + 30).startsWith(suf.slice(0, 30))) sc += 2;
+        if (!best || sc > best.sc) best = { el, map: bm.map, idx, sc };
+        idx = bm.text.indexOf(q, idx + 1);
+      }
+      if (best && best.sc >= 4) break;
+    }
+    if (!best) return null;
+    try{
+      const r = document.createRange();
+      const start = best.map[best.idx], end = best.map[best.idx + q.length - 1];
+      r.setStart(start.node, start.off);
+      r.setEnd(end.node, end.off + 1);
+      const mk = document.createElement('mark');
+      mk.className = 'kb-hl'; mk.dataset.mid = m.id; mk.title = '点击定位页边笔记';
+      mk.appendChild(r.extractContents());
+      r.insertNode(mk);
+      return mk;
+    } catch(_) { return null; }
+  }
+
+  /* ---------- 卡片 ---------- */
+  function cardEl(m){
+    const d = document.createElement('div');
+    d.className = 'kb-notecard';
+    d.dataset.mid = m.id;
+    let h = '';
+    if (m.ask) h += '<div class="q">❓ ' + esc(m.ask) + '</div>';
+    if (m.answer) h += '<div class="a">' + esc(m.answer) + '</div>';
+    h += '<div class="nt' + (m.note ? '' : ' empty') + '" data-act="note">' + (m.note ? esc(m.note) : '＋ 补一条笔记…') + '</div>';
+    h += '<div class="meta"><span>' + new Date(m.at || 0).toLocaleDateString('zh-CN') + ((m.box || 0) ? ' · 盒 ' + m.box : '') + '</span>' +
+      '<button class="x" data-act="del" title="删除这条划线">✕</button></div>';
+    d.innerHTML = h;
+    return d;
+  }
+  function layoutAbs(cards){
+    let bottom = -6;
+    for (const it of cards.sort((a, b) => a.mk.offsetTop - b.mk.offsetTop)){
+      const top = Math.max(it.mk.offsetTop - 6, bottom + 10);
+      it.c.style.top = top + 'px';
+      bottom = top + it.c.offsetHeight;
+    }
+  }
+  /* ---------- 章渲染主流程：从缓存重建正文 → 锚定 → 卡片（桌面页边 / 窄屏行内） ---------- */
+  function applyAll(){
+    const data = chapterCache.get(bookId + '|' + chapterIdx);
+    if (!data || !data.html) return;
+    article.querySelectorAll('.kb-notecard').forEach(el => el.remove());   /* 清上一轮页边卡（正文卡随 body 重建消失） */
+    body.innerHTML = data.html;
+    if (data.html.indexOf('<iframe') >= 0) return;   /* PDF 章：原生查看器，无划线 */
+    const anchored = [], lost = [];
+    for (const m of MY.slice().sort((a, b) => (a.at || 0) - (b.at || 0))){
+      const mk = anchorMark(m);
+      if (mk) anchored.push({ m, mk }); else lost.push(m);
+    }
+    if (lost.length){
+      const box = document.createElement('div');
+      box.className = 'kb-anchorless';
+      box.innerHTML = '<b>✍ 本章划线（原文已变动，未能定位到具体段落）</b>';
+      for (const m of lost) box.appendChild(cardEl(m));
+      body.appendChild(box);
+    }
+    const abs = DESKTOP.matches;
+    const cards = [];
+    for (const it of anchored){
+      const c = cardEl(it.m);
+      if (abs){ c.classList.add('abs'); article.appendChild(c); cards.push({ c, mk: it.mk }); }
+      else {
+        c.classList.add('inline');
+        const blk = it.mk.closest(BLOCK_SEL) || it.mk.parentElement;
+        blk.insertAdjacentElement('afterend', c);
+      }
+    }
+    if (abs) layoutAbs(cards);
+    if (window.KB_PENDING_MID){
+      const mid = window.KB_PENDING_MID; window.KB_PENDING_MID = '';
+      const mk = body.querySelector('mark.kb-hl[data-mid="' + mid + '"]');
+      if (mk){
+        mk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        mk.classList.add('flash');
+        setTimeout(() => mk.classList.remove('flash'), 1800);
+      } else {
+        const cd = body.querySelector('.kb-notecard[data-mid="' + mid + '"]');
+        if (cd) cd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }
+  async function pullMarks(){
+    const seq = ++markSeq, b = bookId, c = chapterIdx;
+    try{
+      const r = await fetch('/api/kb/marks?b=' + encodeURIComponent(b));   /* 拉全书：章内渲染 + 书卡/目录计数一并维护 */
+      const j = await r.json();
+      if (seq !== markSeq || b !== bookId) return;
+      const all = j.marks || [];
+      const MI = window.KB_MARK_INFO;
+      for (const k of Object.keys(MI.byChapter)) if (k.startsWith(b + '|')) delete MI.byChapter[k];
+      for (const m of all) MI.byChapter[b + '|' + m.c] = (MI.byChapter[b + '|' + m.c] || 0) + 1;
+      MI.byBook[b] = all.length;
+      MI.ts = Date.now();
+      MY = all.filter(m => m.c === c);
+    } catch(_) { MY = []; return; }
+    applyAll();
+    kbStampBook();
+  }
+
+  /* ---------- 挂进原渲染链：loadChapter 之后拉划线 + 报进度 ---------- */
+  const _loadChapter = loadChapter;
+  loadChapter = async function(){
+    await _loadChapter();
+    const key = bookId + '|' + chapterIdx;
+    const data = chapterCache.get(key);
+    if (!data) return;
+    if (data.html.indexOf('<iframe') >= 0) { article.classList.remove('kb-margin'); return; }
+    article.classList.add('kb-margin');
+    if (lastProgKey !== key){
+      lastProgKey = key;
+      fetch('/api/kb/progress', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ b: bookId, c: chapterIdx }) }).catch(() => {});
+    }
+    await pullMarks();
+  };
+  DESKTOP.addEventListener('change', () => { if (view === 'book') applyAll(); });
+  /* 兜底：视口变化事件与媒体查询偶有时序差（如加载中缩放窗口），去抖后再排一次卡片 */
+  let rzTimer = null;
+  window.addEventListener('resize', () => {
+    if (view !== 'book') return;
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(applyAll, 250);
+  });
+
+  /* ---------- 与原有功能整合：书内学习状态行 + 目录章节 ✍ 标记 + 书架徽标/角标 ---------- */
+  const _renderBook = renderBook;
+  renderBook = function(){ _renderBook(); kbStampBook(); };
+  function kbStampBook(){
+    const MI = window.KB_MARK_INFO, el = document.getElementById('bookStudy');
+    if (el){
+      const n = MI.byBook[bookId] || 0;
+      const p = window.KB_PROG.books[bookId];
+      const bits = [];
+      if (n) bits.push('✍ ' + n + ' 条划线');
+      if (p && p.c != null && p.c + 1 <= (bookById(bookId) ? bookById(bookId).chapters.length : 1e9)) bits.push('读到第 ' + (p.c + 1) + ' 章');
+      if (bits.length){ el.textContent = '· ' + bits.join(' · '); el.style.display = ''; }
+      else el.style.display = 'none';
+    }
+    document.querySelectorAll('#toc button[data-c]').forEach(btn => {
+      const cn = MI.byChapter[bookId + '|' + btn.dataset.c] || 0;
+      let sp = btn.querySelector('.tmark');
+      if (cn){ if (!sp){ sp = document.createElement('span'); sp.className = 'tmark'; btn.appendChild(sp); } sp.textContent = '✍' + cn; }
+      else if (sp) sp.remove();
+    });
+  }
+  let dueBadgeN = 0;
+  const _renderShelf = renderShelf;
+  renderShelf = function(){ _renderShelf(); kbStampShelf(); kbRefreshMarks(); };
+  function kbStampShelf(){
+    const el = document.querySelector('[data-revbadge]');
+    if (el) el.textContent = dueBadgeN > 99 ? '99+' : (dueBadgeN || '');
+  }
+  /* 书架每次渲染时顺带对账一次全量划线计数（>15s 节流；有变化自动重渲，自防环） */
+  async function kbRefreshMarks(){
+    if (Date.now() - (window.KB_MARK_INFO.ts || 0) < 15000) return;
+    window.KB_MARK_INFO.ts = Date.now();
+    try{
+      const r = await fetch('/api/kb/marks');
+      const j = await r.json();
+      const MI = { byBook: {}, byChapter: {}, ts: Date.now() };
+      for (const m of (j.marks || [])){
+        MI.byBook[m.b] = (MI.byBook[m.b] || 0) + 1;
+        MI.byChapter[m.b + '|' + m.c] = (MI.byChapter[m.b + '|' + m.c] || 0) + 1;
+      }
+      const changed = JSON.stringify(MI.byBook) !== JSON.stringify(window.KB_MARK_INFO.byBook);
+      window.KB_MARK_INFO = MI;
+      if (changed && view === 'shelf') renderShelf();
+    } catch(_) {}
+  }
+
+  /* ---------- 卡片交互（事件委托：删 / 笔记编辑） ---------- */
+  body.addEventListener('click', async e => {
+    const mk = e.target.closest('mark.kb-hl');
+    if (mk){
+      const cd = body.querySelector('.kb-notecard[data-mid="' + mk.dataset.mid + '"]') ||
+        article.querySelector('.kb-notecard[data-mid="' + mk.dataset.mid + '"]');
+      if (cd){ cd.scrollIntoView({ behavior: 'smooth', block: 'center' }); cd.classList.add('flash'); setTimeout(() => cd.classList.remove('flash'), 1800); }
+      return;
+    }
+    const card = e.target.closest('.kb-notecard');
+    if (!card) return;
+    const m = MY.find(x => x.id === card.dataset.mid);
+    if (!m) return;
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    if (act.dataset.act === 'del'){
+      if (!confirm('删除这条划线（含问答与笔记）？')) return;
+      const r = await fetch('/api/kb/marks?id=' + encodeURIComponent(m.id), { method: 'DELETE' });
+      if (r.ok){ MY = MY.filter(x => x.id !== m.id); applyAll(); }
+      return;
+    }
+    if (act.dataset.act === 'note'){
+      if (act.querySelector('textarea')) return;
+      act.innerHTML = '<textarea maxLength="500"></textarea>' +
+        '<div class="meta" style="margin-top:6px"><button data-act="save">💾 保存</button><button data-act="cancel">取消</button></div>';
+      const ta = act.querySelector('textarea');
+      ta.value = m.note || ''; ta.focus();
+      return;
+    }
+    if (act.dataset.act === 'save'){
+      const note = card.querySelector('.nt textarea').value.trim().slice(0, 500);
+      const r = await fetch('/api/kb/marks', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: m.id, note }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.ok){ m.note = note; applyAll(); }
+      return;
+    }
+    if (act.dataset.act === 'cancel') applyAll();
+  });
+
+  /* ---------- 选中工具条 ---------- */
+  const selbar = document.createElement('div');
+  selbar.className = 'kb-selbar';
+  selbar.innerHTML = '<button data-op="mark">✏ 划线</button><button data-op="ask">✨ 问 AI</button><button data-op="note">📝 笔记</button>';
+  document.body.appendChild(selbar);
+  const hideSelbar = () => { selbar.style.display = 'none'; };
+  let SEL = null;
+  function onSelEnd(){
+    if (view !== 'book') return hideSelbar();
+    const data = chapterCache.get(bookId + '|' + chapterIdx);
+    if (!data || data.html.indexOf('<iframe') >= 0) return hideSelbar();
+    const sel = document.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return hideSelbar();
+    const rg = sel.getRangeAt(0);
+    if (!body.contains(rg.commonAncestorContainer)) return hideSelbar();
+    /* 卡片（问答/笔记）与未锚定区内的文字不属于正文，不给划线工具条 */
+    const inCard = (rg.startContainer.nodeType === 3 ? rg.startContainer.parentElement : rg.startContainer)?.closest('.kb-notecard,.kb-anchorless');
+    if (inCard) return hideSelbar();
+    const quote = norm(sel.toString());
+    if (quote.length < 2 || quote.length > 300) return hideSelbar();
+    let pre = '', suf = '';
+    const startEl = rg.startContainer.nodeType === 3 ? rg.startContainer.parentElement : rg.startContainer;
+    const block = startEl && startEl.closest ? startEl.closest(BLOCK_SEL) : null;
+    if (block){
+      try{
+        const rp = document.createRange();
+        rp.setStart(block, 0); rp.setEnd(rg.startContainer, rg.startOffset);
+        pre = norm(rp.toString()).slice(-30);
+        const rs = document.createRange();
+        rs.setStart(rg.endContainer, rg.endOffset); rs.setEnd(block, block.childNodes.length);
+        suf = norm(rs.toString()).slice(0, 30);
+      } catch(_) {}
+    }
+    const rect = rg.getBoundingClientRect();
+    if (!rect || (!rect.width && !rect.height)) return hideSelbar();
+    SEL = { quote: quote.slice(0, 200), pre, suf, rx: rect.left + rect.width / 2, ry: Math.max(rect.top, 70) };
+    selbar.style.display = 'flex';
+    selbar.style.left = Math.max(70, Math.min(window.innerWidth - 70, SEL.rx)) + 'px';
+    selbar.style.top = Math.max(52, rect.top - 10) + 'px';
+  }
+  document.addEventListener('mouseup', () => setTimeout(onSelEnd, 10));
+  document.addEventListener('touchend', () => setTimeout(onSelEnd, 350));
+  document.addEventListener('scroll', hideSelbar, { passive: true });
+  selbar.addEventListener('mousedown', e => e.preventDefault());
+  selbar.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || !SEL) return;
+    hideSelbar();
+    openPop(btn.dataset.op, SEL);
+    document.getSelection().removeAllRanges();
+  });
+
+  /* ---------- 问 AI / 笔记 弹层 ---------- */
+  const pop = document.createElement('div');
+  pop.className = 'kb-pop';
+  document.body.appendChild(pop);
+  let POP = null;
+  function openPop(mode, sel){
+    POP = { mode, sel };
+    pop.classList.add('on');
+    pop.innerHTML =
+      '<div class="sel">' + esc(sel.quote) + '</div>' +
+      '<textarea maxLength="200" placeholder="' +
+      (mode === 'ask' ? '关于这段文字，问点什么？GLM 将结合整章上下文作答…' : '写下你的笔记…') + '"></textarea>' +
+      '<div class="err"></div>' +
+      '<div class="row"><small>Enter 发送 · Esc 关闭</small><button class="no">取消</button>' +
+      '<button class="go">' + (mode === 'ask' ? '✨ 问 AI' : '📝 保存') + '</button></div>';
+    pop.style.left = Math.max(12, Math.min(window.innerWidth - Math.min(380, window.innerWidth * .92) - 12, sel.rx - 190)) + 'px';
+    pop.style.top = Math.max(64, sel.ry) + 'px';
+    pop.querySelector('textarea').focus();
+  }
+  function closePop(){ pop.classList.remove('on'); POP = null; }
+  async function submitPop(){
+    if (!POP) return;
+    const ta = pop.querySelector('textarea'), btn = pop.querySelector('.go'), err = pop.querySelector('.err');
+    const val = ta.value.trim();
+    const fail = t => { err.textContent = t; err.style.display = 'block'; btn.disabled = false; };
+    if (POP.mode === 'mark' || POP.mode === 'note'){
+      if (POP.mode === 'note' && !val) return fail('笔记内容为空');
+      btn.disabled = true;
+      try{
+        const r = await fetch('/api/kb/marks', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ b: bookId, c: chapterIdx, quote: POP.sel.quote, pre: POP.sel.pre, suf: POP.sel.suf,
+            note: (val || '').slice(0, 500) }) });
+        const j = await r.json().catch(() => ({}));
+        if (j.ok){ closePop(); pullMarks(); } else fail(j.error || ('HTTP ' + r.status));
+      } catch(_) { fail('网络错误，稍后再试'); }
+      return;
+    }
+    if (!val) return fail('问题不能为空');
+    btn.disabled = true; btn.textContent = 'GLM 正在阅读本章…'; err.style.display = 'none';
+    try{
+      const r = await fetch('/api/kb/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ b: bookId, c: chapterIdx, quote: POP.sel.quote, pre: POP.sel.pre, suf: POP.sel.suf, question: val.slice(0, 200) }) });
+      const j = await r.json().catch(() => ({}));
+      if (j.ok){ closePop(); pullMarks(); }
+      else { fail(j.error || ('HTTP ' + r.status)); btn.textContent = '✨ 问 AI'; }
+    } catch(_) { fail('网络错误，稍后再试'); btn.textContent = '✨ 问 AI'; }
+  }
+  pop.addEventListener('click', e => {
+    if (e.target.closest('.go')) submitPop();
+    else if (e.target.closest('.no')) closePop();
+  });
+  pop.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submitPop(); }
+    if (e.key === 'Escape') closePop();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closePop(); hideSelbar(); closeRev(); } });
+
+  /* ---------- 书架数据落位：进度（含每书读位）驱动继续阅读/排序，due 驱动回顾角标 ---------- */
+  fetch('/api/kb/progress').then(r => r.json()).then(j => {
+    const p = j && j.progress;
+    if (!p) return;
+    window.KB_PROG = { last: p, books: p.books || {} };
+    const b = bookById(p.b);
+    if (b && b.chapters[p.c]) {
+      const btn = document.getElementById('kbContinue');
+      btn.innerHTML = '▶ 继续上次：《' + esc(b.title) + '》· 第 ' + (p.c + 1) + ' 章 ' + esc(b.chapters[p.c].title.slice(0, 26)) +
+        '<small>' + new Date(p.at || 0).toLocaleDateString('zh-CN') + '</small>';
+      btn.style.display = 'flex';
+      btn.onclick = () => { view = 'book'; bookId = p.b; chapterIdx = p.c; render(); };
+    }
+    if (view === 'shelf') renderShelf();   /* 读位徽标/最近读排序就位 */
+  }).catch(() => {});
+  fetch('/api/kb/marks/due').then(r => r.json()).then(j => {
+    dueBadgeN = (j && j.dueTotal) || 0;
+    kbStampShelf();
+  }).catch(() => {});
+
+  /* ---------- 每日回顾闪卡浮层 ---------- */
+  const revMask = document.createElement('div');
+  revMask.className = 'kb-rev-mask';
+  document.body.appendChild(revMask);
+  let REV = null;
+  function openRev(){
+    revMask.classList.add('on');
+    revMask.innerHTML = '<div class="kb-rev g-glass"><div class="empty">📦 载入中…</div></div>';
+    fetch('/api/kb/marks/due').then(r => r.json()).then(j => {
+      REV = { queue: (j && j.marks) || [], i: 0, flipped: false };
+      drawRev();
+    }).catch(() => { revMask.querySelector('.kb-rev').innerHTML = '<div class="empty">网络错误，稍后再试</div>'; });
+  }
+  function closeRev(){
+    revMask.classList.remove('on');
+    REV = null;
+    fetch('/api/kb/marks/due').then(r => r.json()).then(j => { dueBadgeN = (j && j.dueTotal) || 0; kbStampShelf(); }).catch(() => {});
+  }
+  function drawRev(){
+    const box = revMask.querySelector('.kb-rev');
+    const hd = '<div class="hd">🔁 Revisión · 每日回顾<button class="cl" data-r="close">✕</button></div>';
+    if (!REV || !REV.queue.length){
+      box.innerHTML = hd + '<div class="empty">今天没有需要回顾的划线。<br>去书里选中一段文字，划一条试试 ✏</div>';
+      return;
+    }
+    if (REV.i >= REV.queue.length){
+      box.innerHTML = hd + '<div class="empty">🎉 今日 ' + REV.queue.length + ' 条回顾完成！<br>到期的那几条明天会再回来。</div>';
+      return;
+    }
+    const m = REV.queue[REV.i];
+    const back = REV.flipped;
+    box.innerHTML =
+      '<div class="hd">🔁 Revisión · 每日回顾 <span class="n">' + (REV.i + 1) + ' / ' + REV.queue.length + '</span>' +
+      '<button class="cl" data-r="close">✕</button></div>' +
+      '<div class="src">📖 ' + esc(m.bTitle) + ' · ' + esc(m.cTitle) + ' · <a data-r="src">跳原文 ↗</a></div>' +
+      '<div class="card" data-r="flip"><div class="qq">“' + esc(m.quote) + '”</div>' +
+      (back
+        ? (m.ask ? '<div class="aa"><b style="color:var(--g-accent-soft)">❓ ' + esc(m.ask) + '</b><br>' + esc(m.answer || '') + '</div>' : '') +
+          (m.note ? '<div class="aa">📝 ' + esc(m.note) + '</div>' : '') +
+          '<div class="hint">复习盒子 ' + (m.box || 0) + ' · 还记得吗？</div>'
+        : '<div class="hint">点击卡片翻面，看当时的问答与笔记</div>') +
+      '</div>' +
+      (back ? '<div class="grades"><button class="g-miss" data-g="miss">😵 忘了</button>' +
+        '<button class="g-so" data-g="so">🤔 模糊</button><button class="g-ok" data-g="ok">😌 记得</button></div>' : '');
+  }
+  revMask.addEventListener('click', async e => {
+    const t = e.target.closest('[data-r],[data-g]');
+    if (!t) return;
+    if (t.dataset.r === 'close') return closeRev();
+    if (t.dataset.r === 'src'){
+      const m = REV && REV.queue[REV.i];
+      if (!m) return;
+      closeRev();
+      view = 'book'; bookId = m.b; chapterIdx = m.c; window.KB_PENDING_MID = m.id; render();
+      return;
+    }
+    if (t.dataset.r === 'flip'){ REV.flipped = !REV.flipped; return drawRev(); }
+    const g = t.dataset.g;
+    if (!g || !REV || !REV.queue[REV.i]) return;
+    const m = REV.queue[REV.i];
+    t.disabled = true;
+    try{ await fetch('/api/kb/marks/review', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: m.id, grade: g }) }); } catch(_) {}
+    REV.i++; REV.flipped = false;
+    drawRev();
+  });
+  document.getElementById('kbChips').addEventListener('click', e => {
+    if (e.target.closest('[data-kbrev]')) openRev();
+  });
+
+  /* ---------- 深链直达某章时补拉划线（boot 先于本脚本执行） ---------- */
+  if (view === 'book'){
+    const kick = () => {
+      const d = chapterCache.get(bookId + '|' + chapterIdx);
+      if (d && d.html && d.html.indexOf('<iframe') < 0){ article.classList.add('kb-margin'); pullMarks(); }
+    };
+    if (chapterCache.get(bookId + '|' + chapterIdx)) kick();
+    else setTimeout(() => { if (view === 'book') kick(); }, 900);
+  }
+})();
 </script>
 <script>
 /* ================= 主题切换：访客可选配色，选择记忆在本机 ================= */
