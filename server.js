@@ -812,6 +812,7 @@ async function glmChat(prompt, opts = {}) {
   const body = JSON.stringify({
     model: "glm-4-flash",
     temperature: opts.temperature != null ? opts.temperature : 0.2,
+    ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}),
     messages: [{ role: "user", content: prompt }],
   });
   let lastErr = null;
@@ -1547,6 +1548,66 @@ function buildCalendarICS() {
 
 const pad2 = n => String(n).padStart(2, "0");
 const dstr = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+/* GLM 偶发不守「字符串」约定，把 summary/plan 写成对象/数组：兜底拍平成可读文本 */
+function wbJsonToText(v) {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    return v.map(x => wbJsonToText(x)).filter(Boolean)
+      .map(t => /^[-·•]|^(总述|盘面|顺延|风险|投入对比|【)/.test(t) ? t : "- " + t).join("\n");
+  }
+  if (typeof v === "object") {
+    return Object.entries(v).map(([k, val]) => {
+      const t = wbJsonToText(val);
+      if (!t) return "";
+      if (/^\d+$/.test(k)) return t;
+      if (typeof val === "string") return /^(总述|盘面|顺延|风险|投入对比)/.test(k) ? k + "：" + t : "【" + k + "】" + t;
+      return (/^(顺延|风险)/.test(k) ? k + "：\n" : "【" + k + "】\n") + t;
+    }).filter(Boolean).join("\n");
+  }
+  return String(v);
+}
+/* 周报草稿：模型只负责出结构（JSON），展示格式由服务端确定性渲染，
+   避免 glm-4-flash 跟不稳长格式约定（空排周末/跨天重复/段落错位都出过） */
+function wbRenderSummary(s) {
+  if (typeof s === "string") return s.trim();
+  if (!s || typeof s !== "object") return "";
+  const parts = [];
+  if (s.overview) parts.push("总述：" + String(s.overview).trim());
+  (Array.isArray(s.projects) ? s.projects : []).forEach(p => {
+    if (!p || typeof p !== "object") return;
+    const pts = (Array.isArray(p.points) ? p.points : [p.points]).filter(Boolean).map(String);
+    if (!p.name && !pts.length) return;
+    parts.push("【" + String(p.name || "未分类") + "】" + (p.count ? "（" + p.count + " 条）" : "") +
+      (pts.length ? "\n" + pts.map(t => "- " + t).join("\n") : ""));
+  });
+  if (s.mix) parts.push("投入对比：" + String(s.mix).trim());
+  return parts.join("\n\n");
+}
+function wbRenderPlan(p) {
+  if (typeof p === "string") return p.trim();
+  if (!p || typeof p !== "object") return "";
+  const parts = [];
+  if (p.capacity) parts.push(String(p.capacity).trim());
+  (Array.isArray(p.days) ? p.days : []).forEach(d => {
+    if (!d || typeof d !== "object") return;
+    const items = (Array.isArray(d.items) ? d.items : []).filter(Boolean);
+    if (!items.length) return;
+    const head = String(d.label || "").trim() + (d.kind ? "（" + String(d.kind).trim() + "）" : "");
+    parts.push(head + "\n" + items.map(it => {
+      if (typeof it === "string") return "- " + it;
+      const pr = it.project ? "[" + String(it.project).trim() + "] " : "";
+      const tail = it.slot ? "（约 " + (it.hours != null ? it.hours + "h · " : "") + String(it.slot).trim() + "）"
+        : (it.hours != null ? "（约 " + it.hours + "h）" : "");
+      return "- " + pr + String(it.task || "").trim() + tail;
+    }).join("\n"));
+  });
+  const carry = (Array.isArray(p.carryover) ? p.carryover : []).map(String).filter(Boolean);
+  parts.push("顺延：\n" + (carry.length ? carry.map(t => "- " + t).join("\n") : "无"));
+  const risks = (Array.isArray(p.risks) ? p.risks : []).map(String).filter(Boolean);
+  if (risks.length) parts.push("风险与兜底：\n" + risks.map(t => "- " + t).join("\n"));
+  return parts.join("\n\n");
+}
 function localWeekRange() {
   const now = new Date();
   const day = (now.getDay() + 6) % 7;   // 周一为 0
@@ -1560,6 +1621,7 @@ async function wbGenerateWeekly(start, end) {
   const startTime = new Date(start + "T00:00:00").getTime();
   const endTime = new Date(end + "T23:59:59.999").getTime();
   if (!(startTime <= endTime)) throw new Error("起始日期不能晚于结束日期");
+  if (!wbCfg.glmKey) throw new Error("未配置 GLM Key");   // 提前抛，别让无 Key 场景白跑节假日抓取
   const entries = wbLog.filter(e => e.date >= start && e.date <= end);
   const comments = Object.values(wbComments).filter(c => c.createdAt >= startTime && c.createdAt <= endTime);
   const memos = wbMemos.filter(m => m.date >= start && m.date <= end);
@@ -1567,16 +1629,61 @@ async function wbGenerateWeekly(start, end) {
   const prev = Object.values(wbWeekly).filter(w => w.confirmedAt).sort((a, b) => b.confirmedAt - a.confirmedAt)[0];
   const prevPlan = prev ? prev.plan : "";
   const rangeLabel = start + " ~ " + end;
-  const prompt = "你是 Andres 的工作助理。根据下面三份材料，为时间段 " + rangeLabel + " 写「工作总结」和「下阶段计划」。\n\n" +
-    "【该时间段的工作记录】\n" + (entries.length ? entries.map(e => "- (" + e.date + ") " + e.text).join("\n") : "（该时间段暂无记录）") + "\n\n" +
+
+  /* 总结材料①：工作记录按项目分组（旧记录无 project 字段归「未分类」） */
+  const groups = {};
+  entries.forEach(e => {
+    const k = String(e.project || "未分类").slice(0, 24);
+    (groups[k] = groups[k] || []).push(e);
+  });
+  const groupLines = Object.entries(groups).sort((a, b) => b[1].length - a[1].length)
+    .map(([name, es]) => "■ " + name + "（" + es.length + " 条 · 活跃 " + new Set(es.map(e => e.date)).size + " 天）\n" +
+      es.map(e => "- (" + e.date.slice(5) + ") " + e.text).join("\n")).join("\n\n");
+
+  /* 计划材料：下阶段窗口 = 紧接 end 的同长度区间（周报场景即下周一~周日），
+     逐日给出周几/休班（holiday-cn：法定假 isOffDay=true、调休补班落在周末 isOffDay=false）/当天已排备忘 */
+  const lenDays = Math.round((new Date(end + "T00:00:00") - new Date(start + "T00:00:00")) / 86400e3) + 1;
+  const nextDays = [];
+  for (let i = 1; i <= Math.min(Math.max(lenDays, 7), 21); i++) {
+    const d = new Date(end + "T00:00:00");
+    d.setDate(d.getDate() + i);
+    nextDays.push(dstr(d));
+  }
+  const holIdx = {};
+  for (const y of [...new Set(nextDays.map(ds => ds.slice(0, 4)))]) {
+    (await ensureHolidays(y) || []).forEach(h => { holIdx[h.date] = !!h.isOffDay; });
+  }
+  const WK = ["日", "一", "二", "三", "四", "五", "六"];
+  const openMemos = wbMemos.filter(m => !m.done);
+  const dayFacts = nextDays.map(ds => {
+    const dow = new Date(ds + "T00:00:00").getDay();
+    let mark = (dow === 0 || dow === 6) ? "周末休" : "工作日";
+    if (ds in holIdx) mark = holIdx[ds] ? "法定休" : "调休补班";
+    const occ = openMemos.filter(m => m.date === ds).map(m => m.text);
+    return "- 周" + WK[dow] + " " + ds.slice(5) + "（" + mark + (occ.length ? "；已排备忘：" + occ.join("、") : "") + "）";
+  }).join("\n");
+  const nextStart = nextDays[0], nextEnd = nextDays[nextDays.length - 1];
+
+  const prompt = "你是 Andres 的工作助理（他白天有全职工作，晚上和周末做个人项目）。根据下面的材料，为时间段 " + rangeLabel + " 写「工作总结」，并为紧随其后的 " + nextStart + " ~ " + nextEnd + " 写「下阶段计划」。\n\n" +
+    "【该时间段的工作记录（按项目分组）】\n" + (groupLines || "（该时间段暂无记录）") + "\n\n" +
     "【该时间段的阅读与评论】\n" + (comments.length ? comments.map(c => "- [" + (c.source || "") + "] " + (c.title || c.url) + "：" + (c.text || "")).join("\n") : "（该时间段暂无评论）") + "\n\n" +
     "【该时间段的备忘记事/待办】\n" + (memos.length ? memos.map(m => "- (" + m.date + (m.done ? " 已完成" : " 未完成") + ") " + m.text).join("\n") : "（无）") + "\n\n" +
-    "【最近一次已确认的计划（对照：已完成的在总结里体现，未完成的视需要顺延）】\n" + (prevPlan || "（无）") + "\n\n" +
-    "要求：总结用中文，300 字内，先一句总述再分点；计划用中文，3~6 条可执行事项，按优先级排序。\n" +
-    "只输出 JSON: {\"summary\":\"…\",\"plan\":\"…\"}，字符串内的换行写成 \\n。";
-  const r = extractJSON(await glmChat(prompt, { temperature: 0.4 }));
-  if (!r || !r.summary || !r.plan) throw new Error("生成失败，请重试");
-  return { start, end, range: rangeLabel, summary: String(r.summary), plan: String(r.plan) };
+    "【最近一次已确认的计划（对照：已完成的在总结里体现，未完成的列入下阶段计划的顺延）】\n" + (prevPlan || "（无）") + "\n\n" +
+    "【下阶段日历（排程的唯一依据）】\n" + dayFacts + "\n\n" +
+    "要求（全部中文）：\n" +
+    "1. 总结按项目分组：projects 只来自上面工作记录的项目分组（阅读评论、备忘记事不算项目），每个项目 1~4 条要点，写清做了什么、推进到哪、有什么结论或卡点，不要泛泛而谈。\n" +
+    "2. 计划是排程推演：Andres 白天有全职工作，可自由支配的是工作日晚间（约 2h）和休息日白天（约 4h/天）。capacity 写出估算式（如「盘面：5 个工作日×2h + 2 个体息日×4h ≈ 18h」，已排备忘要占用则说明）；days 只列有安排的日子，工作日/调休补班的 items.slot 只能是「晚间」（hours ≤ 2）或「白天顺带」（琐碎沟通审批类，hours ≤ 0.5，不占晚间容量），大块事项（hours ≥ 3）必须排在法定休/周末休；每天 items 的 hours 合计：班日 ≤ 2（白天顺带除外）、休日 ≤ 4；事项要可执行可验证，不写「继续优化」这类空话；carryover 列上期计划未完成需带走的（没有给空数组）；risks 1~2 条，写清哪个安排若被挤掉、顺延到哪天。\n\n" +
+    "只输出如下 JSON，不要输出任何多余文字：\n" +
+    "{\"summary\":{\"overview\":\"一句话总述\",\"projects\":[{\"name\":\"项目名\",\"count\":条数,\"points\":[\"要点\",\"…\"]}],\"mix\":\"投入对比一句话\"},\"plan\":{\"capacity\":\"盘面：估算式\",\"days\":[{\"label\":\"周一 10-19\",\"kind\":\"班\",\"items\":[{\"project\":\"项目名\",\"task\":\"事项\",\"hours\":1.5,\"slot\":\"晚间\"}]}],\"carryover\":[\"顺延事项\"],\"risks\":[\"风险与兜底\"]}}";
+  const r = extractJSON(await glmChat(prompt, { temperature: 0.4, maxTokens: 3000 }));
+  const rSum = r && r.summary, rPlan = r && r.plan;
+  const sumOk = typeof rSum === "string" ? !!rSum.trim() : !!(rSum && typeof rSum === "object" && (rSum.overview || (Array.isArray(rSum.projects) && rSum.projects.length)));
+  const planOk = typeof rPlan === "string" ? !!rPlan.trim() : !!(rPlan && typeof rPlan === "object" &&
+    (rPlan.capacity || (Array.isArray(rPlan.days) && rPlan.days.some(d => d && Array.isArray(d.items) && d.items.length))));
+  if (!sumOk || !planOk) throw new Error("生成失败，请重试");
+  const summary = (wbRenderSummary(rSum) || wbJsonToText(rSum)).slice(0, 20000);
+  const plan = (wbRenderPlan(rPlan) || wbJsonToText(rPlan)).slice(0, 20000);
+  return { start, end, range: rangeLabel, summary, plan };
 }
 function wbAddNote(o) {
   const srcTag = o.source === "arxiv" ? "论文笔记" : o.source === "anth" ? "AI 前沿" : "视频笔记";
@@ -2629,7 +2736,9 @@ const server = http.createServer(async (req, res) => {
         if (!text) { json(res, 400, { ok: false, error: "内容不能为空" }); return log(400); }
         let date = String(body.date || "");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = dstr(new Date());
-        wbLog.push({ id: "l-" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), date, text: text.slice(0, 2000), createdAt: Date.now() });
+        const project = String(body.project || "").trim().slice(0, 24);
+        wbLog.push({ id: "l-" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), date,
+          text: text.slice(0, 2000), ...(project ? { project } : {}), createdAt: Date.now() });
         saveJson(WB_FILE.log, wbLog);
         json(res, 200, { ok: true });
         return log(200);
@@ -2744,8 +2853,8 @@ const server = http.createServer(async (req, res) => {
           json(res, 400, { ok: false, error: "日期格式错误" });
           return log(400);
         }
-        const summary = String(body.summary || "").slice(0, 8000);
-        const plan = String(body.plan || "").slice(0, 8000);
+        const summary = String(body.summary || "").slice(0, 20000);
+        const plan = String(body.plan || "").slice(0, 20000);
         if (!summary.trim() || !plan.trim()) { json(res, 400, { ok: false, error: "总结和计划都不能为空" }); return log(400); }
         const key = start + "~" + end;
         const prev = wbWeekly[key] || {};

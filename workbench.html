@@ -334,8 +334,10 @@ input.date{height:34px;border-radius:999px;padding:0 14px;font:inherit;font-size
 .logrow{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--ink) 5.5%,transparent);font-size:12.5px;line-height:1.6}
 .logrow .ld{flex:none;color:var(--g-accent);font-size:11px;padding-top:2px;font-variant-numeric:tabular-nums}
 .logrow .lt{flex:1;min-width:0;overflow-wrap:anywhere}
+.logrow .lp{flex:none;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;padding:2px 8px;border-radius:999px;margin-top:1px;background:color-mix(in srgb,var(--g-accent) 13%,transparent);color:var(--g-accent)}
 .logrow .del{border:0;background:none;color:var(--g-dim);cursor:pointer;font-size:13px;flex:none;padding:0 2px}
 .logrow .del:hover{color:#ff8a80}
+input.proj{flex:1 1 110px;min-width:0;padding:9px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:12.5px;color:var(--g-text)}
 .wkhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .wkhead b{font-size:14.5px}
 .wkstate{font-size:11px;padding:4px 11px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--g-dim)}
@@ -627,6 +629,8 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
           <textarea class="big" id="logText" placeholder="刚做完 / 正在做的一件事，一行一条也行…"></textarea>
           <div class="crow">
             <input class="date" type="date" id="logDate">
+            <input class="proj" id="logProject" list="projList" placeholder="项目（可选）" title="周总结按项目分组，历史项目会自动补全">
+            <datalist id="projList"></datalist>
             <button class="btn btn-hot" id="logSave">记录</button>
           </div>
           <div class="loglist" id="logList"></div>
@@ -651,11 +655,11 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
           <span class="wkstate" id="wkState">未生成</span>
           <button class="btn btn-ghost" id="genBtn">生成总结</button>
         </div>
-        <div class="setnote" style="padding:0">默认当前一周；想按任意时间段总结就改日期（材料 = 区间内的工作记录、评论，对照 = 最近一次已确认的计划）。</div>
+        <div class="setnote" style="padding:0">默认当前一周；想按任意时间段总结就改日期。总结按项目分组（来自记录里的项目标签）；计划会按下周日历（法定休/调休补班 + 已排备忘）逐日排程推演，对照 = 最近一次已确认的计划。</div>
         <div class="generr" id="genErr"></div>
         <div class="wkareas">
-          <label>工作总结<textarea class="big" id="sumBox" placeholder="点「生成总结」，由 GLM 根据区间内的记录与评论起草，可手改"></textarea></label>
-          <label>下阶段计划<textarea class="big" id="planBox" placeholder="确认后作为下阶段的对照基准"></textarea></label>
+          <label>工作总结<textarea class="big" id="sumBox" placeholder="点「生成总结」：总述 + 按项目分节要点 + 投入占比，可手改"></textarea></label>
+          <label>下阶段计划<textarea class="big" id="planBox" placeholder="点「生成总结」：下阶段盘面估算 + 逐日排程 + 顺延 + 风险兜底；确认后作为对照基准"></textarea></label>
         </div>
         <div class="confirmrow">
           <button class="btn btn-hot" id="confirmBtn">确认计划</button>
@@ -1022,10 +1026,20 @@ function renderPanelHint() {
 /* ================= Registro ================= */
 function renderLog() {
   const box = $("#logList");
-  if (!LOG.length) { box.innerHTML = '<span class="dim">还没有记录，想到什么写什么，周总结会用到。</span>'; return; }
+  if (!LOG.length) { box.innerHTML = '<span class="dim">还没有记录，想到什么写什么，周总结会用到。</span>'; renderProjList(); return; }
   box.innerHTML = LOG.map(e =>
-    '<div class="logrow"><span class="ld">' + esc((e.date || "").slice(5)) + '</span><span class="lt">' + esc(e.text) +
+    '<div class="logrow"><span class="ld">' + esc((e.date || "").slice(5)) + '</span>' +
+    (e.project ? '<span class="lp" title="项目">' + esc(e.project) + '</span>' : "") +
+    '<span class="lt">' + esc(e.text) +
     '</span><button class="del" data-del="' + esc(e.id) + '" title="删除">✕</button></div>').join("");
+  renderProjList();
+}
+/* 项目自动补全：历史用过的项目 + 少量起步种子（输入框可自由手输任意项目名） */
+function renderProjList() {
+  const seeds = ["El Taller", "家庭AI", "openclaw", "getnote", "求职"];
+  const seen = new Set(seeds);
+  LOG.forEach(e => { if (e.project) seen.add(e.project); });
+  $("#projList").innerHTML = [...seen].map(p => '<option value="' + esc(p) + '">').join("");
 }
 
 /* ================= Resumen（任意日期区间） ================= */
@@ -1182,9 +1196,11 @@ $("#card-xhs .rfbtn").addEventListener("click", async function () {
 $("#logSave").addEventListener("click", async () => {
   const text = $("#logText").value.trim();
   if (!text) { toast("写点内容再记录"); return; }
-  const r = await api("POST", "/api/workbench/log", { text, date: $("#logDate").value });
+  const project = $("#logProject").value.trim();
+  const r = await api("POST", "/api/workbench/log", { text, date: $("#logDate").value, ...(project ? { project } : {}) });
   if (r.ok) {
     $("#logText").value = "";
+    $("#logProject").value = "";
     const d = await api("GET", "/api/workbench/log");
     LOG = d.items || [];
     renderLog();

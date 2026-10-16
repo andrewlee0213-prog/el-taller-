@@ -168,6 +168,12 @@ try {
   r = await req("GET", "/api/workbench/log");
   const logItem = (r.json.items || []).find(x => x.text.includes("测试：写了一行"));
   check("工作记录可查", !!logItem, JSON.stringify(r.json).slice(0, 120));
+  r = await req("POST", "/api/workbench/log", { text: "测试：带项目的工作记录", date: "2026-10-09", project: "El Taller" });
+  check("带项目新增记录", r.json && r.json.ok === true, JSON.stringify(r.json));
+  r = await req("GET", "/api/workbench/log");
+  const projItem = (r.json.items || []).find(x => x.text.includes("带项目的工作记录"));
+  check("项目字段落盘可查", projItem && projItem.project === "El Taller", JSON.stringify(projItem || {}).slice(0, 120));
+  check("无项目记录不带 project 字段", logItem && logItem.project === undefined, JSON.stringify(logItem || {}).slice(0, 120));
 
   /* ---- 评论 ---- */
   const testUrl = "https://arxiv.org/abs/2610.99999";
