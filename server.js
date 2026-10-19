@@ -2858,8 +2858,10 @@ const server = http.createServer(async (req, res) => {
         if (!summary.trim() || !plan.trim()) { json(res, 400, { ok: false, error: "总结和计划都不能为空" }); return log(400); }
         const key = start + "~" + end;
         const prev = wbWeekly[key] || {};
+        // 确认时快照区间内工作记录 id：前端据此隐藏「已总结」记录（旧条目无 logIds 则按区间覆盖回退）
+        const logIds = wbLog.filter(e => e.date >= start && e.date <= end).map(e => e.id);
         wbWeekly[key] = { id: key, start, end, range: start + " ~ " + end, summary, plan,
-          generatedAt: prev.generatedAt || Date.now(), confirmedAt: Date.now() };
+          generatedAt: prev.generatedAt || Date.now(), confirmedAt: Date.now(), logIds };
         saveJson(WB_FILE.weekly, wbWeekly);
         json(res, 200, { ok: true });
         return log(200);

@@ -215,6 +215,8 @@ try {
   check("确认区间计划", r.json && r.json.ok === true, JSON.stringify(r.json));
   r = await req("GET", "/api/workbench/weekly");
   check("区间计划落盘含确认时间", !!(r.json.weeks["2026-10-05~2026-10-11"] || {}).confirmedAt, JSON.stringify(r.json).slice(0, 160));
+  const wkSnap = (r.json.weeks["2026-10-05~2026-10-11"] || {}).logIds || [];
+  check("确认时快照区间内记录 logIds", wkSnap.includes(logItem.id) && wkSnap.includes(projItem.id), JSON.stringify(wkSnap));
   check("current 含 start/end", r.json.current && /^\d{4}-\d{2}-\d{2}$/.test(r.json.current.start || ""), JSON.stringify(r.json.current));
 
   /* ---- Mac 命中率上报（token 鉴权） ---- */

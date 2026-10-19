@@ -337,6 +337,15 @@ input.date{height:34px;border-radius:999px;padding:0 14px;font:inherit;font-size
 .logrow .lp{flex:none;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;padding:2px 8px;border-radius:999px;margin-top:1px;background:color-mix(in srgb,var(--g-accent) 13%,transparent);color:var(--g-accent)}
 .logrow .del{border:0;background:none;color:var(--g-dim);cursor:pointer;font-size:13px;flex:none;padding:0 2px}
 .logrow .del:hover{color:#ff8a80}
+details.loghist{border:1px dashed color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;padding:0 10px}
+details.loghist summary{cursor:pointer;padding:7px 2px;font-size:11.5px;color:var(--g-dim);list-style:none;user-select:none}
+details.loghist summary::-webkit-details-marker{display:none}
+details.loghist summary::before{content:"▸ ";color:var(--g-accent)}
+details.loghist[open] summary::before{content:"▾ "}
+details.loghist .loghistbody{display:flex;flex-direction:column;gap:6px;padding:0 0 8px}
+.logrow.done{opacity:.5}
+.logrow.done .ld{color:var(--g-dim)}
+.logrow.done .lt{color:color-mix(in srgb,var(--g-text) 72%,transparent)}
 input.proj{flex:1 1 110px;min-width:0;padding:9px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:12.5px;color:var(--g-text)}
 .wkhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .wkhead b{font-size:14.5px}
@@ -1024,14 +1033,35 @@ function renderPanelHint() {
 }
 
 /* ================= Registro ================= */
+/* 已总结判定：确认总结时快照过 logIds 的用名单（精确）；旧条目无名单按区间覆盖回退。
+   只影响本列表展示——生成总结/年报/半年报走服务器全量，与隐藏无关 */
+function wbCoveredSet() {
+  const covered = new Set();
+  Object.values(WEEKLY.weeks || {}).forEach(w => {
+    if (!w.confirmedAt) return;
+    if (Array.isArray(w.logIds) && w.logIds.length) w.logIds.forEach(id => covered.add(id));
+    else if (w.start && w.end) LOG.forEach(e => { if (e.date >= w.start && e.date <= w.end) covered.add(e.id); });
+  });
+  return covered;
+}
+function logRowHtml(e, done) {
+  return '<div class="logrow' + (done ? " done" : "") + '"><span class="ld">' + esc((e.date || "").slice(5)) + "</span>" +
+    (e.project ? '<span class="lp" title="项目">' + esc(e.project) + "</span>" : "") +
+    '<span class="lt">' + esc(e.text) +
+    '</span><button class="del" data-del="' + esc(e.id) + '" title="删除">✕</button></div>';
+}
 function renderLog() {
   const box = $("#logList");
   if (!LOG.length) { box.innerHTML = '<span class="dim">还没有记录，想到什么写什么，周总结会用到。</span>'; renderProjList(); return; }
-  box.innerHTML = LOG.map(e =>
-    '<div class="logrow"><span class="ld">' + esc((e.date || "").slice(5)) + '</span>' +
-    (e.project ? '<span class="lp" title="项目">' + esc(e.project) + '</span>' : "") +
-    '<span class="lt">' + esc(e.text) +
-    '</span><button class="del" data-del="' + esc(e.id) + '" title="删除">✕</button></div>').join("");
+  const covered = wbCoveredSet();
+  const active = LOG.filter(e => !covered.has(e.id));
+  const done = LOG.filter(e => covered.has(e.id));
+  let html = "";
+  if (done.length) html += '<details class="loghist"><summary>已总结 ' + done.length + " 条已自动隐藏 · 点开翻看（年报/半年报重新总结不受影响）</summary><div class='loghistbody'>" +
+    done.map(e => logRowHtml(e, true)).join("") + "</div></details>";
+  html += active.length ? active.map(e => logRowHtml(e, false)).join("")
+    : '<span class="dim">当前没有待总结的记录。</span>';
+  box.innerHTML = html;
   renderProjList();
 }
 /* 项目自动补全：历史用过的项目 + 少量起步种子（输入框可自由手输任意项目名） */
@@ -1237,6 +1267,7 @@ $("#confirmBtn").addEventListener("click", async () => {
     const d = await api("GET", "/api/workbench/weekly");
     WEEKLY = d;
     renderWeekly();
+    renderLog();
     toast("计划已确认 ✓");
   } else toast(r.error || "确认失败");
 });
