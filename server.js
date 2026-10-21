@@ -11,6 +11,7 @@ const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
 const { DatabaseSync } = require("node:sqlite");
+const { spawnSync } = require("child_process");
 
 /* ---------------- 配置（按需修改） ---------------- */
 const CFG = {
@@ -444,6 +445,160 @@ function kbClassifyQueue() {
     kbClassifyQueue();
   })().catch(() => { kbClassifyBusy = false; });
 }
+
+/* ---------------- PDF 上传 → 中英对照书：python3+pypdf 抽文本 → GLM 翻译 → 生成 .md（保留 PDF 原文入口） ----------------
+   失败降级 = 保持 PDF 原文内嵌（note 记原因）：无 pypdf / 无文本层（扫描版）/ 无 GLM Key / 翻译成功率过低 */
+const KB_PDF_PY = [
+  "import sys,json",
+  "try:",
+  "    from pypdf import PdfReader",
+  "except Exception:",
+  "    print(json.dumps({'error':'no-pypdf'})); sys.exit(0)",
+  "try:",
+  "    r=PdfReader(sys.argv[1])",
+  "    print(json.dumps({'pages':[ (p.extract_text() or '') for p in r.pages ]}))",
+  "except Exception as e:",
+  "    print(json.dumps({'error':str(e)[:120]}))",
+].join("\n");
+function kbPdfExtractPages(pdfPath) {
+  const r = spawnSync("python3", ["-c", KB_PDF_PY, pdfPath], { timeout: 120000, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  if (r.error || r.status !== 0 || !String(r.stdout || "").includes("{")) return { error: r.error ? "spawn" : "exit-" + r.status };
+  try {
+    return JSON.parse(String(r.stdout).slice(String(r.stdout).indexOf("{"), String(r.stdout).lastIndexOf("}") + 1));
+  } catch { return { error: "parse" }; }
+}
+/* 页文本 → 段落：行合并、空行分段；滤页码与跨多数页重复的页眉脚；
+   抽取器若无空行（每视觉行一条）导致段落过碎，则退化为按句子聚合成段 */
+function kbPdfParas(pages) {
+  const n = (pages || []).length || 1;
+  const freq = {};
+  const lines = [];
+  (pages || []).forEach(pg => {
+    String(pg).split(/\r?\n/).forEach(raw => {
+      const t = raw.replace(/\s+/g, " ").trim();
+      lines.push(t);
+      if (t && t.length <= 60) freq[t] = (freq[t] || 0) + 1;
+    });
+    lines.push("\f");
+  });
+  const junk = new Set(Object.keys(freq).filter(t => freq[t] >= Math.max(3, Math.ceil(n * 0.6))));
+  const paras = [];
+  let cur = "";
+  const flush = () => { const t = cur.replace(/\s+/g, " ").trim(); if (t.length > 40) paras.push(t); cur = ""; };
+  for (const t of lines) {
+    if (t === "\f" || !t) { flush(); continue; }
+    if (junk.has(t) || /^\d{1,4}$/.test(t)) continue;
+    cur += (cur ? " " : "") + t;
+  }
+  flush();
+  if (parisTooFine(paras)) {
+    const all = lines.filter(t => t && t !== "\f" && !junk.has(t) && !/^\d{1,4}$/.test(t)).join(" ").replace(/\s+/g, " ");
+    const sents = all.split(/(?<=[.!?])\s+(?=[A-Z“"(])/);
+    const out = [];
+    let buf = "";
+    for (const s of sents) {
+      if ((buf + " " + s).length > 550 && buf) { out.push(buf.trim()); buf = s; }
+      else buf = (buf ? buf + " " : "") + s;
+    }
+    if (buf.trim()) out.push(buf.trim());
+    return out.filter(p => p.length > 40);
+  }
+  return paras;
+  function parisTooFine(ps) {
+    if (!ps.length) return true;
+    return ps.join("").length / ps.length < 120;
+  }
+}
+async function kbPdfTranslateParas(paras) {
+  const zh = await glmTranslateLinesFast(paras);
+  /* 批量协议丢的段落用单条纯文本协议补（最多补 12 条，沿用 10-15 翻译文章脚本的经验） */
+  const miss = [];
+  zh.forEach((t, i) => { if (!t && paras[i].length > 60) miss.push(i); });
+  for (const i of miss.slice(0, 12)) {
+    try {
+      zh[i] = keepEnglishTerms(String(await glmChat("把下面这段英文翻译成中文，术语和产品名保留英文，只输出译文：\n\n" + paras[i])).trim());
+    } catch {}
+  }
+  return zh;
+}
+const kbPdfQueue = [];
+let kbPdfBusy = false;
+function kbPdfTranslateEnqueue(id) {
+  if (!kbPdfQueue.includes(id)) kbPdfQueue.push(id);
+  kbPdfTranslateRun();
+}
+function kbPdfTranslateRun() {
+  if (kbPdfBusy) return;
+  const id = kbPdfQueue.shift();
+  if (!id) return;
+  const u = kbUploads[id];
+  if (!u || u.type !== "pdf") return kbPdfTranslateRun();
+  kbPdfBusy = true;
+  u.state = "translating";
+  saveJson(KB_UPLOAD_FILE, kbUploads);
+  console.log("[kb] PDF 转中英对照开始: " + u.title);
+  (async () => {
+    try {
+      if (!wbCfg.glmKey) throw new Error("未配置 GLM Key");
+      const ext = kbPdfExtractPages(path.join(KB_UPLOAD_DIR, u.file));
+      if (ext.error) throw new Error("文本抽取失败(" + ext.error + ")");
+      /* 超长段（>1600 字符）按句子切开再进批量翻译，防编号协议被超长行打断 */
+      const raw = kbPdfParas(ext.pages);
+      const paras = [];
+      for (const p of raw) {
+        if (p.length <= 1600) { paras.push(p); continue; }
+        let buf = "";
+        for (const s of p.split(/(?<=[.!?])\s+/)) {
+          if ((buf + " " + s).length > 1400 && buf) { paras.push(buf.trim()); buf = s; }
+          else buf = (buf ? buf + " " : "") + s;
+        }
+        if (buf.trim()) paras.push(buf.trim());
+      }
+      const capped = paras.slice(0, 400);
+      if (capped.join("").length < 300) throw new Error("无文本层（疑似扫描版 PDF）");
+      const zh = await kbPdfTranslateParas(capped);
+      const hit = zh.filter(Boolean).length;
+      if (hit < Math.ceil(capped.length * 0.5)) throw new Error("翻译段落过少 " + hit + "/" + capped.length);
+      let zhTitle = "";
+      try {
+        zhTitle = keepEnglishTerms(String(await glmChat("把下面的文章标题翻译成简短中文标题（15 字内），只输出标题本身：\n" + u.title.replace(/\.pdf$/i, "")))).trim().slice(0, 24);
+      } catch {}
+      /* 段落按 ~3500 字符分章，章内每段原文下挂 > 中文译文（与 8 篇对照文章同格式，kbMdToHtml 原生渲染） */
+      const chs = [];
+      let s = 0, len = 0;
+      capped.forEach((p, i) => {
+        if (len + p.length > 3500 && i > s) { chs.push([s, i]); s = i; len = 0; }
+        len += p.length;
+      });
+      chs.push([s, capped.length]);
+      const md = chs.map((c, ci) => {
+        const body = [];
+        for (let i = c[0]; i < c[1]; i++) {
+          body.push(capped[i]);
+          if (zh[i]) body.push("> " + zh[i]);
+        }
+        return "## 第 " + (ci + 1) + " 部分 / Parte " + (ci + 1) + "\n\n" + body.join("\n\n");
+      }).join("\n\n");
+      const mdFile = id + ".md";
+      fs.writeFileSync(path.join(KB_UPLOAD_DIR, mdFile), md);
+      u.pdfFile = u.file;
+      u.file = mdFile;
+      u.type = "md";
+      u.title = u.title.replace(/\.pdf$/i, "") + (zhTitle ? " ｜ " + zhTitle : "");
+      u.state = "done";
+      delete kbUploadParsed[id];
+      saveJson(KB_UPLOAD_FILE, kbUploads);
+      console.log("[kb] PDF 转中英对照完成: " + u.title + "（" + hit + "/" + capped.length + " 段，" + chs.length + " 章）");
+    } catch (e) {
+      u.state = "raw";
+      u.note = "PDF 自动转对照未成功：" + (e.message || "未知") + "，保留原文内嵌";
+      saveJson(KB_UPLOAD_FILE, kbUploads);
+      console.log("[kb] PDF 转中英对照失败: " + u.title + " → " + (e.message || "未知"));
+    }
+    kbPdfBusy = false;
+    kbPdfTranslateRun();
+  })();
+}
 function kbAllBooks() {
   const books = kbFullBooks().slice().filter(b => !kbRemoved.has(b.id));
   const arts = Object.values(wbBiblio).sort((a, b) => (b.promotedAt || 0) - (a.promotedAt || 0));
@@ -509,12 +664,16 @@ function kbUploadBooks() {
         const parsed = kbSplitUploadBook(md);
         const chapters = parsed.chapters.length ? parsed.chapters
           : [{ id: "ch0", title: u.title.replace(/\.md$/i, ""), html: kbMdToHtml(md), text: "" }];
+        if (u.pdfFile) chapters.push({ id: "pdf", title: "查看 PDF 原文",
+          html: '<iframe src="/api/kb/file/' + u.pdfFile + '" style="width:100%;height:72vh;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;background:var(--g-bg-base)"></iframe>' +
+            '<p style="margin-top:10px"><a href="/api/kb/file/' + u.pdfFile + '" target="_blank" rel="noopener">↗ 新窗口打开 / 下载 PDF</a></p>', text: "" });
         cached = kbUploadParsed[u.id] = { chapters, intro: parsed.intro };
       }
       return { id: "up-" + u.id, title: u.title.replace(/\.md$/i, ""), es, desc: "上传收录 · " + new Date(u.at).toLocaleDateString(),
         intro: cached.intro, at: u.at, chapters: cached.chapters, uploaded: true, note: u.note || "" };
     }
-    return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: "上传收录 · PDF 原文",
+    const pdfDesc = u.state === "new" || u.state === "translating" ? "上传收录 · 转中英对照中…" : "上传收录 · PDF 原文";
+    return { id: "up-" + u.id, title: u.title.replace(/\.pdf$/i, ""), es, desc: pdfDesc,
       intro: "PDF 原文内嵌查看（浏览器原生渲染）。",
       at: u.at, chapters: [{ id: "pdf", title: "查看 PDF 原文",
         html: '<iframe src="/api/kb/file/' + u.file + '" style="width:100%;height:72vh;border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:12px;background:var(--g-bg-base)"></iframe>' +
@@ -2190,6 +2349,7 @@ const server = http.createServer(async (req, res) => {
         const e = kbUploads[u.searchParams.get("id") || ""];
         if (!e) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
         try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
+        if (e.pdfFile) { try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.pdfFile)); } catch {} }
         delete kbUploadParsed[e.id];
         delete kbUploads[e.id];
         delete kbCats["up-" + e.id];
@@ -2216,6 +2376,7 @@ const server = http.createServer(async (req, res) => {
         kbUploads[id] = { id, title: fname, file, type: ext.slice(1), size: buf.length, at: Date.now(), state: "new" };
         saveJson(KB_UPLOAD_FILE, kbUploads);
         kbClassifyQueue();   /* 新上传入队自动分类 */
+        if (ext === ".pdf") kbPdfTranslateEnqueue(id);   /* PDF 入队自动转中英对照 */
         json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
       return log(200);
     }
@@ -2272,6 +2433,7 @@ const server = http.createServer(async (req, res) => {
       if (!e || !["keep", "discard", "note"].includes(act)) { json(res, 400, { ok: false, error: "bad request" }); return log(400); }
       if (act === "discard") {
         try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.file)); } catch {}
+        if (e.pdfFile) { try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.pdfFile)); } catch {} }
         delete kbUploadParsed[e.id];
         delete kbUploads[e.id];
         saveJson(KB_UPLOAD_FILE, kbUploads);
@@ -3154,6 +3316,11 @@ setInterval(readerPurge, 3600e3).unref();
 setTimeout(() => { readerPrefetch("anth"); readerPrefetch("arxiv"); }, 90e3).unref();
 /* 书本自动分类：boot 5s 后背景扫未分类的书（无 GLM Key 自动跳过，配好 Key 重启即补全） */
 setTimeout(kbClassifyQueue, 5e3).unref();
+/* 启动补跑：重启/部署打断的 PDF 转中英对照（state 仍 new/translating 的） */
+setTimeout(() => {
+  Object.values(kbUploads).filter(u => u.type === "pdf" && (u.state === "new" || u.state === "translating"))
+    .forEach(u => kbPdfTranslateEnqueue(u.id));
+}, 20e3).unref();
 
 server.listen(CFG.PORT, "0.0.0.0", () => {
   const lans = [];
