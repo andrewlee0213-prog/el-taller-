@@ -1115,15 +1115,26 @@ function parseEnDate(s) {
 async function wbFetchAnth() {
   const html = await httpGetText("https://www.anthropic.com/research", 20000);
   const items = [], seen = new Set();
-  const re = /<li><a href="(\/research\/[^"]+)"[^>]*>\s*<div[^>]*>\s*<time[^>]*>([^<]+)<\/time>\s*<span[^>]*>([^<]*)<\/span>\s*<\/div>\s*<span[^>]*>([^<]+)<\/span>/g;
   let m;
-  while ((m = re.exec(html))) {
+  /* 2026-10 改版：列表页去掉了 <li><time> 结构，文章数据藏进内嵌 Next.js flight JSON（一层反斜杠转义），
+     字段顺序 href→title→span→date；HeroCarousel 轮播条目兜底补充 */
+  const reArt = /\\"href\\":\\"(\/research\/(?!team)[^\\]+)\\",\\"title\\":\\"([^\\]+)\\",\\"span\\":\d+,\\"date\\":\\"([^\\]+)\\"/g;
+  while ((m = reArt.exec(html))) {
     const href = "https://www.anthropic.com" + m[1];
+    if (seen.has(href)) continue;
+    const dt = parseEnDate(m[3]);
+    if (!dt) continue;
+    seen.add(href);
+    items.push({ url: href, ts: dt.getTime(), title: cleanText(m[2]), cat: "" });
+  }
+  const reHero = /<p><a class="[^"]*TopicLink[^"]*"[^>]*>([^<]*)<\/a><\/p><time class="[^"]*carousel-info-date">([^<]+)<\/time><\/header><a class="[^"]*carousel-info-link"[^>]*href="(\/research\/[^"]+)"[^>]*>\s*<h2[^>]*>([^<]+)<\/h2>/g;
+  while ((m = reHero.exec(html))) {
+    const href = "https://www.anthropic.com" + m[3];
     if (seen.has(href)) continue;
     const dt = parseEnDate(m[2]);
     if (!dt) continue;
     seen.add(href);
-    items.push({ url: href, ts: dt.getTime(), title: cleanText(m[4]), cat: cleanText(m[3]) });
+    items.push({ url: href, ts: dt.getTime(), title: cleanText(m[4]), cat: cleanText(m[1]) });
   }
   if (!items.length) return { ok: false, error: "抓取失败" };
   items.sort((a, b) => b.ts - a.ts);
