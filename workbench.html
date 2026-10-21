@@ -163,6 +163,14 @@ html[data-theme="perla"]{
 .tdot:hover{transform:scale(1.18)}
 .tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
 
+/* ---- 配色折叠：平时只露当前色一颗 + ▾，悬浮/聚焦展开整排（间距由 gap 改为两侧 margin 以便收拢） ---- */
+.themedots{gap:0}
+.themedots .tdot{margin:0 3.5px;transition:width .28s,opacity .28s,margin .28s,transform .25s}
+.themedots:not(:hover):not(:focus-within):has(.tdot.on) .tdot:not(.on){width:0;opacity:0;margin:0;pointer-events:none}
+.themedots:hover .tdot,.themedots:focus-within .tdot{width:17px;opacity:1;margin:0 3.5px;pointer-events:auto}
+.themedots::after{content:"▾";font-size:10px;line-height:1;color:var(--g-dim);margin-left:4px;transition:transform .28s;pointer-events:none}
+.themedots:hover::after,.themedots:focus-within::after{transform:rotate(180deg)}
+
 /* ---- 区块头 ---- */
 .section-head{display:flex;align-items:baseline;gap:16px;margin:40px 0 18px}
 .section-head .eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--g-accent);font-weight:600}
