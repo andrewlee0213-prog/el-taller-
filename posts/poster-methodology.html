@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>try{var __t=localStorage.getItem('taller-theme');if(__t&&__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<script>try{var __t=localStorage.getItem('taller-theme')||'bermellon';if(__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
 <title>贴纸海报方法论 · 通用适配篇 · El Taller Cuaderno</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cpath d='M14 40 L34 20 L44 30 L24 50 Z' fill='%23ff9d2e'/%3E%3Cpath d='M34 20 L40 14 L50 24 L44 30 Z' fill='%23ffd9a3'/%3E%3C/svg%3E">
 <style>
@@ -104,15 +104,35 @@ html[data-theme="crepusculo"]{
   --g-bg-1:#2c1546; --g-bg-2:#1f0f33; --g-bg-3:#0e0619; --g-bg-base:#170a28;
   --g-blob1:rgba(170,120,255,.26); --g-blob2:rgba(255,120,200,.16);
 }
-html[data-theme="laca"]{
+html[data-theme="bermellon"]{
   --g-accent:#d9a44e; --g-accent-soft:#f3d9a8; --g-accent-deep:#9a6b22; --g-accent-mid:#c08a32; --g-on-accent:#2a1b05;
-  --g-text:#f7efe3; --g-dim:rgba(247,239,227,.60);
-  --g-glass-hi:rgba(166,92,62,.38); --g-glass-lo:rgba(88,44,29,.34);
-  --g-card-hi:rgba(255,232,200,.13); --g-card-lo:rgba(240,205,160,.06);
-  --g-pillactive:rgba(52,24,12,.68); --g-tint:#f5e3c6;
-  --g-glow-a:rgba(217,164,78,.24); --g-glow-b:rgba(150,55,35,.30); --g-glow-c:rgba(112,80,144,.10);
-  --g-bg-1:#4a2417; --g-bg-2:#33150c; --g-bg-3:#1b0b05; --g-bg-base:#220e07;
-  --g-blob1:rgba(217,140,60,.30); --g-blob2:rgba(164,69,51,.22);
+  --g-text:#f8efe2; --g-dim:rgba(248,239,226,.60);
+  --g-glass-hi:rgba(164,75,62,.36); --g-glass-lo:rgba(88,38,26,.34);
+  --g-card-hi:rgba(255,228,200,.13); --g-card-lo:rgba(242,203,164,.06);
+  --g-pillactive:rgba(54,20,12,.68); --g-tint:#f5e2c8;
+  --g-glow-a:rgba(217,164,78,.24); --g-glow-b:rgba(164,75,62,.30); --g-glow-c:rgba(60,30,20,.22);
+  --g-bg-1:#4a2317; --g-bg-2:#33140c; --g-bg-3:#1d0906; --g-bg-base:#230d07;
+  --g-blob1:rgba(217,164,78,.28); --g-blob2:rgba(164,69,51,.24);
+}
+html[data-theme="castana"]{
+  --g-accent:#c98a4b; --g-accent-soft:#ebd3ac; --g-accent-deep:#8f5e28; --g-accent-mid:#b0763a; --g-on-accent:#2a1b07;
+  --g-text:#f6efe4; --g-dim:rgba(246,239,228,.58);
+  --g-glass-hi:rgba(122,88,60,.38); --g-glass-lo:rgba(66,44,26,.34);
+  --g-card-hi:rgba(244,226,196,.12); --g-card-lo:rgba(226,196,156,.06);
+  --g-pillactive:rgba(46,30,16,.68); --g-tint:#f2e2c4;
+  --g-glow-a:rgba(197,110,60,.22); --g-glow-b:rgba(122,82,50,.30); --g-glow-c:rgba(208,192,176,.08);
+  --g-bg-1:#42301e; --g-bg-2:#2e1e10; --g-bg-3:#180f07; --g-bg-base:#1f130a;
+  --g-blob1:rgba(197,140,76,.26); --g-blob2:rgba(122,82,50,.22);
+}
+html[data-theme="jaspe"]{
+  --g-accent:#d9a45c; --g-accent-soft:#f2d8ae; --g-accent-deep:#96702c; --g-accent-mid:#c08e44; --g-on-accent:#2a1b06;
+  --g-text:#f8f0e2; --g-dim:rgba(248,240,226,.60);
+  --g-glass-hi:rgba(150,96,60,.36); --g-glass-lo:rgba(84,48,36,.34);
+  --g-card-hi:rgba(255,232,204,.13); --g-card-lo:rgba(238,204,168,.06);
+  --g-pillactive:rgba(50,26,16,.68); --g-tint:#f4e0be;
+  --g-glow-a:rgba(199,140,66,.24); --g-glow-b:rgba(112,80,112,.26); --g-glow-c:rgba(176,80,80,.20);
+  --g-bg-1:#5c3a22; --g-bg-2:#3f2314; --g-bg-3:#22110a; --g-bg-base:#2a160c;
+  --g-blob1:rgba(112,80,112,.26); --g-blob2:rgba(176,80,80,.22);
 }
 html[data-theme="perla"]{
   --g-accent:#74c7b8; --g-accent-soft:#c2eae2; --g-accent-deep:#2e7a6e; --g-accent-mid:#4aa393; --g-on-accent:#06231e;
@@ -124,6 +144,7 @@ html[data-theme="perla"]{
   --g-bg-1:#1c2a27; --g-bg-2:#12201c; --g-bg-3:#08110f; --g-bg-base:#0d1815;
   --g-blob1:rgba(110,200,182,.24); --g-blob2:rgba(220,150,180,.16);
 }
+
 
 body{transition:background-color .35s}
 html[data-theme="blanco"] .article pre,html[data-theme="blanco"] .article .body pre.kb-pre{background:#2e1f10;border-color:rgba(255,255,255,.08)}
@@ -196,7 +217,9 @@ html[data-theme="negro"]{
         <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
         <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
         <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
-        <button class="tdot" type="button" data-theme-dot="laca" style="--dot:#d9a44e" title="朱漆金 · Laca" aria-label="朱漆金主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bermellon" style="--dot:#c05a46" title="朱漆红 · Bermellón" aria-label="朱漆红主题"></button>
+        <button class="tdot" type="button" data-theme-dot="castana" style="--dot:#c98a4b" title="栗漆棕 · Castaña" aria-label="栗漆棕主题"></button>
+        <button class="tdot" type="button" data-theme-dot="jaspe" style="--dot:#b56580" title="犀皮彩 · Jaspé" aria-label="犀皮彩主题"></button>
         <button class="tdot" type="button" data-theme-dot="perla" style="--dot:#74c7b8" title="螺钿青 · Perla" aria-label="螺钿青主题"></button>
         <button class="tdot" type="button" data-theme-dot="blanco" style="--dot:#ffffff" title="纸白 · Blanco" aria-label="纸白主题"></button>
         <button class="tdot" type="button" data-theme-dot="negro" style="--dot:#181818" title="玄黑 · Negro" aria-label="玄黑主题"></button>
@@ -333,8 +356,8 @@ html[data-theme="negro"]{
     else document.documentElement.dataset.theme = t;
     dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
   }
-  var cur = 'naranja';
-  try { cur = localStorage.getItem('taller-theme') || 'naranja'; } catch(_){}
+  var cur = 'bermellon';
+  try { cur = localStorage.getItem('taller-theme') || 'bermellon'; } catch(_){}
   apply(cur);
   dots.forEach(function(d){ d.addEventListener('click', function(){
     cur = d.dataset.themeDot;
