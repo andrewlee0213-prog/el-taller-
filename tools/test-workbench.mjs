@@ -84,7 +84,8 @@ fs.writeFileSync(path.join(tmpData, "workbench-cache.json"), JSON.stringify({
   bili: { ok: true, at: seedAt, items: [] },
   anth: { ok: true, at: seedAt, items: [] },
   arxiv: { ok: true, at: seedAt, items: [] },
-  github: { ok: true, at: seedAt, items: [{ url: "https://github.com/a/b", repo: "a/b", desc: "d", zh: "解读", lang: "Rust", stars: 1234, today: 56, fresh: true }] },
+  github: { ok: true, at: seedAt, items: [{ url: "https://github.com/a/b", repo: "a/b", desc: "d", zh: "解读", lang: "Rust", stars: 1234, delta: 56, fresh: true }],
+            weekly: [{ url: "https://github.com/c/d", repo: "c/d", desc: "w", zh: "周榜解读", lang: "Go", stars: 999, delta: 200, fresh: true }] },
   f1: { ok: true, at: seedAt, races: [
     { round: 98, raceName: "种子站A", locality: "测试", date: bjDate(2), time: "20:00", sprint: "", sprintTime: "",
       sessions: [{ k: "R", label: "正赛", date: bjDate(2), hm: "20:00" }] },
@@ -145,6 +146,7 @@ try {
     ["glm", "oil", "bili", "anth", "arxiv"].every(k => k in (r.json.data || {})), JSON.stringify(r.json).slice(0, 120));
   check("data.github 种子条目完整下发", r.json.data.github && r.json.data.github.items.length === 1 &&
     r.json.data.github.items[0].repo === "a/b" && r.json.data.github.items[0].fresh === true, JSON.stringify(r.json.data.github || {}).slice(0, 100));
+  check("data.github 周榜随种子下发", r.json.data.github && r.json.data.github.weekly && r.json.data.github.weekly[0].repo === "c/d", JSON.stringify((r.json.data.github || {}).weekly || null));
   check("data.cfg 含 ups/profile", Array.isArray(r.json.cfg.ups) && typeof r.json.cfg.profile === "string");
 
   /* ---- 定点调度断言（2026-10-14 起定点每日制）：sched.nextAt 与测试端同式重算比对 ----

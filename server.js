@@ -1314,48 +1314,66 @@ async function wbFetchAnth() {
   };
 }
 
-/* ---------------- 抓取器 · GitHub Trending 日榜（官方无 API，HTML 解析；GLM 逐仓解读「是什么/能干什么」；对比昨日标新上榜） ---------------- */
+/* ---------------- 抓取器 · GitHub Trending 日榜+周榜（官方无 API，HTML 解析；GLM 逐仓解读「是什么/能干什么」；对比上一期标新上榜；解读跨榜共享缓存） ---------------- */
 async function wbFetchGithub() {
-  const html = await httpGetText("https://github.com/trending?since=daily", 25000);
+  /* 顺序抓取（并行两连接触发 github 限流，2026-10-22 实测周榜被吞）；单页失败隔 3s 各试两次。
+     超时 35s：这条线路 github.com 被限速（TTFB 实测 2~8s），20s 会误杀慢窗 */
+  const getTextR = async url => {
+    let lastErr;
+    for (let i = 0; i < 2; i++) {
+      try { return await httpGetText(url, 35000); }
+      catch (e) { lastErr = e; if (i === 0) await new Promise(r => setTimeout(r, 3000)); }
+    }
+    throw lastErr;
+  };
+  const htmlD = await getTextR("https://github.com/trending?since=daily");
+  let htmlW = "";
+  try { htmlW = await getTextR("https://github.com/trending?since=weekly"); }
+  catch (e) { console.log("[workbench] github 周榜抓取失败（下轮重试）: " + (e.message || e)); }
   const num = s => parseInt(String(s || "").replace(/,/g, ""), 10) || 0;
-  const items = [];
-  const seen = new Set();
-  let m;
-  const reRow = /<article class="Box-row">([\s\S]*?)<\/article>/g;
-  while ((m = reRow.exec(html)) && items.length < 10) {
-    const row = m[1];
-    const hm = /<h2[^>]*>[\s\S]*?href="\/([\w.-]+\/[\w.-]+)"/.exec(row);
-    if (!hm || seen.has(hm[1].toLowerCase())) continue;
-    seen.add(hm[1].toLowerCase());
-    const dm = /<p class="[^"]*color-fg-muted[^"]*"[^>]*>([\s\S]*?)<\/p>/.exec(row);
-    const lm = /itemprop="programmingLanguage"[^>]*>([^<]+)</.exec(row);
-    const sm = /href="\/[\w.-]+\/[\w.-]+\/stargazers"[^>]*>([\s\S]*?)<\/a>/.exec(row);
-    const tm = /([\d,]+)\s+stars?\s+today/.exec(row);
-    items.push({
-      url: "https://github.com/" + hm[1],
-      repo: hm[1],
-      desc: dm ? cleanText(dm[1].replace(/<[^>]+>/g, " ")).slice(0, 200) : "",
-      lang: lm ? cleanText(lm[1]) : "",
-      stars: sm ? num(sm[1].replace(/<[^>]+>/g, " ").trim()) : 0,
-      today: tm ? num(tm[1]) : 0,
-    });
-  }
+  const parse = html => {
+    const out = [];
+    const seen = new Set();
+    let m;
+    const reRow = /<article class="Box-row">([\s\S]*?)<\/article>/g;
+    while ((m = reRow.exec(html)) && out.length < 10) {
+      const row = m[1];
+      const hm = /<h2[^>]*>[\s\S]*?href="\/([\w.-]+\/[\w.-]+)"/.exec(row);
+      if (!hm || seen.has(hm[1].toLowerCase())) continue;
+      seen.add(hm[1].toLowerCase());
+      const dm = /<p class="[^"]*color-fg-muted[^"]*"[^>]*>([\s\S]*?)<\/p>/.exec(row);
+      const lm = /itemprop="programmingLanguage"[^>]*>([^<]+)</.exec(row);
+      const sm = /href="\/[\w.-]+\/[\w.-]+\/stargazers"[^>]*>([\s\S]*?)<\/a>/.exec(row);
+      const tm = /([\d,]+)\s+stars?\s+(?:today|this week)/.exec(row);
+      out.push({
+        url: "https://github.com/" + hm[1],
+        repo: hm[1],
+        desc: dm ? cleanText(dm[1].replace(/<[^>]+>/g, " ")).slice(0, 200) : "",
+        lang: lm ? cleanText(lm[1]) : "",
+        stars: sm ? num(sm[1].replace(/<[^>]+>/g, " ").trim()) : 0,
+        delta: tm ? num(tm[1]) : 0,
+      });
+    }
+    return out;
+  };
+  const items = parse(htmlD);       // 日榜
+  const weekly = parse(htmlW);      // 周榜（抓取失败容忍为空，日榜为主）
   if (!items.length) return { ok: false, error: "榜单解析失败（GitHub 改版？）" };
-  /* 与昨日榜对比：新进榜的标 fresh；解读按仓库名复用（连任不重翻；旧值若是对输入的复述则视为无效重翻） */
-  const prev = ((wbCache.github && wbCache.github.items) || []);
-  const prevSet = new Set(prev.map(it => String(it.repo).toLowerCase()));
+  /* 与上一期对比：新进榜的标 fresh（日比日、周比周）；解读按仓库名复用且日/周榜共享（连任不重翻；旧值若是对输入的复述则视为无效重翻） */
+  const prevG = wbCache.github || {};
   const zhMap = {};
   const isEcho = (repo, zh) => !zh || !/[\u4e00-\u9fff]/.test(zh) || String(zh).startsWith(repo);
-  prev.forEach(it => { if (it.zh && !isEcho(it.repo, it.zh)) zhMap[it.repo] = it.zh; });
-  const need = items.filter(it => !zhMap[it.repo]);
+  [].concat(prevG.items || [], prevG.weekly || []).forEach(it => { if (it.zh && !isEcho(it.repo, it.zh)) zhMap[it.repo] = it.zh; });
+  const uniq = arr => { const s = new Set(); return arr.filter(it => !s.has(it.repo) && s.add(it.repo)); };
+  const need = uniq(items.concat(weekly)).filter(it => !zhMap[it.repo]);
   if (need.length && wbCfg.glmKey) {
     try {
       const out = await glmChat(
-        "下面是 GitHub 今日趋势榜的仓库清单。为每个仓库写一句不超过 60 字的中文解读，必须覆盖两点：它是什么、能用来干什么；术语和产品名保留英文。\n" +
+        "下面是 GitHub 趋势榜的仓库清单。为每个仓库写一句不超过 60 字的中文解读，必须覆盖两点：它是什么、能用来干什么；术语和产品名保留英文。\n" +
         "示例——输入「3. vercel/next.js（TypeScript）The React Framework」输出「3. React 全栈框架，用于构建服务端渲染与静态站点，前端工程主流选择」。\n" +
         "要求：每行输出以编号开头，编号后直接是中文解读（以汉字开头，禁止复述仓库名/语言/英文描述）。按编号顺序，不要其他文字：\n" +
         need.map((it, i) => (i + 1) + ". " + it.repo + "（" + (it.lang || "语言未知") + "）" + (it.desc || "无描述")).join("\n"),
-        { temperature: 0.3, maxTokens: 2000 });
+        { temperature: 0.3, maxTokens: 3000 });
       for (const line of String(out).split("\n")) {
         const g = /^\s*(\d+)[.、)]?\s*(.+)$/.exec(line.trim());
         if (g) {
@@ -1365,7 +1383,7 @@ async function wbFetchGithub() {
       }
     } catch {}
     /* 批量丢条/回显兜底：单条纯文本协议（输出取首个汉字起，剥掉可能的回显前缀） */
-    for (const it of need.filter(it => !zhMap[it.repo]).slice(0, 10)) {
+    for (const it of need.filter(it => !zhMap[it.repo]).slice(0, 14)) {
       try {
         const one = await glmChat("用不超过 60 字中文解读这个 GitHub 项目，说清它是什么、能用来干什么。输出直接以汉字开头，不要复述项目名和英文描述，只输出解读：\n" + it.repo + " —— " + (it.desc || "无描述"));
         const zhm = /[\u4e00-\u9fff][\s\S]*/.exec(String(one));
@@ -1373,10 +1391,16 @@ async function wbFetchGithub() {
       } catch {}
     }
   }
+  const stamp = (list, prevList) => {
+    const prevSet = new Set((prevList || []).map(it => String(it.repo).toLowerCase()));
+    return list.map(it => ({ url: it.url, repo: it.repo, desc: it.desc, lang: it.lang, stars: it.stars, delta: it.delta,
+      zh: zhMap[it.repo] || "", fresh: !prevSet.has(String(it.repo).toLowerCase()) }));
+  };
   return {
     ok: true, at: Date.now(),
-    items: items.map(it => ({ url: it.url, repo: it.repo, desc: it.desc, lang: it.lang, stars: it.stars, today: it.today,
-      zh: zhMap[it.repo] || "", fresh: !prevSet.has(String(it.repo).toLowerCase()) })),
+    items: stamp(items, prevG.items),                          /* 日榜 */
+    weekly: weekly.length ? stamp(weekly, prevG.weekly)
+      : (prevG.weekly || []).map(it => ({ ...it, fresh: false })),   /* 周榜抓取失败：保留上期（不再标新） */
   };
 }
 

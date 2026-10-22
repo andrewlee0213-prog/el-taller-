@@ -322,6 +322,9 @@ html[data-theme="perla"]{
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .item a.it:hover{color:var(--g-accent-soft)}
 .new{color:#ff7ba8;font-weight:700;font-size:11px;flex:none}
+.ghtab{display:flex;gap:4px;flex:none}
+.ghtab button{border:1px solid color-mix(in srgb,var(--ink) 18%,transparent);background:none;color:var(--g-dim);border-radius:999px;padding:2px 10px;font:inherit;font-size:10.5px;cursor:pointer;line-height:1.5}
+.ghtab button.on{background:color-mix(in srgb,var(--c) 22%,transparent);border-color:var(--c);color:var(--g-text);font-weight:600}
 .imeta{color:var(--g-dim);font-size:10.5px;line-height:1.5}
 .icmt{border:0;background:none;color:var(--g-dim);cursor:pointer;font-size:12px;padding:2px 4px;flex:none;line-height:1}
 .icmt:hover{color:var(--g-accent-soft)}
@@ -649,9 +652,10 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
       </div>
 
       <div class="g-card wbcard" id="card-github" style="--c:#58a6ff">
-        <div class="chead"><span class="cbar"></span><b>GitHub · 日趋势榜</b>
+        <div class="chead"><span class="cbar"></span><b>GitHub · 趋势榜</b>
+          <span class="ghtab" id="ghTabs"><button type="button" data-ght="d" class="on">日榜</button><button type="button" data-ght="w">周榜</button></span>
           <span class="upd" id="githubUpd"></span>
-          <button class="rfbtn" data-sec="github" title="立即刷新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+          <button class="rfbtn" data-sec="github" title="立即刷新（日榜+周榜一起）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
         <div class="cbody ilist" id="githubBody"><span class="dim">等待首抓…</span></div>
       </div>
 
@@ -1020,19 +1024,39 @@ function renderArxiv() {
     return itemRowHtml(a.url, a.url, t, esc(a.why || ""), "arxiv", a.zh);
   }).join("") + "</div>" + (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
 }
-/* ================= GitHub 日趋势榜（Trending；GLM 解读「是什么/能干什么」；新上榜标注） ================= */
+/* ================= GitHub 趋势榜（日榜/周榜双标签；GLM 解读「是什么/能干什么」；新上榜标注） ================= */
+let ghTab = "d";
+try { ghTab = localStorage.getItem("wb-gh-tab") === "w" ? "w" : "d"; } catch (e) {}
+$("#ghTabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-ght]");
+  if (!b) return;
+  ghTab = b.dataset.ght;
+  try { localStorage.setItem("wb-gh-tab", ghTab); } catch (e) {}
+  renderGithub();
+});
 function renderGithub() {
+  document.querySelectorAll("#ghTabs button").forEach(b => b.classList.toggle("on", b.dataset.ght === ghTab));
   const d = WB.github, body = $("#githubBody"), upd = $("#githubUpd");
-  if (!d || !d.items || !d.items.length) {
+  if (!d || ((!d.items || !d.items.length) && (!d.weekly || !d.weekly.length))) {
     body.innerHTML = '<span class="dim">' + (d && d.error ? esc(d.error) + "（已保留旧值）" : "等待首抓…") + "</span>";
     upd.textContent = d && d.error ? hm(d.at) + " 失败" : ""; return;
   }
-  const freshN = d.items.filter(x => x.fresh).length;
-  upd.textContent = (d.error ? hm(d.at) + " · 旧值" : hm(d.at) + " 更新") + "(" + d.items.length + (freshN ? " · 新上榜 " + freshN : "") + ")";
-  body.innerHTML = d.items.map((r, i) => {
+  const week = ghTab === "w";
+  const list = week ? (d.weekly || []) : (d.items || []);
+  const freshN = list.filter(x => x.fresh).length;
+  upd.textContent = (d.error ? hm(d.at) + " · 旧值" : hm(d.at) + " 更新") +
+    "(日" + ((d.items || []).length) + " · 周" + ((d.weekly || []).length) + ")";
+  if (!list.length) {
+    body.innerHTML = '<span class="dim">' + (week ? "周榜等待首抓（下次 05:00 或点 ↻）" : "日榜为空") + "</span>" +
+      (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
+    return;
+  }
+  const dl = week ? "本周" : "今日";
+  body.innerHTML = list.map((r, i) => {
     const l1 = '<a class="it" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + (i + 1) + ". " + esc(r.repo) + "</a>" +
       (r.fresh ? ' <span class="new">新上榜</span>' : "");
-    const meta = (r.today ? '<b style="color:var(--c);font-weight:600">今日 +' + r.today + " ★</b>" : "") +
+    const delta = r.delta != null ? r.delta : r.today;   // 旧缓存字段兼容
+    const meta = (delta ? '<b style="color:var(--c);font-weight:600">' + dl + " +" + delta + " ★</b>" : "") +
       (r.stars ? " · 总 " + r.stars.toLocaleString() + " ★" : "") + (r.lang ? " · " + esc(r.lang) : "");
     const zh = r.zh || r.desc || "";
     return '<div class="item"><div class="l1">' + l1 + "</div>" +
