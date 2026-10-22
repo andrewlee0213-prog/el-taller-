@@ -1314,6 +1314,72 @@ async function wbFetchAnth() {
   };
 }
 
+/* ---------------- 抓取器 · GitHub Trending 日榜（官方无 API，HTML 解析；GLM 逐仓解读「是什么/能干什么」；对比昨日标新上榜） ---------------- */
+async function wbFetchGithub() {
+  const html = await httpGetText("https://github.com/trending?since=daily", 25000);
+  const num = s => parseInt(String(s || "").replace(/,/g, ""), 10) || 0;
+  const items = [];
+  const seen = new Set();
+  let m;
+  const reRow = /<article class="Box-row">([\s\S]*?)<\/article>/g;
+  while ((m = reRow.exec(html)) && items.length < 10) {
+    const row = m[1];
+    const hm = /<h2[^>]*>[\s\S]*?href="\/([\w.-]+\/[\w.-]+)"/.exec(row);
+    if (!hm || seen.has(hm[1].toLowerCase())) continue;
+    seen.add(hm[1].toLowerCase());
+    const dm = /<p class="[^"]*color-fg-muted[^"]*"[^>]*>([\s\S]*?)<\/p>/.exec(row);
+    const lm = /itemprop="programmingLanguage"[^>]*>([^<]+)</.exec(row);
+    const sm = /href="\/[\w.-]+\/[\w.-]+\/stargazers"[^>]*>([\s\S]*?)<\/a>/.exec(row);
+    const tm = /([\d,]+)\s+stars?\s+today/.exec(row);
+    items.push({
+      url: "https://github.com/" + hm[1],
+      repo: hm[1],
+      desc: dm ? cleanText(dm[1].replace(/<[^>]+>/g, " ")).slice(0, 200) : "",
+      lang: lm ? cleanText(lm[1]) : "",
+      stars: sm ? num(sm[1].replace(/<[^>]+>/g, " ").trim()) : 0,
+      today: tm ? num(tm[1]) : 0,
+    });
+  }
+  if (!items.length) return { ok: false, error: "榜单解析失败（GitHub 改版？）" };
+  /* 与昨日榜对比：新进榜的标 fresh；解读按仓库名复用（连任不重翻；旧值若是对输入的复述则视为无效重翻） */
+  const prev = ((wbCache.github && wbCache.github.items) || []);
+  const prevSet = new Set(prev.map(it => String(it.repo).toLowerCase()));
+  const zhMap = {};
+  const isEcho = (repo, zh) => !zh || !/[\u4e00-\u9fff]/.test(zh) || String(zh).startsWith(repo);
+  prev.forEach(it => { if (it.zh && !isEcho(it.repo, it.zh)) zhMap[it.repo] = it.zh; });
+  const need = items.filter(it => !zhMap[it.repo]);
+  if (need.length && wbCfg.glmKey) {
+    try {
+      const out = await glmChat(
+        "下面是 GitHub 今日趋势榜的仓库清单。为每个仓库写一句不超过 60 字的中文解读，必须覆盖两点：它是什么、能用来干什么；术语和产品名保留英文。\n" +
+        "示例——输入「3. vercel/next.js（TypeScript）The React Framework」输出「3. React 全栈框架，用于构建服务端渲染与静态站点，前端工程主流选择」。\n" +
+        "要求：每行输出以编号开头，编号后直接是中文解读（以汉字开头，禁止复述仓库名/语言/英文描述）。按编号顺序，不要其他文字：\n" +
+        need.map((it, i) => (i + 1) + ". " + it.repo + "（" + (it.lang || "语言未知") + "）" + (it.desc || "无描述")).join("\n"),
+        { temperature: 0.3, maxTokens: 2000 });
+      for (const line of String(out).split("\n")) {
+        const g = /^\s*(\d+)[.、)]?\s*(.+)$/.exec(line.trim());
+        if (g) {
+          const i = parseInt(g[1], 10);
+          if (i >= 1 && i <= need.length && !isEcho(need[i - 1].repo, g[2].trim())) zhMap[need[i - 1].repo] = g[2].trim().slice(0, 120);
+        }
+      }
+    } catch {}
+    /* 批量丢条/回显兜底：单条纯文本协议（输出取首个汉字起，剥掉可能的回显前缀） */
+    for (const it of need.filter(it => !zhMap[it.repo]).slice(0, 10)) {
+      try {
+        const one = await glmChat("用不超过 60 字中文解读这个 GitHub 项目，说清它是什么、能用来干什么。输出直接以汉字开头，不要复述项目名和英文描述，只输出解读：\n" + it.repo + " —— " + (it.desc || "无描述"));
+        const zhm = /[\u4e00-\u9fff][\s\S]*/.exec(String(one));
+        if (zhm) zhMap[it.repo] = zhm[0].trim().slice(0, 120);
+      } catch {}
+    }
+  }
+  return {
+    ok: true, at: Date.now(),
+    items: items.map(it => ({ url: it.url, repo: it.repo, desc: it.desc, lang: it.lang, stars: it.stars, today: it.today,
+      zh: zhMap[it.repo] || "", fresh: !prevSet.has(String(it.repo).toLowerCase()) })),
+  };
+}
+
 /* ---------------- 抓取器 · arXiv 精选（五段漏斗 300→40→12→8→6，评论反馈进 prompt） ---------------- */
 function arxivPrefilter(papers, topN) {
   const keys = wbCfg.arxivKeys.map(k => k.toLowerCase());
@@ -1507,6 +1573,7 @@ const WB_INTERVALS = {
   anth:  { dailyAt: "05:00", fail: 20 * 60e3 },
   arxiv: { dailyAt: "05:00", fail: 20 * 60e3 },
   f1:    { dailyAt: "05:00", fail: 6 * 3600e3 },
+  github:{ dailyAt: "05:00", fail: 20 * 60e3 },
 };
 /* 成功后的下一次运行时刻（lastAt = 该板块缓存 at；失败仍走 WB_INTERVALS.fail 短重试） */
 function wbNextRun(section, lastAt) {
@@ -1537,7 +1604,7 @@ function wbNextRun(section, lastAt) {
   }
   return bjNextDailyAt(hh, mm, lastAt);                        // bili / anth / arxiv：每天定点
 }
-let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null });
+let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null, github: null });
 let wbSched = {};
 function wbInitSchedule() {
   /* 旧格式 F1 缓存（无北京时间/无全节次 sessions）→ 丢弃，让调度立即重抓 */
@@ -1551,12 +1618,13 @@ function wbInitSchedule() {
     wbSched[k] = { busy: false, nextAt: wbNextRun(k, last) };
     if (!wbCache[k]) wbSched[k].nextAt = now;   // 冷启动立即抓
   }
-  /* 错峰：glm 立即，oil/bili/anth/arxiv/f1 依次让路 */
+  /* 错峰：glm 立即，oil/bili/anth/arxiv/f1/github 依次让路 */
   if (!wbCache.oil) wbSched.oil.nextAt = now + 8e3;
   if (!wbCache.bili) wbSched.bili.nextAt = now + 16e3;
   if (!wbCache.anth) wbSched.anth.nextAt = now + 30e3;
   if (!wbCache.arxiv) wbSched.arxiv.nextAt = now + 45e3;
   if (!wbCache.f1) wbSched.f1.nextAt = now + 60e3;
+  if (!wbCache.github) wbSched.github.nextAt = now + 70e3;
 }
 function wbFail(section, msg) {
   console.log("[workbench] " + section + " 失败: " + msg);
@@ -1595,6 +1663,10 @@ async function wbRun(section) {
       const d = await wbFetchF1();
       if (d.ok) { wbCache.f1 = d; console.log("[workbench] f1 赛程 " + d.races.length + " 站"); okNext(); }
       else { wbFail("f1", d.error); done(iv.fail); }
+    } else if (section === "github") {
+      const d = await wbFetchGithub();
+      if (d.ok) { wbCache.github = d; console.log("[workbench] github 日榜 " + d.items.length + " 仓（新上榜 " + d.items.filter(x => x.fresh).length + "）"); okNext(); }
+      else { wbFail("github", d.error); done(iv.fail); }
     }
   } catch (e) {
     wbFail(section, e.name === "TimeoutError" || e.name === "AbortError" ? "网络超时" : (e.message || "抓取失败"));

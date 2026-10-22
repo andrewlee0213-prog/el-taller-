@@ -648,6 +648,13 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
         <div class="cbody" id="xhsBody"><span class="dim">等待首轮抓取…</span></div>
       </div>
 
+      <div class="g-card wbcard" id="card-github" style="--c:#58a6ff">
+        <div class="chead"><span class="cbar"></span><b>GitHub · 日趋势榜</b>
+          <span class="upd" id="githubUpd"></span>
+          <button class="rfbtn" data-sec="github" title="立即刷新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="githubBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
       <div class="g-card wbcard" id="card-kbin" style="--c:#8b7cf6">
         <div class="chead"><span class="cbar"></span><b>Biblioteca 待处理</b>
           <span class="upd" id="kbinUpd"></span></div>
@@ -1012,6 +1019,26 @@ function renderArxiv() {
     const t = esc("· " + a.zh) + (a.pub === today ? ' <span class="new">New</span>' : "");
     return itemRowHtml(a.url, a.url, t, esc(a.why || ""), "arxiv", a.zh);
   }).join("") + "</div>" + (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
+}
+/* ================= GitHub 日趋势榜（Trending；GLM 解读「是什么/能干什么」；新上榜标注） ================= */
+function renderGithub() {
+  const d = WB.github, body = $("#githubBody"), upd = $("#githubUpd");
+  if (!d || !d.items || !d.items.length) {
+    body.innerHTML = '<span class="dim">' + (d && d.error ? esc(d.error) + "（已保留旧值）" : "等待首抓…") + "</span>";
+    upd.textContent = d && d.error ? hm(d.at) + " 失败" : ""; return;
+  }
+  const freshN = d.items.filter(x => x.fresh).length;
+  upd.textContent = (d.error ? hm(d.at) + " · 旧值" : hm(d.at) + " 更新") + "(" + d.items.length + (freshN ? " · 新上榜 " + freshN : "") + ")";
+  body.innerHTML = d.items.map((r, i) => {
+    const l1 = '<a class="it" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + (i + 1) + ". " + esc(r.repo) + "</a>" +
+      (r.fresh ? ' <span class="new">新上榜</span>' : "");
+    const meta = (r.today ? '<b style="color:var(--c);font-weight:600">今日 +' + r.today + " ★</b>" : "") +
+      (r.stars ? " · 总 " + r.stars.toLocaleString() + " ★" : "") + (r.lang ? " · " + esc(r.lang) : "");
+    const zh = r.zh || r.desc || "";
+    return '<div class="item"><div class="l1">' + l1 + "</div>" +
+      (meta ? '<span class="imeta">' + meta + "</span>" : "") +
+      (zh ? '<span class="imeta" style="line-height:1.6">' + esc(zh) + "</span>" : "") + "</div>";
+  }).join("") + (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
 }
 /* ================= Biblioteca 待处理（上传材料巡检） ================= */
 function renderKbInbox() {
@@ -1778,7 +1805,7 @@ function renderBanner() {
   $("#cfgBanner").classList.toggle("on", !(CFG && CFG.hasKey));
 }
 function renderAll() {
-  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderHw(); renderXhs(); renderKbInbox();
+  renderGLM(); renderOil(); renderBili(); renderAnth(); renderArxiv(); renderHw(); renderXhs(); renderGithub(); renderKbInbox();
   renderLog(); renderWeekly(); renderPanelHint();
   renderCalendar(); renderMemos();
 }

@@ -84,6 +84,7 @@ fs.writeFileSync(path.join(tmpData, "workbench-cache.json"), JSON.stringify({
   bili: { ok: true, at: seedAt, items: [] },
   anth: { ok: true, at: seedAt, items: [] },
   arxiv: { ok: true, at: seedAt, items: [] },
+  github: { ok: true, at: seedAt, items: [{ url: "https://github.com/a/b", repo: "a/b", desc: "d", zh: "解读", lang: "Rust", stars: 1234, today: 56, fresh: true }] },
   f1: { ok: true, at: seedAt, races: [
     { round: 98, raceName: "种子站A", locality: "测试", date: bjDate(2), time: "20:00", sprint: "", sprintTime: "",
       sessions: [{ k: "R", label: "正赛", date: bjDate(2), hm: "20:00" }] },
@@ -142,6 +143,8 @@ try {
   r = await req("GET", "/api/workbench/data");
   check("admin /api/workbench/data → 200 且含五板块键", r.status === 200 &&
     ["glm", "oil", "bili", "anth", "arxiv"].every(k => k in (r.json.data || {})), JSON.stringify(r.json).slice(0, 120));
+  check("data.github 种子条目完整下发", r.json.data.github && r.json.data.github.items.length === 1 &&
+    r.json.data.github.items[0].repo === "a/b" && r.json.data.github.items[0].fresh === true, JSON.stringify(r.json.data.github || {}).slice(0, 100));
   check("data.cfg 含 ups/profile", Array.isArray(r.json.cfg.ups) && typeof r.json.cfg.profile === "string");
 
   /* ---- 定点调度断言（2026-10-14 起定点每日制）：sched.nextAt 与测试端同式重算比对 ----
@@ -158,6 +161,7 @@ try {
     const dayStart = ds => { const [y, m, d] = ds.split("-").map(Number); return Date.UTC(y, m - 1, d) - 8 * 3600e3; };
     const expF1 = dayStart(bjDate(2)) - 86400e3 + 5 * 3600e3;   // 后天 session → 明天 05:00（恒在未来，无竞态）
     check("调度：f1 只在 session 前一天 05:00", sched.f1 && sched.f1.nextAt === expF1, fmt(sched.f1 && sched.f1.nextAt));
+    check("调度：github 每天 05:00 定点", sched.github && sched.github.nextAt === expNext(5, 0, seedAt), fmt(sched.github && sched.github.nextAt));
   }
 
   /* ---- 工作记录 ---- */
