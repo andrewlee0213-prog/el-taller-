@@ -279,10 +279,10 @@ html[data-theme="perla"]{
 .atl-row>a:hover{color:var(--g-accent-soft)}
 .atl-row .rdim{font-size:10.5px;color:var(--g-dim)}
 @media (max-width:680px){.atl-mapwrap{flex-direction:column}.atl-map{width:200px;margin:0 auto}}
-.chead{display:flex;align-items:center;gap:10px}
+.chead{display:flex;align-items:center;gap:8px}
 .chead .cbar{width:8px;height:26px;border-radius:2px;flex:none;background:var(--c,#ff9d2e)}
-.chead b{font-size:14.5px;font-weight:600}
-.chead .upd{margin-left:auto;font-size:10.5px;color:var(--g-dim)}
+.chead b{font-size:14.5px;font-weight:600;white-space:nowrap;flex:none}   /* 标题永不折行：挤空间交给时间戳 */
+.chead .upd{margin-left:auto;font-size:10.5px;color:var(--g-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
 .rfbtn{border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--g-text);cursor:pointer;
   width:26px;height:26px;border-radius:50%;display:grid;place-items:center;transition:.25s;flex:none}
 .rfbtn:hover{background:color-mix(in srgb,var(--ink) 16%,transparent)}
@@ -1045,7 +1045,7 @@ function renderGithub() {
   const list = week ? (d.weekly || []) : (d.items || []);
   const freshN = list.filter(x => x.fresh).length;
   upd.textContent = (d.error ? hm(d.at) + " · 旧值" : hm(d.at) + " 更新") +
-    "(日" + ((d.items || []).length) + " · 周" + ((d.weekly || []).length) + ")";
+    "(日" + ((d.items || []).length) + "·周" + ((d.weekly || []).length) + ")";
   if (!list.length) {
     body.innerHTML = '<span class="dim">' + (week ? "周榜等待首抓（下次 05:00 或点 ↻）" : "日榜为空") + "</span>" +
       (d.error ? '<span class="err">' + esc(d.error) + "</span>" : "");
