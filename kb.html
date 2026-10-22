@@ -30,7 +30,7 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
     linear-gradient(155deg,var(--g-bg-1) 0%,var(--g-bg-2) 48%,var(--g-bg-3) 100%)}
 .noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
-.wrap{position:relative;z-index:2;width:min(1180px,94vw);margin:0 auto;padding-top:26px}
+.wrap{position:relative;z-index:2;width:min(1480px,95vw);margin:0 auto;padding-top:26px}
 .g-glass{background:linear-gradient(150deg,var(--g-glass-hi),var(--g-glass-lo));
   -webkit-backdrop-filter:blur(var(--g-blur)) saturate(1.5);backdrop-filter:blur(var(--g-blur)) saturate(1.5);
   border:1px solid var(--g-brd);
@@ -69,6 +69,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .toc-hint{padding:14px 10px;font-size:11.5px;color:var(--g-dim);line-height:1.7}
 
 .article{border-radius:32px;padding:38px 44px 46px;min-height:480px;min-width:0}
+/* 自适应行宽：正文文字列 ~850px 保行长舒适，表格/代码/内嵌 PDF 用满（页边卡模式右侧 296px 时自动收窄） */
+.article .body > p,.article .body > h2,.article .body > h3,.article .body > h4,.article .body > h5,.article .body > blockquote,.article .body > ul,.article .body > ol{max-width:850px}
 .article .crumb{font-size:11.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--g-accent);font-weight:600;margin-bottom:10px}
 .article .owner-note{font-size:13px;line-height:1.7;color:var(--g-text);background:color-mix(in srgb,var(--g-tint) 55%,transparent);
   border-left:3px solid var(--g-accent);border-radius:8px;padding:10px 14px;margin-bottom:16px;white-space:pre-wrap}

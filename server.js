@@ -2225,7 +2225,7 @@ body{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,
   background:radial-gradient(90% 70% at 72% 6%,rgba(217,164,78,.24),transparent 60%),
     radial-gradient(70% 60% at 12% 88%,rgba(164,75,62,.30),transparent 65%),
     linear-gradient(180deg,var(--bg-1),var(--bg-2) 55%,var(--bg-3));}
-.wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:36px 20px 60px}
+.wrap{position:relative;z-index:1;width:min(1240px,94vw);margin:0 auto;padding:36px 20px 60px}
 .glass{background:linear-gradient(150deg,var(--glass-hi),var(--glass-lo));
   -webkit-backdrop-filter:blur(40px) saturate(1.8);backdrop-filter:blur(40px) saturate(1.8);
   border:1px solid rgba(248,239,226,.2);border-radius:22px;
@@ -2240,6 +2240,8 @@ body{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,
   border-radius:999px;padding:6px 14px;font:inherit;font-size:12px;cursor:pointer}
 .toc button.on{background:var(--accent);border-color:var(--accent);color:#2a1b05;font-weight:600}
 .article{padding:10px 30px 26px;font-size:15px;line-height:1.95;overflow-wrap:anywhere}
+/* 自适应行宽：正文文字列 ~850px 保行长舒适，表格/代码/内嵌 PDF 用满容器 */
+.article > p,.article > h2,.article > h3,.article > h4,.article > h5,.article > blockquote,.article > ul,.article > ol{max-width:850px}
 .article h2,.article h3,.article h4,.article h5{margin:26px 0 10px;line-height:1.5}
 .article h2{font-size:18px;color:var(--accent-soft)}
 .article h3{font-size:16px}.article h4{font-size:14.5px}
