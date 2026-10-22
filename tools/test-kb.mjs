@@ -131,6 +131,50 @@ r = await req('POST', '/api/logout');
 r = await req('GET', '/kb-data.js');
 check('登出后恢复 401', r.status === 401, r.status);
 
+/* ---- 公开分享链接 ---- */
+db.prepare('INSERT OR REPLACE INTO users(username,pwhash,salt,role,must_change) VALUES(?,?,?,?,0)')
+  .run('kbtest-admin', crypto.scryptSync('kbtest-pass-2026', salt, 64).toString('hex'), salt, 'admin');
+r = await req('POST', '/api/login', { username: 'kbtest-admin', password: 'kbtest-pass-2026' });
+check('临时管理员登录', r.json && r.json.ok === true, JSON.stringify(r.json));
+r = await req('POST', '/api/kb/share', { book: 'agent-handbook', chapter: -1, days: 30 });
+check('建整本分享链接', r.json && r.json.ok === true && /^\/s\/[\w-]+$/.test(r.json.url || ''), JSON.stringify(r.json));
+const SH_TOK = r.json && r.json.token;
+r = await req('POST', '/api/kb/share', { book: 'agent-handbook', chapter: 0, days: 7 });
+check('建单章分享链接', r.json && r.json.ok === true, JSON.stringify(r.json));
+const SH_TOK1 = r.json && r.json.token;
+r = await req('POST', '/api/kb/share', { book: 'no-such-book', chapter: -1, days: 7 });
+check('不存在书 → 400', r.status === 400, r.status);
+r = await req('POST', '/api/logout');
+r = await req('POST', '/api/login', { username: 'kbtest-tmp', password: 'kbtest-pass-2026' });
+r = await req('POST', '/api/kb/share', { book: 'agent-handbook', chapter: -1, days: 7 });
+check('普通用户建分享 → 403', r.status === 403, r.status);
+r = await req('POST', '/api/logout');
+/* 匿名访问 */
+r = await req('GET', '/s/' + SH_TOK);
+check('匿名打开分享页', r.status === 200 && r.text.includes('分享阅读') && r.text.includes('noindex'), r.status);
+r = await req('GET', '/api/kb/share/view?token=' + SH_TOK);
+check('匿名 view：书目信息', r.json && r.json.ok === true && r.json.title === 'AI Agent 构建知识手册' && r.json.chapters.length > 0, JSON.stringify(r.json).slice(0, 120));
+r = await req('GET', '/api/kb/share/chapter?token=' + SH_TOK + '&c=0');
+check('匿名读整本第 0 章', r.json && r.json.ok === true && (r.json.html || '').length > 100, r.json && r.json.error);
+r = await req('GET', '/api/kb/share/chapter?token=' + SH_TOK1 + '&c=0');
+check('单章链读指定章', r.json && r.json.ok === true, r.json && r.json.error);
+r = await req('GET', '/api/kb/share/chapter?token=' + SH_TOK1 + '&c=1');
+check('单章链读其他章被拒', r.json && r.json.ok === false, JSON.stringify(r.json));
+r = await req('GET', '/api/kb/share/view?token=not-a-real-token');
+check('无效令牌 view 失败', r.json && r.json.ok === false, JSON.stringify(r.json));
+r = await req('GET', '/s/' + SH_TOK + '/f/agent-handbook.md');
+check('文件路由只放行被分享书的上传文件 → 404', r.status === 404, r.status);
+/* 吊销 */
+r = await req('POST', '/api/login', { username: 'kbtest-admin', password: 'kbtest-pass-2026' });
+r = await req('DELETE', '/api/kb/share?token=' + SH_TOK);
+check('吊销分享链接', r.json && r.json.ok === true, JSON.stringify(r.json));
+r = await req('DELETE', '/api/kb/share?token=' + SH_TOK1);
+check('吊销单章链接（清理）', r.json && r.json.ok === true, JSON.stringify(r.json));
+r = await req('POST', '/api/logout');
+r = await req('GET', '/api/kb/share/view?token=' + SH_TOK);
+check('吊销后匿名 view 失败', r.json && r.json.ok === false, JSON.stringify(r.json));
+db.prepare('DELETE FROM users WHERE username=?').run('kbtest-admin');
+
 db.prepare('DELETE FROM users WHERE username=?').run('kbtest-tmp');
 const n = db.prepare('SELECT COUNT(*) AS n FROM users WHERE username=?').get('kbtest-tmp').n;
 console.log('\n临时账号已删除（剩余 ' + n + ' 条）');

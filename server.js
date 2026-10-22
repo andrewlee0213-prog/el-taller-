@@ -261,6 +261,10 @@ function loadKb() {
 const KB_UPLOAD_DIR = path.join(DATA, "kb-uploads");
 const KB_UPLOAD_FILE = path.join(DATA, "kb-uploads.json");
 let kbUploads = loadJson(KB_UPLOAD_FILE, {});
+/* 公开分享链接：{ [token]: {token, book, chapter(-1=整本|索引), createdAt, expiresAt(0=永久), by, title快照} }
+   —— token 12 字节 base64url（96 位熵不可猜）；/s/<token> 无登录只读；吊销/过期即失效 */
+const KB_SHARE_FILE = path.join(DATA, "kb-shares.json");
+let kbShares = loadJson(KB_SHARE_FILE, {});
 /* 设计修正（2026-10-10 站主反馈）：主动上传 ≠ 看过——只有点过 要/不要 或写过评论（有 readAt）的才算处置过，
    其余一律回待处理队列。旧版迁移曾把无 state 的标成 keep，无 readAt 的 keep 一并重排（幂等）。 */
 for (const u of Object.values(kbUploads)) {
@@ -2198,6 +2202,143 @@ load();
 </script>
 </body></html>`;
 
+/* ---------------- 公开分享页（无登录只读；朱漆金默认配色，独立轻量页不带主题切换） ---------------- */
+function kbSharePage(token) {
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>分享阅读 · El Taller de Andres</title>
+<style>
+:root{
+  --accent:#d9a44e; --accent-soft:#f3d9a8; --text:#f8efe2; --dim:rgba(248,239,226,.6);
+  --glass-hi:rgba(164,75,62,.36); --glass-lo:rgba(88,38,26,.34);
+  --bg-1:#4a2317; --bg-2:#33140c; --bg-3:#1d0906; --bg-base:#230d07;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--text);background:var(--bg-base);min-height:100vh}
+.page{position:relative;min-height:100vh;overflow-x:hidden}
+.page::before{content:"";position:fixed;inset:0;z-index:0;
+  background:radial-gradient(90% 70% at 72% 6%,rgba(217,164,78,.24),transparent 60%),
+    radial-gradient(70% 60% at 12% 88%,rgba(164,75,62,.30),transparent 65%),
+    linear-gradient(180deg,var(--bg-1),var(--bg-2) 55%,var(--bg-3));}
+.wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:36px 20px 60px}
+.glass{background:linear-gradient(150deg,var(--glass-hi),var(--glass-lo));
+  -webkit-backdrop-filter:blur(40px) saturate(1.8);backdrop-filter:blur(40px) saturate(1.8);
+  border:1px solid rgba(248,239,226,.2);border-radius:22px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 18px 50px rgba(0,0,0,.35)}
+.head{padding:26px 30px 18px}
+.eyebrow{font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase}
+.head h1{font-size:22px;line-height:1.45;margin-top:8px;font-weight:650}
+.head .desc{font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.7}
+.meta{font-size:11.5px;color:var(--dim);margin-top:10px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;padding:4px 30px 22px}
+.toc button{border:1px solid rgba(248,239,226,.22);background:rgba(248,239,226,.07);color:var(--text);
+  border-radius:999px;padding:6px 14px;font:inherit;font-size:12px;cursor:pointer}
+.toc button.on{background:var(--accent);border-color:var(--accent);color:#2a1b05;font-weight:600}
+.article{padding:10px 30px 26px;font-size:15px;line-height:1.95;overflow-wrap:anywhere}
+.article h2,.article h3,.article h4,.article h5{margin:26px 0 10px;line-height:1.5}
+.article h2{font-size:18px;color:var(--accent-soft)}
+.article h3{font-size:16px}.article h4{font-size:14.5px}
+.article p{margin:12px 0}
+.article a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(217,164,78,.45)}
+.article blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid var(--accent);
+  background:rgba(217,164,78,.09);border-radius:0 10px 10px 0;color:var(--accent-soft)}
+.article ul,.article ol{margin:12px 0 12px 22px}
+.article li{margin:5px 0}
+.article table{border-collapse:collapse;margin:14px 0;font-size:13px;width:100%}
+.article th,.article td{border:1px solid rgba(248,239,226,.18);padding:7px 11px;text-align:left}
+.article th{background:rgba(248,239,226,.08)}
+.article pre{background:rgba(0,0,0,.4);border:1px solid rgba(248,239,226,.14);border-radius:12px;
+  padding:14px;overflow-x:auto;font-size:12.5px;margin:14px 0}
+.article iframe{width:100%;height:72vh;border:1px solid rgba(248,239,226,.2);border-radius:12px;background:#fff}
+.article .dl{display:inline-block;margin-top:10px;color:var(--accent);font-size:13px;border:1px solid rgba(217,164,78,.45);
+  border-radius:999px;padding:6px 16px;text-decoration:none}
+.foot{position:relative;z-index:1;text-align:center;font-size:11.5px;color:var(--dim);margin-top:22px;line-height:1.8}
+.foot b{color:var(--accent)}
+.dead{text-align:center;padding:80px 20px}
+.dead .emoji{font-size:44px}
+.dead h2{font-size:18px;margin:16px 0 8px}
+.dead p{color:var(--dim);font-size:13px}
+.nav{display:flex;justify-content:space-between;gap:10px;padding:0 30px 24px}
+.nav button{border:1px solid rgba(248,239,226,.22);background:rgba(248,239,226,.07);color:var(--text);
+  border-radius:999px;padding:8px 18px;font:inherit;font-size:12.5px;cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+@media (max-width:640px){.head,.article,.toc,.nav{padding-left:18px;padding-right:18px}}
+</style>
+</head>
+<body>
+<div class="page"><div class="wrap">
+  <div class="glass" id="card">
+    <div class="dead"><div class="emoji">🔗</div><h2>加载中…</h2><p>正在打开分享的内容</p></div>
+  </div>
+  <div class="foot">分享自 <b>El Taller de Andres · 安德烈的工坊</b><br><span id="expire"></span></div>
+</div></div>
+<script>
+(function(){
+  var token = location.pathname.split("/")[2] || "";
+  var card = document.getElementById("card");
+  var cur = 0, data = null;
+  function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+  function fmtExp(t){
+    if(!t) return "链接永久有效";
+    var d = Math.ceil((t - Date.now()) / 864e5);
+    return d > 0 ? "链接 " + d + " 天后失效" : "链接已过期";
+  }
+  function render(){
+    var chs = data.chapter >= 0 ? [{t:"分享章节"}] : data.chapters;
+    var toc = data.chapter >= 0 ? "" : '<div class="toc">' + chs.map(function(c,i){
+      return '<button data-i="' + i + '" class="' + (i===cur?"on":"") + '">' + esc(c.t) + "</button>";
+    }).join("") + "</div>";
+    card.innerHTML =
+      '<div class="head"><div class="eyebrow">Lectura compartida · 分享阅读</div><h1>' + esc(data.title) + "</h1>" +
+      (data.desc ? '<div class="desc">' + esc(data.desc) + "</div>" : "") +
+      '<div class="meta">' + (data.chapter >= 0 ? "单章分享" : chs.length + " 章") + " · " + fmtExp(data.expiresAt) + "</div></div>" +
+      toc +
+      '<div class="article" id="art">正文加载中…</div>' +
+      (data.chapter >= 0 ? "" :
+        '<div class="nav"><button id="prev">← 上一章</button><button id="next">下一章 →</button></div>');
+    document.title = data.title + " · 分享阅读";
+    document.getElementById("expire").textContent = fmtExp(data.expiresAt);
+    if (data.chapter < 0) {
+      card.querySelectorAll(".toc button").forEach(function(b){ b.onclick = function(){ load(+b.dataset.i); }; });
+      document.getElementById("prev").onclick = function(){ if(cur>0) load(cur-1); };
+      document.getElementById("next").onclick = function(){ if(cur<chs.length-1) load(cur+1); };
+    }
+    load(cur);
+  }
+  function load(i){
+    cur = i;
+    var art = document.getElementById("art");
+    art.textContent = "正文加载中…";
+    fetch("/api/kb/share/chapter?token=" + encodeURIComponent(token) + "&c=" + i).then(function(r){return r.json()}).then(function(j){
+      if(!j || !j.ok){ art.innerHTML = "<p>" + esc((j&&j.error)||"章节加载失败") + "</p>"; return; }
+      art.innerHTML = j.html;
+      var pb = document.getElementById("prev"), nb = document.getElementById("next");
+      if(pb){ pb.disabled = cur<=0; nb.disabled = cur>=data.chapters.length-1; }
+      card.querySelectorAll(".toc button").forEach(function(b){ b.classList.toggle("on", +b.dataset.i===cur); });
+      window.scrollTo({top:0});
+    }).catch(function(){ art.innerHTML = "<p>章节加载失败，请刷新重试</p>"; });
+  }
+  fetch("/api/kb/share/view?token=" + encodeURIComponent(token)).then(function(r){return r.json()}).then(function(j){
+    if(!j || !j.ok){
+      card.innerHTML = '<div class="dead"><div class="emoji">🔒</div><h2>链接已失效或过期</h2><p>请向分享者索取新的链接</p></div>';
+      document.getElementById("expire").textContent = "";
+      return;
+    }
+    data = j; cur = j.chapter >= 0 ? j.chapter : 0;
+    render();
+  }).catch(function(){
+    card.innerHTML = '<div class="dead"><div class="emoji">⚠️</div><h2>加载失败</h2><p>请刷新重试</p></div>';
+  });
+})();
+</script>
+</body></html>`;
+}
+
 /* ---------------- 路由 ---------------- */
 const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
@@ -2378,6 +2519,46 @@ const server = http.createServer(async (req, res) => {
         kbClassifyQueue();   /* 新上传入队自动分类 */
         if (ext === ".pdf") kbPdfTranslateEnqueue(id);   /* PDF 入队自动转中英对照 */
         json(res, 200, { ok: true, id, title: fname, books: kbUploadBooks().length });
+      return log(200);
+    }
+
+    /* ---- 分享链接管理（仅 admin）：建 / 列 / 吊销 ---- */
+    if (p === "/api/kb/share" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const body = await readJson(req);
+      const book = String(body.book || "");
+      const b = kbAllBooks().find(x => x.id === book);
+      if (!b) { json(res, 400, { ok: false, error: "书不存在" }); return log(400); }
+      const chapter = body.chapter === -1 || body.chapter === "-1" ? -1 : parseInt(body.chapter, 10);
+      if (!(chapter >= -1 && chapter < b.chapters.length)) { json(res, 400, { ok: false, error: "章节范围错误" }); return log(400); }
+      const days = [0, 7, 30, 90].includes(body.days) ? body.days : 30;
+      const token = crypto.randomBytes(12).toString("base64url");
+      kbShares[token] = { token, book, chapter, days, createdAt: Date.now(),
+        expiresAt: days ? Date.now() + days * 86400e3 : 0, by: s.u, title: b.title, revoked: false };
+      saveJson(KB_SHARE_FILE, kbShares);
+      json(res, 200, { ok: true, token, url: "/s/" + token, expiresAt: kbShares[token].expiresAt });
+      return log(200);
+    }
+    if (p === "/api/kb/shares" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const now = Date.now();
+      json(res, 200, { items: Object.values(kbShares).map(sh => ({
+        token: sh.token, book: sh.book, title: sh.title, chapter: sh.chapter, days: sh.days,
+        createdAt: sh.createdAt, expiresAt: sh.expiresAt,
+        status: sh.revoked ? "revoked" : (sh.expiresAt && now > sh.expiresAt ? "expired" : "active"),
+      })).sort((a, b) => b.createdAt - a.createdAt) });
+      return log(200);
+    }
+    if (p === "/api/kb/share" && req.method === "DELETE") {
+      const s = readSession(req);
+      if (!s || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      const tok = String(u.searchParams.get("token") || "");
+      if (!kbShares[tok]) { json(res, 404, { ok: false, error: "not found" }); return log(404); }
+      delete kbShares[tok];
+      saveJson(KB_SHARE_FILE, kbShares);
+      json(res, 200, { ok: true });
       return log(200);
     }
 
@@ -3113,6 +3294,66 @@ const server = http.createServer(async (req, res) => {
         return need != null && need <= lvl;
       }).sort((a, b) => (b.date || "").localeCompare(a.date || "") || b.createdAt - a.createdAt);
       json(res, 200, { items });
+      return log(200);
+    }
+
+    /* ---- 公开分享链接（无登录只读；令牌 96 位熵 + noindex 不进搜索引擎） ---- */
+    const shareValidOf = tok => {
+      const sh = kbShares[tok];
+      if (!sh || sh.revoked) return null;
+      if (sh.expiresAt && Date.now() > sh.expiresAt) return null;
+      const b = kbAllBooks().find(x => x.id === sh.book);
+      return b ? { sh, b } : null;
+    };
+    if (/^\/s\/[\w-]{8,32}$/.test(p) && req.method === "GET") {
+      send(res, 200, Buffer.from(kbSharePage(p.slice(3))), {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Robots-Tag": "noindex, nofollow",
+      });
+      return log(200);
+    }
+    if (/^\/s\/[\w-]{8,32}\/f\/[\w.-]+$/.test(p) && req.method === "GET") {
+      const m = /^\/s\/([\w-]{8,32})\/f\/([\w.-]+)$/.exec(p);
+      const g = shareValidOf(m[1]);
+      const file = m[2];
+      /* 只放行「被分享的这本书自己的」上传文件（原文 pdf / md） */
+      const upEntry = g && String(g.b.id).startsWith("up-") ? kbUploads[g.b.id.slice(3)] : null;
+      if (!g || !upEntry || (upEntry.file !== file && upEntry.pdfFile !== file)) {
+        json(res, 404, { error: "not found" }); return log(404);
+      }
+      const abs = path.join(KB_UPLOAD_DIR, path.basename(file));
+      if (!fs.existsSync(abs)) { json(res, 404, { error: "not found" }); return log(404); }
+      send(res, 200, fs.readFileSync(abs), {
+        "Content-Type": file.endsWith(".pdf") ? "application/pdf" : "text/markdown; charset=utf-8",
+        "Content-Disposition": "inline; filename*=UTF-8''" + encodeURIComponent(file),
+        "Cache-Control": "no-store",
+        "X-Robots-Tag": "noindex, nofollow",
+      });
+      return log(200);
+    }
+    if (p === "/api/kb/share/view" && req.method === "GET") {
+      const g = shareValidOf(String(u.searchParams.get("token") || ""));
+      if (!g) { json(res, 200, { ok: false, error: "链接已失效或过期" }); return log(200); }
+      const { sh, b } = g;
+      json(res, 200, {
+        ok: true, title: b.title, desc: (b.intro || b.desc || "").slice(0, 300),
+        chapter: sh.chapter, expiresAt: sh.expiresAt,
+        chapters: b.chapters.map(c => ({ t: c.title })),
+      });
+      return log(200);
+    }
+    if (p === "/api/kb/share/chapter" && req.method === "GET") {
+      const g = shareValidOf(String(u.searchParams.get("token") || ""));
+      const ci = parseInt(u.searchParams.get("c") || "0", 10);
+      if (!g) { json(res, 200, { ok: false, error: "链接已失效或过期" }); return log(200); }
+      const { sh, b } = g;
+      if (sh.chapter >= 0 && ci !== sh.chapter) { json(res, 200, { ok: false, error: "此链接只包含单章" }); return log(200); }
+      const c = b.chapters[ci];
+      if (!c) { json(res, 200, { ok: false, error: "章节不存在" }); return log(200); }
+      /* 内嵌文件路径换成带令牌的公开路由（无登录也能看 PDF 原文） */
+      const html = String(c.html || "").replace(/\/api\/kb\/file\//g, "/s/" + sh.token + "/f/");
+      json(res, 200, { ok: true, title: c.title, html, total: b.chapters.length });
       return log(200);
     }
 
