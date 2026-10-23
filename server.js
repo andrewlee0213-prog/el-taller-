@@ -2820,7 +2820,8 @@ const server = http.createServer(async (req, res) => {
       const s = readSession(req);
       if (!s) { json(res, 401, { error: "unauthorized" }); return log(401); }
       const file = p.slice("/api/kb/file/".length);
-      if (!Object.values(kbUploads).some(e => e.file === file)) { json(res, 404, { error: "not found" }); return log(404); }
+      /* pdfFile：PDF 转中英对照后原件挪进该字段（e.file 已变 .md），白名单两者都认 */
+      if (!Object.values(kbUploads).some(e => e.file === file || e.pdfFile === file)) { json(res, 404, { error: "not found" }); return log(404); }
       const abs = path.join(KB_UPLOAD_DIR, path.basename(file));
       if (!fs.existsSync(abs)) { json(res, 404, { error: "not found" }); return log(404); }
       send(res, 200, fs.readFileSync(abs), {
