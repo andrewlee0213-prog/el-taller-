@@ -3,7 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>try{var __t=localStorage.getItem('taller-theme')||'bermellon';if(__t!=='naranja')document.documentElement.dataset.theme=__t}catch(_){}</script>
+<script>try{(function(){
+var L=31.23,LG=121.47,r=Math.PI/180;
+function sun(){var d=new Date(),N=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),
+dec=r*23.44*Math.sin(r*(360/365)*(N-81)),
+c=(Math.sin(-.833*r)-Math.sin(L*r)*Math.sin(dec))/(Math.cos(L*r)*Math.cos(dec)),
+now=d.getHours()*60+d.getMinutes();
+if(c>1)return{night:true};if(c<-1)return{night:false};
+var H=Math.acos(c)/r,B=r*(360/365)*(N-81),
+E=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B),
+n=720-4*(LG+d.getTimezoneOffset()/4)-E,  /* 太阳正午（当地钟表分钟）：标准经线差 + 均时差 */
+fm=function(m){m=((m%1440)+1440)%1440;var h=Math.floor(m/60),mi=Math.floor(m%60);return(h<10?"0":"")+h+":"+(mi<10?"0":"")+mi};
+return{night:now<n-H*4||now>n+H*4,rise:fm(n-H*4),set:fm(n+H*4)}}
+window.__tallerSunFn=sun;window.__tallerSun=sun();
+var __t=localStorage.getItem('taller-theme')||(window.__tallerSun.night?'negro':'bermellon');
+if(__t!=='naranja')document.documentElement.dataset.theme=__t;
+})()}catch(_){}</script>
 <title>OpenClaw 个人 AI 中枢 · El Taller de Andres</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23241006'/%3E%3Cellipse cx='32' cy='42' rx='11' ry='9' fill='%23ff9d2e'/%3E%3Cellipse cx='18' cy='28' rx='5' ry='7' fill='%23ffd9a3'/%3E%3Cellipse cx='32' cy='24' rx='5' ry='7.5' fill='%23ffd9a3'/%3E%3Cellipse cx='46' cy='28' rx='5' ry='7' fill='%23ffd9a3'/%3E%3C/svg%3E">
 <style>
@@ -376,8 +391,8 @@ html[data-theme="negro"]{
     else document.documentElement.dataset.theme = t;
     dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
   }
-  var cur = 'bermellon';
-  try { cur = localStorage.getItem('taller-theme') || 'bermellon'; } catch(_){}
+  var cur = 'bermellon'; try{if(!localStorage.getItem('taller-theme')&&window.__tallerSun&&window.__tallerSun.night)cur='negro'}catch(_){}
+  try { cur = localStorage.getItem('taller-theme') || (window.__tallerSun&&window.__tallerSun.night?'negro':'bermellon'); } catch(_){}
   apply(cur);
   dots.forEach(function(d){ d.addEventListener('click', function(){
     cur = d.dataset.themeDot;
@@ -386,5 +401,14 @@ html[data-theme="negro"]{
   }); });
 })();
 </script>
-</body>
+
+<script>/* 日落自动玄黑 · 日出回朱漆红：仅未手动选过主题的访客；每分钟复查 */
+setInterval(function(){try{
+if(localStorage.getItem('taller-theme'))return;
+var S=window.__tallerSunFn&&window.__tallerSunFn();if(!S)return;window.__tallerSun=S;
+var t=S.night?'negro':'bermellon';
+if(document.documentElement.dataset.theme!==t){document.documentElement.dataset.theme=t;
+document.querySelectorAll('.tdot').forEach(function(d){d.classList.toggle('on',d.dataset.themeDot===t)})}
+}catch(_){}},60000);
+</script></body>
 </html>
