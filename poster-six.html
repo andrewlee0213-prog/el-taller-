@@ -51,13 +51,14 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
   border:1px solid var(--g-brd);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12),0 34px 90px var(--g-drop)}
 
-.top{display:flex;align-items:center;gap:16px;padding:26px 0 10px}
+.top{display:flex;align-items:center;flex-wrap:wrap;row-gap:14px;gap:16px;padding:26px 0 10px;width:min(1240px,96vw);position:relative;left:50%;transform:translateX(-50%)}
+@media (max-width:1080px){.g-pill a small{display:none}.top .g-pill a{padding:6px 11px}}
 .top .back{margin-left:auto}
 .btn-ghost{border:0;cursor:pointer;font-family:inherit;border-radius:999px;transition:.25s;text-decoration:none;
   padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;
   background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--g-text);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent)}
 .btn-ghost:hover{background:color-mix(in srgb,var(--ink) 18%,transparent)}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand{display:flex;align-items:center;gap:12px;flex:none}
 .brand .mark{width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;
   background:linear-gradient(140deg,var(--g-accent),var(--g-accent-deep));box-shadow:0 8px 22px color-mix(in srgb,var(--g-accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.4)}
 .brand .mark svg{width:20px;height:20px;stroke:var(--g-on-accent);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
