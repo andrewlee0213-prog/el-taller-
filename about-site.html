@@ -287,24 +287,24 @@ html[data-theme="negro"]{
       <div class="tw"><table>
         <tr><th style="width:26%">部分</th><th>做法</th></tr>
         <tr><td>前端</td><td>单文件 <code>index.html</code>，原生 HTML/CSS/JS；作品和日志是两个数据文件（works.js / notes.js），加内容 = 改数据文件，主页自动渲染</td></tr>
-        <tr><td>服务端</td><td>一个 <code>server.js</code>：静态服务 + 会话鉴权 + 知识库守卫 + 天气代理，Node 24 原生 <code>node:sqlite</code>，零外部依赖</td></tr>
+        <tr><td>服务端</td><td>一个 <code>server.js</code>：静态服务 + 会话鉴权 + 知识库守卫 + 天气代理，Node 24 原生 <code>node:sqlite</code>，零外部依赖；工作台调度器按北京时间定点抓取油价 / B站 / Anthropic / arXiv / F1 / GitHub 趋势榜，PDF 上传自动转中英对照，文章可生成无登录只读的公开分享链接</td></tr>
         <tr><td>账号体系</td><td>scrypt 密码散列入库，HMAC 签名会话 cookie；<b>guest / user / admin 三级可见性</b>——作品可标 public / friends / private，未登录看不到该看的之外的一切</td></tr>
         <tr><td>私有知识库</td><td>La Biblioteca 整库鉴权下发（未登录访问直接 302 到登录页，数据文件 401），数据目录永不对 Web 暴露</td></tr>
         <tr><td>天气</td><td>服务端代理第三方 API，密钥只存在服务端，前端拿到的只有温度</td></tr>
       </table></div>
 
-      <h2>视觉：玻璃拟态 × 暖琥珀工坊</h2>
-      <p>深暖底色上叠三团光斑与一层 SVG 噪点，卡片用半透明渐变玻璃（backdrop-blur）+ 内高光，主视觉是一枚琥珀色的锤子徽记。文字排版中西语混搭——区块标题用西语（Proyectos / Cuaderno / Biblioteca），正文说人话。整站响应式，390 视口单列无横向溢出。</p>
+      <h2>视觉：玻璃拟态 × 东方漆色工坊</h2>
+      <p>深漆底色上叠三团光斑与一层 SVG 噪点，卡片用半透明渐变玻璃（backdrop-blur）+ 内高光，主视觉是一枚琥珀色的锤子徽记。配色从「东方漆色研究」四页参考图逐像素取样，做成朱漆红 / 栗漆棕 / 犀皮彩 / 螺钿青四套大漆主题（共十套可换），默认朱漆红配鎏金强调；时钟模块按上海坐标实时算日出日落，<b>日落后全站自动切玄黑、日出回朱漆红</b>，点过圆点的访客以手动选择为准。文字排版中西语混搭——区块标题用西语（Proyectos / Cuaderno / Biblioteca），正文说人话。整站响应式，390 视口单列无横向溢出；阅读页自适应行宽（正文列保行长舒适，表格与内嵌 PDF 用满容器）。</p>
       <div class="chips">
-        <span class="chip">玻璃拟态</span><span class="chip">暖琥珀主题</span><span class="chip">无框架</span><span class="chip">零构建</span><span class="chip">响应式</span>
+        <span class="chip">玻璃拟态</span><span class="chip">大漆主题 × 昼夜自动</span><span class="chip">无框架</span><span class="chip">零构建</span><span class="chip">响应式</span>
       </div>
 
       <h2>工程纪律：网站也是要验收的</h2>
       <ul>
-        <li><b>权限断言测试</b>：8 项自动化断言常跑——路径穿越、未登录守卫、越权访问、可见性过滤、登出恢复；每次改动后必须全过。</li>
+        <li><b>权限断言测试</b>：202 项自动化断言常跑——路径穿越、未登录守卫、越权访问、可见性过滤、登出恢复、调度定点、分享链接边界；每次改动后必须全过。</li>
         <li><b>内容敏感词扫描</b>：所有公开内容上线前过一遍词表 grep，客户名、内部系统名、密钥形态零容忍。</li>
         <li><b>视觉验收 = 用户接受度</b>：每次改动逐页截图过一遍，桌面与手机视口都看。</li>
-        <li><b>部署路线</b>：境内合规部署——域名备案、nginx 反代、systemd 守护、HTTPS，上线前有一份自查清单逐项打勾。</li>
+        <li><b>部署路线</b>：境内合规部署——域名备案、nginx 反代、systemd 守护、HTTPS，上线前有一份自查清单逐项打勾；验证用临时管理员账号，用完即删。</li>
       </ul>
 
       <h2>踩过的坑（写下来，下次不踩）</h2>
@@ -312,6 +312,9 @@ html[data-theme="negro"]{
         <li>中文路径下 <code>new URL().pathname</code> 是百分号编码，直接喂给 fs / sqlite 会打不开文件——先过 <code>fileURLToPath</code>。</li>
         <li>grid 布局里放宽表格 / 代码块，容器必须 <code>min-width: 0</code>，否则撑破整页。</li>
         <li>无头浏览器 fullPage 截图有平铺伪影——把视口拉到超过页高截视口，或用 CDP 的 <code>captureBeyondViewport</code>。</li>
+        <li><code>hidden</code> 属性的隐藏会被作者样式里的 <code>display:flex</code> 压过——验「隐藏」必须看渲染结果，不能只看属性在不在。</li>
+        <li>让语言模型直接写长格式文本，格式约定跟不稳——模型只出结构化 JSON、展示格式由服务端确定性渲染，一劳永逸。</li>
+        <li>反代层不配 <code>client_max_body_size</code> 就是默认 1MB——上传端点上线时就要传一个大于默认值的文件实测整条链路。</li>
       </ul>
 
       <h2>开发时间轴</h2>
@@ -323,6 +326,15 @@ html[data-theme="negro"]{
         <div class="ti fix"><span class="td">2026-09-28 · Bug 修复</span><b>轮播带点击全部失效</b><p>根因两层：setPointerCapture 把 click 重定向到舞台（卡片监听永远收不到），且 pointerup 先清了拖拽状态、click 到达时卡片记录已丢。修为 pointerdown 记卡 + 舞台委托消费，沉淀为轮播「第五条不变量」。</p></div>
         <div class="ti"><span class="td">2026-09-30</span><b>上公网</b><p>腾讯云轻量部署：systemd 守护 + nginx 限速反代；上线终扫拦下 KB 数据中的内部信息 → 构建脚本内置 SANITIZE 脱敏钩子；发布收敛为 deploy.sh 一条命令。</p></div>
         <div class="ti"><span class="td">2026-10-10</span><b>开源</b><p>全站源码公开到 GitHub：推送前对提交历史做了两轮清洗——曾硬编码的和风天气 Key 与构建脚本里的内部脱敏词表尽数抹除，词表外置为本机私有文件。鉴权、可见性、发布管线，完整可查。</p></div>
+        <div class="ti"><span class="td">2026-10-13</span><b>HTTPS 与合规收尾</b><p>ICP 备案落地，certbot 签发证书全站 TLS；公网爬虫扫描三天数百次零命中。</p></div>
+        <div class="ti"><span class="td">2026-10-14</span><b>安全加固与调度定点化</b><p>家庭同步服务降权进 systemd 沙箱、nginx 补四项安全响应头；工作台抓取从固定间隔改为北京墙钟定点——B站每天 11:00、晨报 05:00、油价只在调价日窗口、F1 只在赛节前夜。顺手抓到命中率断推两天的真故障。</p></div>
+        <div class="ti"><span class="td">2026-10-15</span><b>Biblioteca 升级为可交互书房</b><p>划线 / 页边问读（AI 按段落锚作答）/ 每日回顾闪卡 / 阅读进度云同步四件套上线；八篇「确定性 vs 概率性 AI」参考文章全文中英对照入库。</p></div>
+        <div class="ti"><span class="td">2026-10-16</span><b>周报 / 周计划重构</b><p>工作记录带上项目维度，周总结按项目分组，计划改排程推演——按下周日历（法定假 / 调休补班 / 已排备忘）逐日安排且不超容量；语言模型只出结构化 JSON，格式由服务端确定性渲染。</p></div>
+        <div class="ti"><span class="td">2026-10-21</span><b>大漆流光主题</b><p>从「东方漆色研究」四页参考图逐像素取样，做出朱漆红 / 栗漆棕 / 犀皮彩 / 螺钿青四套完整配色，朱漆红设为全站默认；十个配色圆点折叠成一颗当前色，悬浮展开。</p></div>
+        <div class="ti fix"><span class="td">2026-10-21 · Bug 修复</span><b>上传 413 与 PDF 无翻译</b><p>两层修复：nginx 没配请求体上限、默认 1MB 拦掉大 PDF（放宽到 30MB）；上传的 PDF 从只内嵌原文升级为自动转中英对照——服务器抽文本、并行翻译、分章成书，原文 PDF 保留可下载。</p></div>
+        <div class="ti"><span class="td">2026-10-22</span><b>公开分享链接</b><p>Biblioteca 任意书或单章可生成带令牌的无登录只读页（<code>/s/令牌</code>）——可选有效期、随时吊销、不进搜索引擎、只放行被分享内容；对面无需账号。</p></div>
+        <div class="ti"><span class="td">2026-10-22</span><b>GitHub 趋势榜上卡</b><p>工作台新增 GitHub 日榜 / 周榜双标签卡片：每仓一句「是什么、能用来干什么」的中文解读，新上榜标注；腾讯云直连 GitHub 被限速，用顺序抓取 + 重试 + 放宽超时正面攻坚。</p></div>
+        <div class="ti"><span class="td">2026-10-23</span><b>随日升日落</b><p>时钟模块按上海坐标零依赖计算日出日落（±3 分钟）；日落后全站自动切玄黑、日出回朱漆红，页面停留期间每分钟复查，手动选过主题的访客不受打扰。</p></div>
       </div>
 
       <blockquote><p>选型逻辑：个人站点要的不是技术栈的先进，是<b>十年后还能一键跑起来</b>。原生标准、零依赖、数据是自己的，就没有会过期框架的焦虑。</p></blockquote>
