@@ -240,9 +240,25 @@ html[data-theme="negro"]{
 .g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
 .g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
 @media (max-width:680px){.g-pill{display:none}}
+
+/* 动效无障碍：用户系统开启「减弱动态」时，关停环境漂移/循环动画（对齐 index 范式） */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .g-blob{animation:none}
+}
+
+/* 键盘可达：Tab 第一站「跳到正文」+ 统一键盘焦点环（十主题用 --g-accent 自适应） */
+.skiplink{position:fixed;left:14px;top:14px;z-index:400;padding:9px 16px;border-radius:12px;
+  background:var(--g-accent);color:var(--g-on-accent);font-weight:600;font-size:13.5px;text-decoration:none;
+  transform:translateY(-160%);transition:transform .18s ease}
+.skiplink:focus{transform:translateY(0)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
 </head>
 <body>
+<a class="skiplink" href="#main">Saltar al contenido · 跳到正文</a>
+
 <div class="g-page">
   <div class="g-noise"></div>
   <div class="wrap">
@@ -276,7 +292,7 @@ html[data-theme="negro"]{
       <a class="btn-ghost" href="index.html">← 回工坊</a>
     </header>
 
-    <div class="ahead">
+    <div id="main" class="ahead">
       <span class="eyebrow">Guion de vídeos · 打磨中</span>
       <h1>白话短视频脚本 · 12 集 × 60 秒</h1>
     </div>

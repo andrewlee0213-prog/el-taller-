@@ -156,11 +156,11 @@ html[data-theme="perla"]{
 .g-glass>*,.g-card>*{position:relative;z-index:1}
 
 /* ---- 顶栏 ---- */
-.top{display:flex;align-items:center;gap:16px;padding-bottom:18px}
+.top{display:flex;align-items:center;flex-wrap:wrap;row-gap:14px;gap:16px;padding-bottom:18px}  /* A2：v1 加固对齐全站（任意宽度可换行防溢出裁切） */
 .back{display:inline-flex;align-items:center;gap:8px;color:var(--g-dim);text-decoration:none;font-size:13px;
   padding:9px 16px;border-radius:999px;background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);transition:.25s}
 .back:hover{color:var(--g-text)}
-.brand{margin-right:auto}
+.brand{margin-right:auto;flex:none}  /* A2：brand 不可缩，防文字溢出盒外被后绘元素盖住（ae54a4f 教训） */
 .brand b{font-size:17px;font-weight:600;display:block}
 .brand small{font-size:11px;color:var(--g-dim);letter-spacing:2px;text-transform:uppercase}
 .whoami{display:none;align-items:center;gap:10px}
@@ -565,10 +565,27 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 .g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:.25s}
 .g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
 .g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
+@media (max-width:1080px){.g-pill a small{display:none}.g-pill a{padding:6px 11px}}  /* A2：与全站 13 页对齐（藏导航中文副标，防中屏换行） */
 @media (max-width:680px){.g-pill{display:none}}
+
+/* 动效无障碍：用户系统开启「减弱动态」时，关停环境漂移/循环动画（对齐 index 范式） */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .g-blob,.rfbtn.spin svg{animation:none}
+}
+
+/* 键盘可达：Tab 第一站「跳到正文」+ 统一键盘焦点环（十主题用 --g-accent 自适应） */
+.skiplink{position:fixed;left:14px;top:14px;z-index:400;padding:9px 16px;border-radius:12px;
+  background:var(--g-accent);color:var(--g-on-accent);font-weight:600;font-size:13.5px;text-decoration:none;
+  transform:translateY(-160%);transition:transform .18s ease}
+.skiplink:focus{transform:translateY(0)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
 </head>
 <body>
+<a class="skiplink" href="#main">Saltar al contenido · 跳到正文</a>
+
 <div class="stage">
   <div class="noise"></div>
   <div class="wrap">
@@ -601,6 +618,7 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
         <a href="#" id="logoutBtn" class="wlink-out">退出</a></div>
     </header>
 
+    <div id="main"></div>
     <div class="banner" id="cfgBanner">
       工作台还未配置：GLM 额度 / 标题翻译 / arXiv 选文需要 <b>GLM API Key</b>，B站板块需要 <b>B站 Cookie 与 UP 清单</b>。
       拉到页面底部 <b>Ajustes · 设置</b> 粘贴即可，保存后约半分钟内出数。

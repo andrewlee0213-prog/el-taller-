@@ -220,6 +220,12 @@ html[data-theme="negro"]{
 .themedots::after{content:"▾";font-size:10px;line-height:1;color:var(--g-dim);margin-left:4px;transition:transform .28s;pointer-events:none}
 .themedots:hover::after,.themedots:focus-within::after{transform:rotate(180deg)}
 @media (max-width:680px){ .themedots{display:none} }
+
+/* 动效无障碍：用户系统开启「减弱动态」时，关停环境漂移/循环动画（对齐 index 范式） */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .g-blob,.card .halo{animation:none}
+}
 </style>
 </head>
 <body>

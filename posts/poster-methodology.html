@@ -225,9 +225,25 @@ html[data-theme="negro"]{
 .themedots::after{content:"▾";font-size:10px;line-height:1;color:var(--g-dim);margin-left:4px;transition:transform .28s;pointer-events:none}
 .themedots:hover::after,.themedots:focus-within::after{transform:rotate(180deg)}
 @media (max-width:680px){ .themedots{display:none} }
+
+/* 动效无障碍：用户系统开启「减弱动态」时，关停环境漂移/循环动画（对齐 index 范式） */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .g-blob{animation:none}
+}
+
+/* 键盘可达：Tab 第一站「跳到正文」+ 统一键盘焦点环（十主题用 --g-accent 自适应） */
+.skiplink{position:fixed;left:14px;top:14px;z-index:400;padding:9px 16px;border-radius:12px;
+  background:var(--g-accent);color:var(--g-on-accent);font-weight:600;font-size:13.5px;text-decoration:none;
+  transform:translateY(-160%);transition:transform .18s ease}
+.skiplink:focus{transform:translateY(0)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
 </head>
 <body>
+<a class="skiplink" href="#main">Saltar al contenido · 跳到正文</a>
+
 <div class="g-page">
   <div class="g-noise"></div>
   <div class="wrap">
@@ -251,7 +267,7 @@ html[data-theme="negro"]{
       <a class="btn-ghost" href="../index.html">← 回工坊</a>
     </header>
 
-    <div class="ahead">
+    <div id="main" class="ahead">
       <span class="eyebrow">Cuaderno · 工坊日志</span>
       <h1>贴纸海报方法论 · 通用适配篇</h1>
       <div class="meta">
