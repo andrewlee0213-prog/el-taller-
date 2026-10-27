@@ -475,7 +475,7 @@
       try { d = daily(chart, t.y + '-' + pad2(t.m) + '-' + pad2(t.d)); } catch (e) { d = null; }
       cells.push({
         y: t.y, m: t.m, d: t.d, inMonth: inMonth,
-        overall: d ? d.overall : null, score: d ? d.score : null,
+        overall: d ? d.overall : null, score: d ? d.score : null, stars: d ? d.stars : null,
         sihua: d ? d.riSihua : null, lunar: d ? d.lunar : null
       });
     }
@@ -488,6 +488,7 @@
       var yr = domainRank(yl.score);
       theme = {
         mEff: mid.mEff, yueStem: mid.yueStem, yuePalace: mid.yuePalace, yuePalaceName: yueName,
+        monthKey: mid.lunar.y + '-' + mid.mEff,
         sihua: mid.yueSihua, rows: yl.rows, score: yl.score,
         stars: {
           career: clampStars(yl.score.career), wealth: clampStars(yl.score.wealth),
@@ -499,6 +500,51 @@
     return { year: year, month: month, cells: cells, theme: theme };
   }
 
+  /**
+   * 月度报告：规则表总述 + 四领域月度星级 + 本月吉日/慎日各 3。
+   * 确定性输出；monthKey 供 GLM 月总述做缓存键。
+   */
+  function monthReport(chart, year, month) {
+    var g = monthGrid(chart, year, month);
+    if (!g || !g.theme) return null;
+    var t = g.theme;
+    var p = chart.palaces[t.yuePalace];
+    var majors = p.stars.filter(function (s) { return s.type === 'major'; }).map(function (s) { return s.name; });
+    var mood = majors.length ? majors.map(function (n) { return STAR_MOOD[n] || n; }).join('·') + '坐守——' : '空宫借对宫——';
+    var luRow = null, jiRow = null;
+    t.rows.forEach(function (r) { if (r.si === '禄') luRow = r; else if (r.si === '忌') jiRow = r; });
+    var headline = '农历' + t.mEff + '月流月行至本命' + p.name + '，' + mood +
+      (RI_THEME[p.name] || '').replace('的日子', '的一个月') +
+      '；' + (luRow ? '化禄入' + luRow.palace : '') + (luRow && jiRow ? '、' : '') + (jiRow ? '化忌入' + jiRow.palace : '') +
+      '，' + t.advice + '。';
+    var inCells = g.cells.filter(function (c) { return c.inMonth && c.overall != null && c.stars; });
+    function peak(c, dir) { // dir=1 取最旺领域星级，-1 取最弱
+      return DOMAINS.reduce(function (m, k) { return dir > 0 ? Math.max(m, c.stars[k]) : Math.min(m, c.stars[k]); }, dir > 0 ? 0 : 9);
+    }
+    function top3(dir, pool) {
+      return (pool || inCells).slice().sort(function (a, b) {
+        return dir * (peak(b, dir) - peak(a, dir)) || dir * (b.overall - a.overall) || (a.m - b.m) || (a.d - b.d);
+      }).slice(0, 3).map(function (c) {
+        var dm = DOMAINS.slice().sort(function (x, y) { return dir * (c.score[y] - c.score[x]); })[0];
+        return {
+          date: c.y + '-' + pad2(c.m) + '-' + pad2(c.d), overall: c.overall,
+          why: (dir > 0 ? '宜' : '慎') + DOMAIN_NAME[dm] + ' ★' + c.stars[dm]
+        };
+      });
+    }
+    var goodDays = top3(1);
+    var goodSet = {};
+    goodDays.forEach(function (d) { goodSet[d.date] = 1; });
+    var cautionPool = inCells.filter(function (c) { return !goodSet[c.y + '-' + pad2(c.m) + '-' + pad2(c.d)]; });
+    var cautionDays = top3(-1, cautionPool.length >= 3 ? cautionPool : inCells);
+    return {
+      monthKey: t.monthKey, headline: headline, advice: t.advice,
+      monthStars: t.stars, sihua: t.sihua, rows: t.rows,
+      yuePalaceName: t.yuePalaceName, mEff: t.mEff,
+      goodDays: goodDays, cautionDays: cautionDays
+    };
+  }
+
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
   /* ════════════════ 对外 API ════════════════ */
@@ -508,6 +554,7 @@
     daily: daily,
     week: week,
     monthGrid: monthGrid,
+    monthReport: monthReport,
     flowOf: flowOf,
     solarToLunar: solarToLunar,
     lunarToSolar: lunarToSolar,

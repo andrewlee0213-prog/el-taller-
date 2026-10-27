@@ -543,6 +543,26 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 .zwstars{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--g-dim)}
 .zwstars b{color:var(--g-text);letter-spacing:1px}
 .zwdx{font-size:11px;color:var(--g-dim);margin:2px 0 4px}
+/* 月度第二行：总述 + 吉慎日；领域 chips；热力图例 */
+.zwmonth .zws2{flex-basis:100%;font-size:11.5px;line-height:1.75;color:var(--g-dim)}
+.zwmonth .zws2 .glmmark{color:var(--g-accent);font-size:10px;margin-right:4px}
+.zwmonth .zws2 b[data-zwday]{color:var(--g-text);cursor:pointer;font-variant-numeric:tabular-nums}
+.zwmonth .zws2 b[data-zwday]:hover{color:var(--g-accent)}
+.zwmonth .zwgd{color:#3fb950}.zwmonth .zwcd{color:#e8a13c}
+.zwchips{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.zwlegend{display:inline-flex;gap:3px;align-items:center;margin-left:6px;vertical-align:1px}
+.zwlegend i{width:13px;height:7px;border-radius:3px;display:inline-block}
+.zwlegend .heatleg5{background:#3fb950}.zwlegend .heatleg4{background:color-mix(in srgb,#3fb950 55%,transparent)}
+.zwlegend .heatleg3{background:color-mix(in srgb,var(--ink) 30%,transparent)}
+.zwlegend .heatleg2{background:color-mix(in srgb,#e8a13c 65%,transparent)}.zwlegend .heatleg1{background:#e10600}
+/* 热力月历：选中领域后按当日该领域星级着色（选中日/今日边框语义优先） */
+.calday.heat5:not(.sel){background:color-mix(in srgb,#3fb950 30%,transparent)}
+.calday.heat4:not(.sel){background:color-mix(in srgb,#3fb950 17%,transparent)}
+.calday.heat3:not(.sel){background:color-mix(in srgb,var(--ink) 9%,transparent)}
+.calday.heat2:not(.sel){background:color-mix(in srgb,#e8a13c 20%,transparent)}
+.calday.heat1:not(.sel){background:color-mix(in srgb,#e10600 21%,transparent)}
+#calGrid.heaton .cdot.zw{display:none}
+#calGrid.heaton .calday:hover{background:color-mix(in srgb,var(--ink) 13%,transparent)}
 
 /* ---- 油价卡四标号 chips（95# 高亮） ---- */
 .oilgrades{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px}
@@ -1532,11 +1552,13 @@ function renderCalendar() {
         (c && c.memo ? '<i class="cdot ' + (c.memoOpen ? "memo" : "memodone") + '"></i>' : "") +
         (c && c.f1s && c.f1s.length ? '<i class="cdot f1" title="' + esc(c.f1s.map(x => "F1 " + x.name + " " + x.label + (x.hm ? " · " + x.hm : "")).join("\n")) + '"></i>' : "") + zwd + "</span>";
     }
-    html += '<button type="button" class="calday' + (out ? " out" : "") + (ds === today ? " today" : "") +
-      (ds === calSel ? " sel" : "") + (hol && hol.isOffDay ? " off" : "") + '" data-calday="' + ds + '">' +
+    html += '<button type="button" class="calday' + (out ? " out" : "") + zwHeatCls(ds, !out) +
+      (ds === today ? " today" : "") + (ds === calSel ? " sel" : "") + (hol && hol.isOffDay ? " off" : "") +
+      '"' + zwHeatTitle(ds) + ' data-calday="' + ds + '">' +
       '<span class="calhead"><b>' + dObj.getDate() + "</b>" + holHtml + "</span>" + dots + "</button>";
   }
   $("#calGrid").innerHTML = html;
+  $("#calGrid").classList.toggle("heaton", ZW_HEAT !== "all" && zwReady());
   renderZwMount();
   renderZwWeek();
   renderCalDetail();
@@ -1681,26 +1703,57 @@ document.addEventListener("click", async e => {
    月视图打点 = 流日综合星级（菱形）；月主题条 = 流月四化落宫；周运势条 = 7 流日聚合。 */
 let ZW_BIRTH = null, ZW_CHART = null, ZW_ON = true, ZW_FORM = false;
 try { ZW_ON = localStorage.getItem("cal-zw") !== "0"; } catch (e) {}
-let ZW_MONTH_CACHE = { key: "", data: null };
+let ZW_HEAT = "all";                                     // 热力领域：all=综合(菱形点) / career / wealth / love / health
+try { const h = localStorage.getItem("cal-zw-heat"); ZW_HEAT = ["all","career","wealth","love","health"].includes(h) ? h : "all"; } catch (e) {}
+let ZW_SUMMARY = {};                                     // monthKey -> {text, glm}（GLM 月总述内存缓存，服务端另有持久缓存）
+let ZW_MONTH_CACHE = { key: "", grid: null, report: null };
 const zwReady = () => !!(window.ZW && ZW_CHART && ZW_ON);
 const zwSI2Cls = { "禄": "lu", "权": "quan", "科": "ke", "忌": "ji" };
 function zwMonthData() {
   if (!zwReady()) return null;
   const key = calY + "-" + calM;
-  if (ZW_MONTH_CACHE.key === key) return ZW_MONTH_CACHE.data;
-  try { ZW_MONTH_CACHE = { key, data: ZW.monthGrid(ZW_CHART, calY, calM + 1) }; }
-  catch (e) { ZW_MONTH_CACHE = { key, data: null }; }
-  return ZW_MONTH_CACHE.data;
+  if (ZW_MONTH_CACHE.key === key) return ZW_MONTH_CACHE.grid;
+  ZW_MONTH_CACHE = { key, grid: null, report: null };
+  try {
+    ZW_MONTH_CACHE.grid = ZW.monthGrid(ZW_CHART, calY, calM + 1);
+    ZW_MONTH_CACHE.report = ZW.monthReport(ZW_CHART, calY, calM + 1);
+  } catch (e) { /* 超出农历表等 */ }
+  return ZW_MONTH_CACHE.grid;
 }
+function zwReport() { zwMonthData(); return ZW_MONTH_CACHE.report; }
+function zwCellOf(g, ds) { return g && g.cells.find(c => c.y + "-" + pad2(c.m) + "-" + pad2(c.d) === ds); }
 function zwDotFor(ds) {
   if (!zwReady()) return "";
-  const g = zwMonthData();
-  if (!g) return "";
-  const cell = g.cells.find(c => c.y + "-" + pad2(c.m) + "-" + pad2(c.d) === ds);
+  const cell = zwCellOf(zwMonthData(), ds);
   if (!cell || cell.overall == null) return "";
   const tip = "流日运势 " + "★".repeat(cell.overall) + "☆".repeat(5 - cell.overall) +
     "\n" + cell.sihua.map((s, i) => "化" + ["禄", "权", "科", "忌"][i] + s).join(" · ");
   return '<i class="cdot zw zw' + cell.overall + '" title="' + esc(tip) + '"></i>';
+}
+function zwHeatCls(ds, inMonth) {
+  if (ZW_HEAT === "all" || !inMonth || !zwReady()) return "";
+  const cell = zwCellOf(zwMonthData(), ds);
+  return cell && cell.stars ? " heat" + cell.stars[ZW_HEAT] : "";
+}
+function zwHeatTitle(ds) {
+  if (!zwReady()) return "";
+  const cell = zwCellOf(zwMonthData(), ds);
+  if (!cell || !cell.stars) return "";
+  return ' title="' + esc("事业★" + cell.stars.career + " 财运★" + cell.stars.wealth + " 感情★" + cell.stars.love + " 健康★" + cell.stars.health) + '"';
+}
+/* GLM 月总述：素材为引擎确定性产物；成功换 ✨ 版文案，失败/无 Key 保持规则表 headline */
+function zwEnsureSummary(rep) {
+  if (!ZW_BIRTH || !rep || ZW_SUMMARY[rep.monthKey]) return;
+  ZW_SUMMARY[rep.monthKey] = { pending: true };
+  const birthFp = [ZW_BIRTH.y, ZW_BIRTH.m, ZW_BIRTH.d, ZW_BIRTH.hour, ZW_BIRTH.gender].join("-");
+  api("POST", "/api/workbench/ziwei/month-summary", {
+    monthKey: rep.monthKey, birthFp,
+    material: { headline: rep.headline, rows: rep.rows, monthStars: rep.monthStars,
+      goodDays: rep.goodDays, cautionDays: rep.cautionDays }
+  }).then(r => {
+    ZW_SUMMARY[rep.monthKey] = r && r.ok && r.summary ? { text: r.summary, glm: true } : { text: rep.headline, glm: false };
+    if (ZW_MONTH_CACHE.key === calY + "-" + calM) renderZwMount();
+  }).catch(() => { ZW_SUMMARY[rep.monthKey] = { text: rep.headline, glm: false }; });
 }
 function zwStarsHtml(stars) {
   return '<span class="zwstars">' + Object.entries(ZW.DOMAIN_NAME).map(([k, name]) =>
@@ -1725,12 +1778,33 @@ function renderZwMount() {
   } else if (!g || !g.theme) {
     inner = '<span>🔮 本月运势推演暂不可用（超出农历表范围）</span><button class="calbtn zwset" data-zw="toggle">隐藏</button>';
   } else {
-    const t = g.theme;
-    inner = '<span>🔮 农历' + (t.mEff) + '月 · 流月行至本命<b>' + esc(t.yuePalaceName) + '</b></span>' +
-      t.sihua.map((s, i) => '<span class="zwtag ' + zwSI2Cls[["禄", "权", "科", "忌"][i]] + '">' +
-        ["禄", "权", "科", "忌"][i] + esc(s) + "</span>").join("") +
+    const t = g.theme, rep = zwReport() || { headline: "", goodDays: [], cautionDays: [], monthStars: t.stars, monthKey: "" };
+    zwEnsureSummary(zwReport());
+    const SI4 = ["禄", "权", "科", "忌"];
+    /* 第一行：现状主题 + 四化标签（hover 出落宫解读）+ 宜忌 + 按钮 */
+    inner = '<span>🔮 农历' + t.mEff + '月 · 流月行至本命<b>' + esc(t.yuePalaceName) + '</b></span>' +
+      t.sihua.map((s, i) => '<span class="zwtag ' + zwSI2Cls[SI4[i]] + '" title="' +
+        esc((t.rows.find(r => r.si === SI4[i]) || {}).text || "") + '">' + SI4[i] + esc(s) + "</span>").join("") +
       '<span>' + esc(t.advice) + "</span>" +
       '<button class="calbtn zwset" data-zw="toggle">隐藏</button><button class="calbtn zwset" data-zw="form">生辰</button>';
+    /* 第二行：领域 chips（带月度★）+ 热力图例 */
+    const chips = [["all", "综合", null]].concat(Object.entries(ZW.DOMAIN_NAME))
+      .map(([k, name]) => [k, name, rep.monthStars ? rep.monthStars[k] : null])
+      .map(([k, name, st]) => '<button type="button" class="calchip' + (ZW_HEAT === k ? " on" : "") + '" data-zwheat="' + k + '">' +
+        name + (st ? "★" + st : "") + "</button>").join("");
+    const HEAT_LEG = '<span class="zwlegend" title="底色=当日该领域星级：深绿★5 → 淡红★1">' +
+      [5, 4, 3, 2, 1].map(n => '<i class="heatleg' + n + '"></i>').join("") + "</span>";
+    inner += '<span class="zwchips">' + chips + (ZW_HEAT !== "all" ? HEAT_LEG : "") + "</span>";
+    /* 第三行：月总述（GLM ✨ / 规则表）+ 吉慎日 */
+    const sum = ZW_SUMMARY[rep.monthKey];
+    const sumText = sum && sum.text ? sum.text : rep.headline;
+    inner += '<span class="zws2">' + (sum && sum.glm ? '<i class="glmmark">✨</i>' : "") + esc(sumText) + "</span>";
+    if (rep.goodDays && rep.goodDays.length) {
+      inner += '<span class="zws2"><span class="zwgd">吉</span> ' + rep.goodDays.map(d =>
+        '<b data-zwday="' + d.date + '" title="' + esc(d.why + " · 点开看当天") + '">' + d.date.slice(5) + "</b>").join("·") +
+        '　<span class="zwcd">慎</span> ' + rep.cautionDays.map(d =>
+        '<b data-zwday="' + d.date + '" title="' + esc(d.why + " · 点开看当天") + '">' + d.date.slice(5) + "</b>").join("·") + "</span>";
+    }
   }
   box.innerHTML = '<div class="zwmonth">' + inner + "</div>" + (ZW_FORM ? zwFormHtml() : "");
 }
@@ -1786,6 +1860,13 @@ function zwDailyHtml(ds) {
   return html;
 }
 document.addEventListener("click", async e => {
+  const hw = e.target.closest("[data-zwheat]");
+  if (hw) {
+    ZW_HEAT = hw.dataset.zwheat;
+    try { localStorage.setItem("cal-zw-heat", ZW_HEAT); } catch (_) {}
+    renderCalendar();
+    return;
+  }
   const z = e.target.closest("[data-zw],[data-zwday]");
   if (!z) return;
   if (z.dataset.zwday) {
@@ -1809,7 +1890,8 @@ document.addEventListener("click", async e => {
     if (r.ok) {
       ZW_BIRTH = r.birth; ZW_FORM = false;
       try { ZW_CHART = ZW.natal(ZW_BIRTH); } catch (err) { toast("生辰无法排盘：" + err.message); ZW_CHART = null; }
-      ZW_MONTH_CACHE = { key: "", data: null };
+      ZW_MONTH_CACHE = { key: "", grid: null, report: null };
+      ZW_SUMMARY = {};
       renderCalendar(); toast("生辰已保存 ✓");
     } else toast(r.error || "保存失败");
   }

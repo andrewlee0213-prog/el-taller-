@@ -755,6 +755,7 @@ const WB_FILE = {
   hw:       path.join(DATA, "workbench-hw.json"),       // 智能硬件·每日情报（Mac 收集任务推送，留 7 天）
   xhs:      path.join(DATA, "xhs-fans.json"),           // 小红书粉丝监控（服务器侧抓取，日点留 120 天）
   ziwei:    path.join(DATA, "ziwei.json"),              // 紫微生辰（仅站主本人，敏感数据不入库）
+  ziweiMonth: path.join(DATA, "ziwei-month.json"),      // 紫微月总述 GLM 缓存（键=生辰指纹:农历月，改生辰自动失效）
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -1710,6 +1711,7 @@ let wbReader = loadJson(WB_FILE.reader, {});      // { [url]: {url,source,title,
 let wbBiblio = loadJson(WB_FILE.biblio, {});      // { [url]: {url,id,source,title,promotedAt,html,text} } 评论过的文章进 Biblioteca
 let wbDislikes = loadJson(WB_FILE.dislikes, {});  // { [url]: {url,source,title,at} } 不感兴趣：强降权、永不进 Biblioteca
 let wbZiwei = loadJson(WB_FILE.ziwei, null);      // { birth:{y,m,d,hour,gender}, updatedAt } 紫微生辰（仅站主本人）
+let wbZiweiMonth = loadJson(WB_FILE.ziweiMonth, {}); // { [fp:农历月]: {summary, at} } GLM 月总述缓存
 
 /* ---------------- 节假日（holiday-cn：国务院公告口径，含调休补班；jsdelivr→raw 双源） ---------------- */
 const holidaysByYear = loadJson(WB_FILE.holidays, {});   // { 2026: [{name,date,isOffDay}] }
@@ -3407,6 +3409,58 @@ const server = http.createServer(async (req, res) => {
         saveJson(WB_FILE.ziwei, wbZiwei);
         json(res, 200, { ok: true, birth: wbZiwei.birth });
         return log(200);
+      }
+
+      /* ---- 紫微月总述：素材由前端引擎确定性生成（服务端不排盘），GLM 只做文案化并出 JSON
+         ——家规「模型只出结构化 JSON」；按 生辰指纹:农历月 缓存，无 Key/失败前端回退规则表 ---- */
+      if (p === "/api/workbench/ziwei/month-summary" && req.method === "POST") {
+        const body = await readJson(req);
+        const monthKey = String(body.monthKey || "");
+        const birthFp = String(body.birthFp || "");
+        const m = body.material;
+        const mk = /^(\d{4})-(\d{1,2})$/.exec(monthKey);
+        if (!mk || !(+mk[2] >= 1 && +mk[2] <= 12) || !/^[A-Za-z0-9_-]{4,64}$/.test(birthFp)
+          || !m || typeof m.headline !== "string" || !Array.isArray(m.rows)) {
+          json(res, 400, { ok: false, error: "素材不合法" });
+          return log(400);
+        }
+        const key = birthFp + ":" + monthKey;
+        const hit = wbZiweiMonth[key];
+        if (hit && typeof hit.summary === "string") {
+          json(res, 200, { ok: true, summary: hit.summary, cached: true });
+          return log(200);
+        }
+        if (!wbCfg.glmKey) { json(res, 200, { ok: false, error: "未配置 GLM Key" }); return log(200); }
+        try {
+          const slim = {
+            基调: m.headline.slice(0, 200),
+            四化落宫: m.rows.map(r => String(r.text || "").slice(0, 60)).slice(0, 6),
+            月度星级: m.monthStars || null,
+            吉日: (m.goodDays || []).map(d => String(d.date || "") + " " + String(d.why || "")).slice(0, 3),
+            慎日: (m.cautionDays || []).map(d => String(d.date || "") + " " + String(d.why || "")).slice(0, 3),
+          };
+          const prompt = "你是命理文案助手。下面是一个月的紫微斗数确定性推演素材（JSON）。请写成一段给当事人看的中文月度总述，60~120 字，两三句：第一句点本月主基调（流月宫位与主星气质）；第二句讲机遇与注意（结合化禄、化忌落宫）；第三句给一个具体行动建议。语气克制务实，不用大吉大凶类断言，不做健康医疗结论，不预测具体事件。\n"
+            + "只输出 JSON：{\"summary\":\"……\"}。summary 必须以汉字开头，不要复述字段名或英文 key，不要分点、不要换行。\n素材：" + JSON.stringify(slim);
+          const out = await glmChat(prompt, { temperature: 0.4, timeoutMs: 45000, maxTokens: 300 });
+          const j = extractJSON(out);
+          const summary = j && typeof j.summary === "string" ? j.summary.trim() : "";
+          if (!/^[\u4e00-\u9fa5]/.test(summary) || summary.length < 30 || summary.length > 160 || /["<>]/.test(summary)) {
+            json(res, 200, { ok: false, error: "生成内容不合规" });
+            return log(200);
+          }
+          const keys = Object.keys(wbZiweiMonth);
+          if (keys.length >= 300) { // 缓存上限：按时间淘汰最旧
+            keys.sort((a, b) => (wbZiweiMonth[a].at || 0) - (wbZiweiMonth[b].at || 0));
+            for (let i = 0; i < keys.length - 280; i++) delete wbZiweiMonth[keys[i]];
+          }
+          wbZiweiMonth[key] = { summary, at: Date.now() };
+          saveJson(WB_FILE.ziweiMonth, wbZiweiMonth);
+          json(res, 200, { ok: true, summary, cached: false });
+          return log(200);
+        } catch (e) {
+          json(res, 200, { ok: false, error: "生成失败：" + (e.message || "未知") });
+          return log(200);
+        }
       }
 
       /* ---- 收进日志的笔记：按四级可见性链过滤（同 filterWorks 口径） ---- */

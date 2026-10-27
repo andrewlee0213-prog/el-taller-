@@ -319,9 +319,22 @@ function phaseF() {
   check(w.days.length === 7 && w.best && w.worst, 'week 结构');
   const g = ZW.monthGrid(c, 2026, 10);
   check(g.cells.length === 42 && g.theme, 'monthGrid 结构');
-  check(g.cells.every(x => x.inMonth || x.overall === null || true), 'cells');
+  check(g.cells.every(x => !x.inMonth || (x.stars && ['career','wealth','love','health'].every(k => x.stars[k] >= 1 && x.stars[k] <= 5))), 'cells 逐日四领域 stars');
   // 确定性：同参同出
   check(JSON.stringify(ZW.daily(c, '2026-10-26')) === JSON.stringify(d), '确定性');
+  // 月度报告
+  const rep = ZW.monthReport(c, 2026, 10);
+  check(rep && typeof rep.headline === 'string' && rep.headline.length > 20, 'monthReport headline');
+  check(/^\d{4}-\d{1,2}$/.test(rep.monthKey), 'monthKey 格式 ' + rep.monthKey);
+  check(rep.goodDays.length === 3 && rep.cautionDays.length === 3, '吉慎日各 3');
+  check(rep.goodDays.every(x => x.date.startsWith('2026-10-')) && rep.cautionDays.every(x => x.date.startsWith('2026-10-')), '吉慎日限当月');
+  check(!rep.goodDays.some(x => rep.cautionDays.some(y => y.date === x.date)), '吉慎日不重叠');
+  check(rep.goodDays.every(x => /^宜/.test(x.why)) && rep.cautionDays.every(x => /^慎/.test(x.why)), 'why 宜/慎前缀');
+  check(rep.monthStars && ['career','wealth','love','health'].every(k => rep.monthStars[k] >= 1 && rep.monthStars[k] <= 5), '月度四领域星级');
+  check(JSON.stringify(ZW.monthReport(c, 2026, 10)) === JSON.stringify(rep), 'monthReport 确定性');
+  const r2 = ZW.monthReport(c, 2027, 1);
+  check(r2 && r2.goodDays.length === 3 && r2.cautionDays.length === 3, '跨年边界月（公历 1 月）');
+  try { ZW.monthReport(c, 2026, 13); check(false, '非法月份应抛错'); } catch (e) { ok(); }
 }
 
 phaseA();

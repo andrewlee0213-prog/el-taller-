@@ -116,6 +116,12 @@ async function main() {
     await sleep(700);
     await shot('.calpanel', path.join(SHOTS, 'zw-day.png'));
 
+    /* 切领域热力月历（事业）→ 第三张 */
+    await send('Runtime.evaluate', { expression:
+      "document.querySelector('[data-zwheat=\"career\"]')?.click()" });
+    await sleep(700);
+    await shot('.calpanel', path.join(SHOTS, 'zw-heat.png'));
+
     edge.kill(); console.log('验收截图完成');
   } finally {
     server.kill();

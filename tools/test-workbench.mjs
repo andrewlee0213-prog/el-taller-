@@ -74,6 +74,10 @@ fs.writeFileSync(path.join(tmpData, "kb-categories.json"), JSON.stringify({
   "interview-bank": { cat: "职场与商业", by: "manual", at: 1 },
   "video-scripts": { cat: "视频与创作", by: "auto", at: 1 },
 }));
+/* 预置紫微月总述缓存（month-summary 命中测试用） */
+fs.writeFileSync(path.join(tmpData, "ziwei-month.json"), JSON.stringify({
+  "zwfp-test:2026-9": { summary: "预置月总述：事业稳步推进，感情需多沟通，整体宜守不宜攻，月中注意劳逸结合。", at: 1 },
+}));
 /* 预置调度缓存（定点制断言用）：全部 at=30 秒前；oil 给远期 adj=2099-06-01（窗口外→睡到 2099-05-31 05:00）；
    f1 给后天+8 天后两个 session（后天 session 的前夜=明天 05:00 恒在未来，断言免时钟竞态） */
 const seedAt = Date.now() - 30e3;
@@ -310,6 +314,28 @@ try {
   r = await req("GET", "/api/workbench/ziwei");
   check("admin 回读生辰", r.json && r.json.birth && r.json.birth.y === 1988 && r.json.birth.gender === "男", JSON.stringify(r.json));
   check("生辰落隔离 data 目录（不入库）", fs.existsSync(path.join(tmpData, "ziwei.json")));
+  /* ---- 紫微月总述（GLM 文案化 + 缓存；素材由前端引擎生成） ---- */
+  r = await req("POST", "/api/workbench/ziwei/month-summary",
+    { monthKey: "2026-9", birthFp: "zwfp-test", material: { headline: "基调", rows: [{ text: "化禄入财帛" }] } });
+  check("月总述种子缓存命中", r.json && r.json.ok === true && r.json.cached === true && (r.json.summary || "").includes("预置月总述"), JSON.stringify(r.json).slice(0, 80));
+  r = await req("POST", "/api/workbench/ziwei/month-summary",
+    { monthKey: "2099-13", birthFp: "zwfp-test", material: { headline: "x", rows: [] } });
+  check("月总述非法 monthKey → 400", r.status === 400, r.status);
+  r = await req("POST", "/api/workbench/ziwei/month-summary",
+    { monthKey: "2026-10", birthFp: "zwfp-test", material: { headline: "x" } });
+  check("月总述素材缺 rows → 400", r.status === 400, r.status);
+  r = await req("POST", "/api/workbench/ziwei/month-summary",
+    { monthKey: "2026-10", birthFp: "zwfp-test", material: { headline: "农历九月流月行至本命命宫，本月宜事业慎感情。", rows: [{ text: "化禄入父母" }] } });
+  check("月总述未配置 Key → ok:false 回退", r.json && r.json.ok === false && /GLM Key/.test(r.json.error || ""), JSON.stringify(r.json));
+  cookie = "";
+  r = await req("POST", "/api/workbench/ziwei/month-summary", { monthKey: "2026-9", birthFp: "zwfp-test", material: { headline: "x", rows: [] } });
+  check("匿名月总述 → 401", r.status === 401, r.status);
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-user", password: "wbtest-pass-2026" });
+  r = await req("POST", "/api/workbench/ziwei/month-summary", { monthKey: "2026-9", birthFp: "zwfp-test", material: { headline: "x", rows: [] } });
+  check("user 月总述 → 403", r.status === 403, r.status);
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
   r = await req("GET", "/workbench.html", undefined, "follow");
   check("工作台页引用 ziwei.js + 三层挂载点", r.text.includes('src="ziwei.js"') &&
     r.text.includes('id="zwMount"') && r.text.includes('id="zwWeekMount"') && r.text.includes("流日运势"));
