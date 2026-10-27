@@ -754,6 +754,7 @@ const WB_FILE = {
   dislikes: path.join(DATA, "workbench-dislikes.json"), // 不感兴趣：强降权 + 永不进 Biblioteca
   hw:       path.join(DATA, "workbench-hw.json"),       // 智能硬件·每日情报（Mac 收集任务推送，留 7 天）
   xhs:      path.join(DATA, "xhs-fans.json"),           // 小红书粉丝监控（服务器侧抓取，日点留 120 天）
+  ziwei:    path.join(DATA, "ziwei.json"),              // 紫微生辰（仅站主本人，敏感数据不入库）
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -1708,6 +1709,7 @@ let wbMemos = loadJson(WB_FILE.memos, []);        // [{id,date,text,done,created
 let wbReader = loadJson(WB_FILE.reader, {});      // { [url]: {url,source,title,pub,paras:[[src,zh]],firstAt,fetchedAt,promotedAt} }
 let wbBiblio = loadJson(WB_FILE.biblio, {});      // { [url]: {url,id,source,title,promotedAt,html,text} } 评论过的文章进 Biblioteca
 let wbDislikes = loadJson(WB_FILE.dislikes, {});  // { [url]: {url,source,title,at} } 不感兴趣：强降权、永不进 Biblioteca
+let wbZiwei = loadJson(WB_FILE.ziwei, null);      // { birth:{y,m,d,hour,gender}, updatedAt } 紫微生辰（仅站主本人）
 
 /* ---------------- 节假日（holiday-cn：国务院公告口径，含调休补班；jsdelivr→raw 双源） ---------------- */
 const holidaysByYear = loadJson(WB_FILE.holidays, {});   // { 2026: [{name,date,isOffDay}] }
@@ -3381,6 +3383,29 @@ const server = http.createServer(async (req, res) => {
         const year = u.searchParams.get("year") || String(new Date().getFullYear());
         const days = await ensureHolidays(year);
         json(res, 200, { year: parseInt(year, 10) || null, days: days || [] });
+        return log(200);
+      }
+
+      /* ---- 紫微生辰：仅站主本人一份；引擎在前端 ziwei.js（作者 liyanjun），服务端只管存取 ---- */
+      if (p === "/api/workbench/ziwei" && req.method === "GET") {
+        json(res, 200, { birth: (wbZiwei && wbZiwei.birth) || null });
+        return log(200);
+      }
+      if (p === "/api/workbench/ziwei" && req.method === "PUT") {
+        const body = await readJson(req);
+        const b = body.birth || {};
+        const y = parseInt(b.y, 10), m = parseInt(b.m, 10), d = parseInt(b.d, 10), hour = parseInt(b.hour, 10);
+        const gender = b.gender === "女" ? "女" : "男";
+        const probe = new Date(Date.UTC(y, m - 1, d));
+        if (!(y >= 1900 && y <= 2100) || !(m >= 1 && m <= 12) || !(d >= 1 && d <= 31)
+          || probe.getUTCFullYear() !== y || probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d
+          || !(hour >= 0 && hour <= 11)) {
+          json(res, 400, { ok: false, error: "生辰数据不合法（需 1900-2100 真实公历日期 + 时辰）" });
+          return log(400);
+        }
+        wbZiwei = { birth: { y, m, d, hour, gender }, updatedAt: Date.now() };
+        saveJson(WB_FILE.ziwei, wbZiwei);
+        json(res, 200, { ok: true, birth: wbZiwei.birth });
         return log(200);
       }
 

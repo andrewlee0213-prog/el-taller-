@@ -142,10 +142,12 @@ el-taller/
 ├── kb.html           La Biblioteca 知识库（登录可见，玻璃风双书+搜索）
 ├── kb-data.js        知识库数据（tools/build-kb.js 生成，勿手改）
 ├── works.js          作品数据（加作品只改这个文件）
-├── server.js         应用服务器（静态+认证+SQLite+守卫+天气代理+KB守卫）
+├── ziwei.js          紫微斗数引擎（本命盘+流月/流周/流日运势，零依赖，作者：liyanjun；
+│                     农历表由 tools/build-lunar-table.js 离线生成；正确性对照测试 tools/test-ziwei.mjs）
+├── server.js         应用服务器（静态+认证+SQLite+守卫+天气代理+KB守卫+紫微生辰存取）
 ├── start/stop-server.bat、firewall-allow.bat
 ├── assets/           作品封面图
-├── data/             运行时生成：users.db、会话密钥、初始密码（勿外传）
+├── data/             运行时生成：users.db、会话密钥、初始密码、ziwei.json 生辰（勿外传）
 └── tools/            头像/封面处理、KB 构建、CDP 截图、自动化测试
 ```
 

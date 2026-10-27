@@ -15,7 +15,7 @@ SCAN="$(mktemp /tmp/taller-scan.XXXXXX)"
 node -e 'const w=JSON.parse(require("fs").readFileSync("tools/sanitize.local.json","utf8"));process.stdout.write(w.scan.join("\n"))' > "$SCAN" \
   || { echo "⚠ 生成扫描词表失败（需要 node + 本机 tools/sanitize.local.json）"; exit 1; }
 if grep -rlnE -f "$SCAN" \
-  index.html login.html kb.html kb-data.js works.js notes.js server.js workbench.html \
+  index.html login.html kb.html kb-data.js works.js notes.js server.js workbench.html ziwei.js \
   poster-six.html about-site.html kindle-dashboard.html video-scripts.html posts/ data/kb-content.json 2>/dev/null; then
   echo "⚠ 扫描命中上方文件，先脱敏再发布（构建产物请改 tools/sanitize.local.json 后重建）"; rm -f "$SCAN"; exit 1
 fi
@@ -34,7 +34,7 @@ HTMLS=$(ls *.html | grep -v '^\._')
 ASSETS=$(find assets -type f ! -path 'assets/models/*' ! -name '._*')
 POSTS=$(find posts -type f ! -name '._*')
 tar --no-xattrs --no-mac-metadata -czf /tmp/taller.tar.gz \
-  $HTMLS kb-data.js works.js notes.js server.js \
+  $HTMLS kb-data.js works.js notes.js server.js ziwei.js \
   $ASSETS $POSTS \
   data/kb-content.json \
   deploy/taller.service deploy/nginx-taller.conf deploy/nginx-yoyo.conf
@@ -53,7 +53,7 @@ ssh -o BatchMode=yes "$HOST" 'set -e
   systemctl is-active --quiet taller && echo "  taller active ✓"'
 echo "── 5/5 冒烟 ──"
 # 2026-10-13 起 IP 直访退役（certbot 80 端口对非域名 Host 返 404），冒烟走正式域名
-for p in "" works.js poster-six.html posts/kb-engineering.html; do
+for p in "" works.js ziwei.js poster-six.html posts/kb-engineering.html; do
   printf "  /%s → %s\n" "$p" "$(curl -s -o /dev/null -w '%{http_code}' "https://tallerdeandres.cn/$p")"
 done
 wbcode=$(curl -s -o /dev/null -w '%{http_code}' "https://tallerdeandres.cn/workbench.html")

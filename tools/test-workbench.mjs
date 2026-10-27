@@ -285,6 +285,38 @@ try {
   r = await req("DELETE", "/api/workbench/memos?id=" + memoId);
   check("删除备忘", r.json && r.json.removed === 1, JSON.stringify(r.json));
 
+  /* ---- 紫微生辰（月/周/日预测数据源，引擎在前端 ziwei.js） ---- */
+  cookie = "";
+  r = await req("GET", "/api/workbench/ziwei");
+  check("匿名读生辰 → 401", r.status === 401, r.status);
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-user", password: "wbtest-pass-2026" });
+  r = await req("GET", "/api/workbench/ziwei");
+  check("user 读生辰 → 403", r.status === 403, r.status);
+  r = await req("PUT", "/api/workbench/ziwei", { birth: { y: 1988, m: 10, d: 8, hour: 7, gender: "男" } });
+  check("user 写生辰 → 403", r.status === 403, r.status);
+  cookie = "";
+  await req("POST", "/api/login", { username: "wbtest-admin", password: "wbtest-pass-2026" });
+  r = await req("GET", "/api/workbench/ziwei");
+  check("admin 读生辰 → 空态", r.json && r.json.birth === null, JSON.stringify(r.json));
+  r = await req("PUT", "/api/workbench/ziwei", { birth: { y: 1988, m: 2, d: 30, hour: 7, gender: "男" } });
+  check("非法日期（2 月 30）→ 400", r.status === 400, r.status);
+  r = await req("PUT", "/api/workbench/ziwei", { birth: { y: 1988, m: 10, d: 8, hour: 12, gender: "男" } });
+  check("时辰越界（12）→ 400", r.status === 400, r.status);
+  r = await req("PUT", "/api/workbench/ziwei", { birth: { y: 1899, m: 10, d: 8, hour: 7, gender: "男" } });
+  check("年份越界（1899）→ 400", r.status === 400, r.status);
+  r = await req("PUT", "/api/workbench/ziwei", { birth: { y: 1988, m: 10, d: 8, hour: 7, gender: "男" } });
+  check("admin 保存生辰", r.json && r.json.ok === true && r.json.birth.hour === 7, JSON.stringify(r.json));
+  r = await req("GET", "/api/workbench/ziwei");
+  check("admin 回读生辰", r.json && r.json.birth && r.json.birth.y === 1988 && r.json.birth.gender === "男", JSON.stringify(r.json));
+  check("生辰落隔离 data 目录（不入库）", fs.existsSync(path.join(tmpData, "ziwei.json")));
+  r = await req("GET", "/workbench.html", undefined, "follow");
+  check("工作台页引用 ziwei.js + 三层挂载点", r.text.includes('src="ziwei.js"') &&
+    r.text.includes('id="zwMount"') && r.text.includes('id="zwWeekMount"') && r.text.includes("流日运势"));
+  const zwJs = await fetch(BASE + "/ziwei.js");
+  const zwText = await zwJs.text();
+  check("ziwei.js 可下发且署名 liyanjun", zwJs.status === 200 && zwText.includes("作者：liyanjun") && zwText.includes("ZW"));
+
   /* ---- 配置保存 ---- */
   r = await req("POST", "/api/workbench/config", { glmKey: "test-key-123", biliUps: [{ uid: "111", name: "甲" }, { uid: "", name: "脏数据" }, "坏行"] });
   check("保存配置并清洗 UP 清单", r.json && r.json.ok === true && r.json.ups === 1, JSON.stringify(r.json));
