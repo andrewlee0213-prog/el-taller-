@@ -74,17 +74,27 @@ fs.writeFileSync(path.join(tmpData, "kb-categories.json"), JSON.stringify({
   "interview-bank": { cat: "职场与商业", by: "manual", at: 1 },
   "video-scripts": { cat: "视频与创作", by: "auto", at: 1 },
 }));
+/* 离线回归使用确定性样本，真实联网拉取另行验收。 */
+if (process.env.TALLER_OFFLINE === "1") fs.writeFileSync(path.join(tmpData, "holidays.json"), JSON.stringify({
+  2026: Array.from({ length: 7 }, (_, i) => ({ name: "离线节假日样本", date: "2026-10-0" + (i + 1), isOffDay: true })),
+}));
 /* 预置紫微月总述缓存（month-summary 命中测试用） */
 fs.writeFileSync(path.join(tmpData, "ziwei-month.json"), JSON.stringify({
   "zwfp-test:2026-9": { summary: "预置月总述：事业稳步推进，感情需多沟通，整体宜守不宜攻，月中注意劳逸结合。", at: 1 },
 }));
-/* 预置调度缓存（定点制断言用）：全部 at=30 秒前；oil 给远期 adj=2099-06-01（窗口外→睡到 2099-05-31 05:00）；
+/* 预置调度缓存（定点制断言用）：全部 at=30 秒前；oil 与其他每日板块同样按北京 05:00 更新；
    f1 给后天+8 天后两个 session（后天 session 的前夜=明天 05:00 恒在未来，断言免时钟竞态） */
 const seedAt = Date.now() - 30e3;
 const bjDate = off => new Date(Date.now() + 8 * 3600e3 + off * 86400e3).toISOString().slice(0, 10);
+const oilSource = "https://energy.cngold.org/c/" + bjDate(0) + "/c10000000.html";
+const oilAdj = bjDate(7);
+const oilAdjustAt = Date.parse(oilAdj + "T00:00:00+08:00") + 86400e3;
 fs.writeFileSync(path.join(tmpData, "workbench-cache.json"), JSON.stringify({
   glm: { ok: true, at: seedAt },
-  oil: { ok: true, at: seedAt, adj: "2099-06-01", price: "8.10", prices: [], note: "seed", next: "seed", expired: false, hist: [] },
+  oil: { ok: true, at: seedAt, forecastVersion: 2, adj: oilAdj, adjustAt: oilAdjustAt, cycleSource: oilSource,
+    calendar: [{ adj: oilAdj, sourceUrl: oilSource }],
+    forecast: { adj: oilAdj, text: "预计跌0.03~0.04元/升", sourceUrl: oilSource, publishedAt: seedAt },
+    price: "8.10", prices: [], note: "seed", next: "seed", expired: false, hist: [] },
   bili: { ok: true, at: seedAt, items: [] },
   anth: { ok: true, at: seedAt, items: [] },
   arxiv: { ok: true, at: seedAt, items: [] },
@@ -163,7 +173,7 @@ try {
     check("调度：bili 每天 11:00 定点", sched.bili && sched.bili.nextAt === expNext(11, 0, seedAt), fmt(sched.bili && sched.bili.nextAt));
     check("调度：anth 每天 05:00 定点", sched.anth && sched.anth.nextAt === expNext(5, 0, seedAt), fmt(sched.anth && sched.anth.nextAt));
     check("调度：arxiv 每天 05:00 定点", sched.arxiv && sched.arxiv.nextAt === expNext(5, 0, seedAt), fmt(sched.arxiv && sched.arxiv.nextAt));
-    check("调度：oil 窗口外睡到 adj-1 的 05:00", sched.oil && sched.oil.nextAt === expNext(5, 0, Date.UTC(2099, 4, 31) - 8 * 3600e3 - 1), fmt(sched.oil && sched.oil.nextAt));
+    check("调度：oil 整个预测周期每天 05:00 更新", sched.oil && sched.oil.nextAt === expNext(5, 0, seedAt), fmt(sched.oil && sched.oil.nextAt));
     const dayStart = ds => { const [y, m, d] = ds.split("-").map(Number); return Date.UTC(y, m - 1, d) - 8 * 3600e3; };
     const expF1 = dayStart(bjDate(2)) - 86400e3 + 5 * 3600e3;   // 后天 session → 明天 05:00（恒在未来，无竞态）
     check("调度：f1 只在 session 前一天 05:00", sched.f1 && sched.f1.nextAt === expF1, fmt(sched.f1 && sched.f1.nextAt));
@@ -260,7 +270,7 @@ try {
 
   /* ---- 节假日 + F1（真实数据源，需网络） ---- */
   r = await req("GET", "/api/workbench/holidays?year=2026");
-  check("节假日 holiday-cn 拉取", r.json && r.json.year === 2026 && Array.isArray(r.json.days) && r.json.days.length > 5,
+  check(process.env.TALLER_OFFLINE === "1" ? "节假日离线样本读取" : "节假日 holiday-cn 拉取", r.json && r.json.year === 2026 && Array.isArray(r.json.days) && r.json.days.length > 5,
     JSON.stringify(r.json).slice(0, 120));
   await req("POST", "/api/workbench/refresh", { section: "f1" });
   let f1ok = false;

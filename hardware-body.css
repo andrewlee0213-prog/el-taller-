@@ -1,0 +1,62 @@
+/* 智能硬件图鉴 · 三维身体与佩戴部位 */
+#atlMask .atl-head{flex-wrap:wrap}
+#atlMask .atl-dialog{height:94vh;height:94dvh}
+#atlMask .atl-mapwrap{display:grid;grid-template-columns:minmax(390px,1.2fr) minmax(290px,1fr);gap:20px;height:100%;min-height:540px}
+#atlMask .atl-map{width:auto;min-width:0;min-height:0;gap:10px}
+#atlMask .atl-mapwrap-map{flex:1;min-height:480px;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-radius:20px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 38%,color-mix(in srgb,var(--g-accent) 8%,transparent),transparent 65%),color-mix(in srgb,var(--g-bg-base) 76%,transparent)}
+.atl-model-stage{position:relative;width:100%;height:100%;min-height:480px;isolation:isolate;overflow:hidden}
+.atl-model-kicker{position:absolute;z-index:2;left:22px;top:18px;pointer-events:none;display:flex;flex-direction:column;gap:6px}
+.atl-model-kicker span{font-size:9px;letter-spacing:2.8px;color:var(--g-accent-soft)}
+.atl-model-kicker b{font-size:15px;font-weight:500;color:var(--g-text)}
+.atl-model-canvas,.atl-model-links,.atl-model-labels{position:absolute;inset:0;width:100%;height:100%}
+.atl-model-canvas canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.atl-model-canvas canvas:active{cursor:grabbing}
+#atlMask .atl-model-links{pointer-events:none;height:100%;max-height:none}
+.atl-model-links path{fill:none;stroke:color-mix(in srgb,var(--g-accent) 35%,transparent);stroke-width:.8;transition:stroke .2s}
+.atl-model-links path.on{stroke:var(--g-accent);stroke-width:1.5}
+.atl-model-labels{pointer-events:none}
+.atl-body-label{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;gap:5px;height:33px;padding:0 9px;border-radius:8px;
+  border:1px solid color-mix(in srgb,var(--ink) 17%,transparent);background:color-mix(in srgb,var(--g-bg-base) 88%,transparent);color:var(--g-text);font:inherit;font-size:11px;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
+.atl-body-label b{font-size:10px;font-weight:500;color:var(--g-accent-soft);font-variant-numeric:tabular-nums}
+.atl-body-label.empty{color:var(--g-dim)}
+.atl-body-label.on,.atl-body-label:hover{border-color:var(--g-accent);background:color-mix(in srgb,var(--g-accent) 16%,var(--g-bg-base));box-shadow:0 0 18px color-mix(in srgb,var(--g-accent) 12%,transparent)}
+.atl-body-label.on::before{content:"";position:absolute;left:-4px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--g-accent)}
+.atl-model-status{position:absolute;left:16px;right:16px;bottom:77px;text-align:center;font-size:11px;line-height:1.5;color:var(--g-accent-soft);pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.atl-model-tools{position:absolute;bottom:35px;left:0;right:0;display:flex;justify-content:center;gap:6px}
+.atl-model-tools button{min-width:35px;min-height:32px;padding:5px 10px;border:1px solid color-mix(in srgb,var(--ink) 17%,transparent);border-radius:8px;
+  background:color-mix(in srgb,var(--g-bg-base) 87%,transparent);color:var(--g-text);font:inherit;font-size:11px;cursor:pointer}
+.atl-model-tools button:hover,.atl-model-tools button[aria-pressed="true"]{border-color:var(--g-accent);color:var(--g-accent-soft)}
+.atl-model-hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.4px;color:var(--g-dim);pointer-events:none}
+.atl-model-stage[data-failed="true"] .atl-model-status{white-space:normal;bottom:85px}
+#atlMask .atl-list{display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0;border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);border-radius:18px;background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.atl-list-head{padding:16px 18px 12px;border-bottom:1px solid color-mix(in srgb,var(--ink) 10%,transparent)}
+.atl-list-head b{font-size:14px;font-weight:600}
+.atl-list-head span{font-size:11px;color:var(--g-dim);margin-left:8px}
+.atl-list-rows{flex:1;min-height:0;overflow:auto;padding:0 14px 12px;overscroll-behavior:contain}
+#atlMask .atl-row{display:block;padding:14px 2px;border-bottom:1px solid color-mix(in srgb,var(--ink) 9%,transparent)}
+.atl-device-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.atl-device-select{flex:1;min-width:0;text-align:left;border:0;background:none;color:var(--g-text);font:inherit;font-size:13px;font-weight:600;line-height:1.6;cursor:pointer}
+.atl-device-select:hover{color:var(--g-accent-soft)}
+#atlMask .atl-row.selected{border-left:2px solid var(--g-accent);padding-left:10px;background:color-mix(in srgb,var(--g-accent) 6%,transparent)}
+.atl-device-where{display:inline-block;margin-right:7px;font-size:10px;color:var(--g-accent-soft);border:1px solid color-mix(in srgb,var(--g-accent) 30%,transparent);border-radius:5px;padding:1px 5px}
+.atl-device-copy{font-size:11px;color:var(--g-dim);line-height:1.8;overflow-wrap:anywhere}
+.atl-device-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--g-dim);margin-top:5px;line-height:1.6}
+.atl-device-meta a{color:var(--g-accent-soft);text-underline-offset:3px}
+#atlMask button:focus-visible,#atlMask select:focus-visible,#atlMask input:focus-visible{outline:2px solid var(--g-accent);outline-offset:3px}
+#atlMask .atl-mapchips .atl-chip{min-height:29px}
+.atl-body-fallback{font-size:11px;color:var(--g-dim)}
+.atl-body-fallback summary{cursor:pointer;padding:5px 2px}
+.atl-body-fallback .atl-mapchips{justify-content:flex-start;padding:8px 0}
+@media(max-width:1050px){#atlMask .atl-mapwrap{grid-template-columns:minmax(340px,1fr) minmax(260px,.9fr);gap:12px}#atlMask .atl-dialog{padding:18px}}
+@media(max-width:760px){#atlMask{padding:8px}#atlMask .atl-dialog{width:100%;height:calc(100dvh - 16px);border-radius:18px;padding:14px 12px}
+  #atlMask .atl-head{gap:8px}#atlMask .atl-head>b{font-size:13px}#atlMask .atl-stats{width:100%;order:3;font-size:10px}
+  #atlMask .atl-filters{gap:6px;padding:10px 0}#atlMask .atl-q{min-width:140px;font-size:12px}#atlMask .atl-sel{max-width:46%}
+  #atlMask .atl-chip{min-height:30px;padding:4px 10px}#atlMask .atl-views{margin-left:auto}#atlClose{min-width:30px;min-height:30px}
+  #atlMask .atl-mapwrap{display:flex;flex-direction:column;height:auto;min-height:0;gap:14px}
+  #atlMask .atl-map{width:100%;margin:0}#atlMask .atl-mapwrap-map{height:500px;min-height:500px;flex:none}
+  #atlMask .atl-list{overflow:visible;min-height:240px;flex:none}#atlMask .atl-list-rows{overflow:visible}
+  .atl-model-kicker{left:16px;top:16px}.atl-model-kicker span{font-size:8px}.atl-model-kicker b{font-size:14px}
+  .atl-body-label{height:36px;padding:0 7px}.atl-model-tools button{min-height:36px}.atl-model-tools{bottom:37px}
+  .atl-model-hint{font-size:9px}#atlMask .atl-body{overscroll-behavior:contain}}
+@media(prefers-reduced-motion:reduce){#atlMask *{transition:none!important}}

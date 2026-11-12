@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-ai-workbench>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="El Taller AI 工作台：全息对话、日常资讯、日历与工作记录。仅管理员可用。">
+<title>AI Studio · AI 工作台 — El Taller</title>
+<link rel="stylesheet" href="workbench-base.css">
+<link rel="stylesheet" href="hardware-body.css?v=233ddd7a-2">
+<link rel="stylesheet" href="ai-workbench.css">
+<link rel="stylesheet" href="ai-info-board.css">
+</head>
+<body class="ai-workbench" data-core-state="idle">
+<a class="skiplink" href="#ai-main">Saltar al contenido · 跳到 AI 对话</a>
+<header class="ai-topbar">
+  <a class="ai-wordmark" href="index.html"><span class="ai-mark" aria-hidden="true">T</span><span><strong>EL TALLER</strong><small>AI STUDIO / 私人工作台</small></span></a>
+  <nav class="ai-nav" aria-label="站点导航">
+    <a href="index.html#top">首页</a><a href="index.html#proyectos">作品</a><a href="workbench.html">工作台</a><a class="on" href="ai-workbench.html" aria-current="page">AI 工作台</a><a href="index.html#cuaderno">日志</a><a href="kb.html">书库</a><a href="index.html#enlaces">链接</a>
+  </nav>
+  <div class="ai-top-actions"><span id="aiAccountSlot"></span><span class="ai-connection" id="aiConnection"><i></i>连接中</span><button class="ai-icon-button" id="aiSettings" type="button" aria-label="打开工作台设置" title="设置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.5 3-2 1-3-.7-2 3.4 2.4 2v2.6l-2.4 2 2 3.4 3-.7 2 1 .5 3h4l.5-3 2-1 3 .7 2-3.4-2.4-2v-2.6l2.4-2-2-3.4-3 .7-2-1-.5-3Z"/><circle cx="11" cy="13" r="3"/></svg></button></div>
+</header>
+<main class="ai-shell" id="ai-shell" aria-label="AI 工作台" hidden>
+  <section class="ai-data-strip" aria-label="个人信息与数据">
+    <section class="ai-identity ai-surface" aria-label="个人信息">
+      <div class="ai-id-line"><img src="assets/avatar.jpg" alt="Andres" width="58" height="58"><div><span id="aiGreet">Hola, Andres</span><h1>El Taller de Andres</h1><small>ANDRÉS · WORKSHOP · 安德烈的工坊</small></div></div>
+      <div class="ai-tags"><span>HRIS</span><span>AI Seeder</span><span>Agent 玩家</span></div>
+      <p>在工坊里打磨产品、流程与 AI Agent——不追概念，一件一件做能用的东西。</p>
+      <div class="ai-id-links"><a href="index.html#proyectos">看作品 ↗</a><a href="index.html#enlaces">联系我 ↗</a><a href="kb.html#inbox">Biblioteca 待处理 ↗</a><span id="aiPreviewNote"></span></div>
+    </section>
+    <section class="ai-clock ai-surface" aria-label="时钟与上海天气">
+      <time id="aiClock">--:--:--</time><span id="aiDate">—</span><span class="ai-term" id="aiTerm">—</span><span class="ai-sun" id="aiSun">—</span>
+      <div class="ai-weather"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><div><strong id="aiTemp">—°</strong><small id="aiWeather">天气载入中</small></div><span id="aiPlace">上海</span></div>
+    </section>
+    <div class="ai-data-slot" id="ai-glm-slot"></div>
+    <div class="ai-data-slot" id="ai-oil-slot"></div>
+  </section>
+  <div class="ai-mobile-tabs" role="tablist" aria-label="工作区域"><button role="tab" aria-selected="true" data-pane="core" id="ai-tab-core">AI 对话</button><button role="tab" aria-selected="false" data-pane="feed" id="ai-tab-feed">信息看板</button><button role="tab" aria-selected="false" data-pane="agenda" id="ai-tab-agenda">日历与记录</button></div>
+  <div class="ai-cockpit">
+    <aside class="ai-sidebar ai-feed" id="ai-feed" aria-label="信息看板">
+      <section class="ai-info-board ai-surface" id="aiInfoBoard" aria-labelledby="aiInfoTitle">
+        <header class="ai-info-head"><div><span class="ai-eyebrow">SEÑALES · 资讯汇总</span><h2 id="aiInfoTitle">信息看板</h2></div><span id="aiInfoCount" class="ai-info-count" aria-live="polite">五类来源</span></header>
+        <div class="ai-info-tools"><div class="ai-info-filters" role="group" aria-label="筛选资讯来源"><button type="button" data-info-filter="all" aria-pressed="true">全部 <span data-info-count="all">0</span></button><button type="button" data-info-filter="bili" aria-pressed="false">B站 <span data-info-count="bili">0</span></button><button type="button" data-info-filter="anth" aria-pressed="false">Anthropic <span data-info-count="anth">0</span></button><button type="button" data-info-filter="arxiv" aria-pressed="false">arXiv <span data-info-count="arxiv">0</span></button><button type="button" data-info-filter="hw" aria-pressed="false">智能硬件 <span data-info-count="hw">0</span></button><button type="button" data-info-filter="github" aria-pressed="false">GitHub <span data-info-count="github">0</span></button></div><div class="ai-info-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><label class="ai-sr-only" for="aiInfoSearch">搜索信息看板</label><input id="aiInfoSearch" type="search" maxlength="160" placeholder="搜索标题、摘要与仓库…" autocomplete="off"><button id="aiInfoSearchClear" type="button" aria-label="清空资讯搜索" hidden>×</button></div></div>
+        <div id="ai-feed-stack" class="ai-info-sources" data-filter="all"></div>
+        <p class="ai-info-empty" id="aiInfoEmpty" hidden>没有匹配的资讯，可切换来源或清空搜索。</p>
+      </section>
+    </aside>
+    <section class="ai-center" id="ai-main" aria-label="全息 AI 对话" tabindex="-1">
+      <div class="ai-stage-heading"><div><span class="ai-eyebrow">EL NÚCLEO · 对话核心</span><h2 id="aiCoreStatus">核心待命</h2></div><button type="button" class="ai-text-button" id="aiMotion" aria-pressed="false">暂停动态</button></div>
+      <div class="ai-render-host" id="aiRenderHost" role="img" aria-label="青金色光粒子全息核心"><div class="ai-core-fallback" id="aiCoreFallback" hidden><span>AI</span><p>3D 核心暂不可用，对话仍可使用。</p></div></div>
+      <div class="ai-stage-note"><span id="aiCoreHint">核心常驻 · 点击核心空白处隐藏看板并放大 · 鼠标移到上、左、右边缘显示数据栏</span><a href="studio-pcb.html" target="_blank" rel="noopener">PCB 全息教学 ↗</a></div>
+      <div class="ai-transcript" id="aiTranscript" aria-label="本页对话记录" tabindex="0"><div class="ai-chat-empty" id="aiChatEmpty"><span>把问题交给工坊。</span><small>问一个问题，让 AI 结合当前看板与工作摘要帮你梳理。</small></div></div>
+      <div class="ai-compose-wrap">
+        <form id="aiChatForm" class="ai-compose"><label class="ai-sr-only" for="aiChatInput">向 AI 提问</label><textarea id="aiChatInput" rows="2" maxlength="8000" placeholder="想讨论什么？例如：帮我梳理今天值得深入阅读的方向…" aria-describedby="aiChatStatus"></textarea><button type="submit" id="aiChatSend" aria-label="发送给 AI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg></button></form>
+        <div class="ai-compose-options"><label title="将当前资讯、GLM额度和油价摘要附给本次问题" hidden><input type="checkbox" id="aiContextDashboard" checked>附带资讯与数据</label><label title="将近期工作记录、备忘和计划摘要附给本次问题" hidden><input type="checkbox" id="aiContextWork" checked>附带记录与计划</label><button type="button" class="ai-text-button" id="aiChatStop" hidden>停止回答</button><button type="button" class="ai-text-button" id="aiChatClear">清空对话</button></div>
+        <p class="ai-privacy" id="aiPrivacy" hidden>发送时，问题与本页对话会交给服务端已配置的模型，并默认附带资讯数据与记录计划摘要。AI 不会代你写入日程或记录。</p>
+        <div class="ai-chat-status" id="aiChatStatus" role="status" hidden>正在检查模型配置…</div>
+      </div>
+    </section>
+    <aside class="ai-sidebar ai-agenda" id="ai-agenda" aria-label="日历、工作记录与周计划">
+      <div class="ai-rail-title"><div><span>MI JORNADA</span><h2>日历与工作</h2></div><a href="workbench.html">原工作台 ↗</a></div>
+      <div id="ai-calendar-slot"></div>
+      <details class="ai-work-detail" open><summary>工作记录与备忘</summary><div id="ai-log-slot" class="ai-panel-stack"></div></details>
+      <details class="ai-work-detail"><summary>总结与周计划</summary><div id="ai-weekly-slot"></div></details>
+    </aside>
+  </div>
+</main>
+<div class="ai-gate" id="aiGate" role="status"><span class="ai-eyebrow">AI STUDIO</span><h1>正在打开私人工作台</h1><p>确认管理员登录后载入信息、日历与对话。</p><a href="index.html">返回工坊</a></div>
+<dialog class="ai-settings-dialog" id="aiSettingsDialog"><header><div><span class="ai-eyebrow">AJUSTES</span><h2>工作台设置</h2></div><button class="ai-icon-button" id="aiSettingsClose" aria-label="关闭设置">×</button></header><p class="ai-setting-note">资讯与记录沿用原工作台配置。对话使用服务端 AI 配置；未独立配置时可沿用既有 GLM Key，凭据不会发给浏览器。</p><div id="aiSettingsSlot"></div></dialog>
+<dialog class="ai-module-dialog" id="aiModuleDialog" aria-labelledby="aiModuleTitle" aria-describedby="aiModuleHint">
+  <header class="ai-module-dialog-head"><div><span class="ai-eyebrow">VISTA EN FOCO · 专注查看</span><h2 id="aiModuleTitle">信息模块</h2><p id="aiModuleHint">完整内容 · 原有操作可用 · Esc 返回工作台</p></div><div class="ai-module-dialog-actions"><label class="ai-sr-only" for="aiModuleSelect">切换放大模块</label><select id="aiModuleSelect" aria-label="切换放大模块"></select><button class="ai-icon-button" id="aiModuleClose" type="button" aria-label="关闭放大查看" autofocus>×</button></div></header>
+  <div class="ai-module-dialog-body" id="aiModuleBody"></div>
+</dialog>
+<div id="aiLegacy" hidden inert></div>
+<script src="ziwei.js" defer></script>
+<script src="workbench-runtime.js" defer></script>
+<script src="assets/ai-workbench/three.min.js" defer></script>
+<script src="assets/ai-workbench/jarvis-core.js" defer></script>
+<script src="assets/ai-workbench/jarvis-environment.js" defer></script>
+<script src="assets/ai-workbench/scene-postfx.js" defer></script>
+<script src="assets/ai-workbench/hologram-renderer.js" defer></script>
+<script src="assets/ai-workbench/scene-3d.js" defer></script>
+<script src="ai-module-focus.js" defer></script>
+<script src="ai-workbench-idle.js" defer></script>
+<script src="ai-info-board.js" defer></script>
+<script src="ai-workbench.js" defer></script>
+</body>
+</html>

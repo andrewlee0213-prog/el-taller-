@@ -10,3 +10,8 @@ tools/sanitize.local.json
 
 # 手办 3D 扫描件（assets/models/）：走 deploy 上线，不进公开仓库；换模型=覆盖同名文件
 assets/models/
+
+# Mimosa 安全扫描工作区（本机工具产物，不入库）
+.mimosa/
+# 内部过程文档（含服务器路径与运维细节，不上公开仓库）
+docs/

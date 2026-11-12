@@ -16,6 +16,17 @@
    ============================================================ */
 window.WORKS = [
   {
+    id: 'studio-pcb',
+    title: 'Studio · 全息知识演示',
+    subtitle: 'El conocimiento, en movimiento',
+    desc: '用可以旋转、聚焦和拆解的全息模型认识 PCB：裸板、材料层、铜线与过孔、元件装配四幕，搭配字幕与设备本地中文朗读。完整核心首页和点击流程可封装为单文件离线展示；这是公开资料核对后人工编排的固定案例，非任意文章自动生成。',
+    tags: ['Three.js', '动态教学', '字幕与朗读', '离线 HTML'],
+    status: 'terminado',
+    visibility: 'public',
+    cover: 'assets/cover-studio-pcb.jpg',
+    link: 'studio-pcb.html'
+  },
+  {
     id: 'kb-engineering',
     title: '个人知识库工程',
     subtitle: 'La Biblioteca · Motor',

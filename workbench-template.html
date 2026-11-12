@@ -1,0 +1,252 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"></head><body>
+<div class="stage">
+  <div class="noise"></div>
+  <div class="wrap">
+    <header class="top">
+      <a class="back" href="index.html">← Taller</a>
+      <div class="brand"><b>El Estudio · 工作台</b><small>Banco de trabajo</small></div>
+      
+      <nav class="g-pill" aria-label="站点导航 · Navegación">
+        <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
+        <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
+        <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="ai-workbench.html"><b>AI Studio</b><small>AI 工作台</small></a>
+        <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
+        <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
+        <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
+      </nav>
+
+      <div class="themedots" role="group" aria-label="配色 · Tema">
+        <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题"></button>
+        <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题"></button>
+        <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题"></button>
+        <button class="tdot" type="button" data-theme-dot="bermellon" style="--dot:#c05a46" title="朱漆红 · Bermellón" aria-label="朱漆红主题"></button>
+        <button class="tdot" type="button" data-theme-dot="castana" style="--dot:#c98a4b" title="栗漆棕 · Castaña" aria-label="栗漆棕主题"></button>
+        <button class="tdot" type="button" data-theme-dot="jaspe" style="--dot:#b56580" title="犀皮彩 · Jaspé" aria-label="犀皮彩主题"></button>
+        <button class="tdot" type="button" data-theme-dot="perla" style="--dot:#74c7b8" title="螺钿青 · Perla" aria-label="螺钿青主题"></button>
+        <button class="tdot" type="button" data-theme-dot="blanco" style="--dot:#ffffff" title="纸白 · Blanco" aria-label="纸白主题"></button>
+        <button class="tdot" type="button" data-theme-dot="negro" style="--dot:#181818" title="玄黑 · Negro" aria-label="玄黑主题"></button>
+      </div>
+      <div class="whoami" id="whoami"><span class="avatar-dot">A</span><span class="nm" id="whoName"></span><span class="role-chip">管理员</span>
+        <a href="#" id="logoutBtn" class="wlink-out">退出</a></div>
+    </header>
+
+    <div id="main"></div>
+    <div class="banner" id="cfgBanner">
+      工作台还未配置：GLM 额度 / 标题翻译 / arXiv 选文需要 <b>GLM API Key</b>，B站板块需要 <b>B站 Cookie 与 UP 清单</b>。
+      拉到页面底部 <b>Ajustes · 设置</b> 粘贴即可，保存后约半分钟内出数。
+    </div>
+
+    <!-- ============ Panel · 信息面板（可折叠，状态记 localStorage） ============ -->
+    <div class="section-head"><span class="eyebrow">Panel</span><h2>信息面板</h2>
+      <span class="hint" id="panelHint"></span>
+      <button class="foldbtn" id="panelFold" aria-expanded="true" title="收起 / 展开信息面板" aria-label="收起或展开信息面板">
+        <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    <div class="wbgrid" id="panelBody">
+
+      <div class="g-card wbcard" id="card-glm" style="--c:#5b9dff">
+        <div class="chead"><span class="cbar"></span><b>GLM Coding Plan</b>
+          <span class="lvl-pill" id="glmLvl" style="display:none"></span>
+          <span class="upd" id="glmUpd"></span>
+          <button class="rfbtn" data-sec="glm" title="立即刷新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody" id="glmBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-oil" style="--c:#f0a830">
+        <div class="chead"><span class="cbar"></span><b>上海油价</b>
+          <span class="upd" id="oilUpd"></span>
+          <button class="rfbtn" data-sec="oil" title="立即刷新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody" id="oilBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-bili" style="--c:#fb7299">
+        <div class="chead"><span class="cbar"></span><b>B站 · 关注更新</b>
+          <span class="upd" id="biliUpd"></span>
+          <button class="rfbtn" data-sec="bili" title="全量核对"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="biliBody"><span class="dim">等待首轮核对…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-anth" style="--c:#d97757">
+        <div class="chead"><span class="cbar"></span><b>Anthropic 研究</b>
+          <span class="upd" id="anthUpd"></span>
+          <button class="rfbtn" data-sec="anth" title="立即刷新"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="anthBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-arxiv" style="--c:#b31b1b">
+        <div class="chead"><span class="cbar"></span><b>arXiv 精选</b>
+          <span class="upd" id="arxivUpd"></span>
+          <button class="rfbtn" data-sec="arxiv" title="重新选文（五段漏斗，约 1 分钟）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="arxivBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-hw" style="--c:#f59e0b">
+        <div class="chead"><span class="cbar"></span><b>智能硬件 · 每日情报</b>
+          <span class="upd" id="hwUpd"></span>
+          <button class="hw-atlasbtn" id="hwAtlasBtn" title="累积的硬件目录（每日情报自动沉淀）">📔 图鉴</button>
+          <a class="hw-atlasbtn" href="/learning.html?hardware=1" style="text-decoration:none" title="从已有图鉴中选设备比较，不触发新采集">比较学习</a>
+          <button class="rfbtn" data-sec="hw" title="重新拉取（情报由 Mac 收集任务生成，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="hwBody"><span class="dim">等待首份情报…</span></div>
+      </div>
+
+      <!-- 小红书粉丝卡：2026-10-14 站主要求暂停（隐藏不删）——恢复=去掉 hidden 属性，并把 Mac 端
+           launchd 任务重新启用：launchctl enable gui/$(id -u)/cn.andrewlee0213.taller-xhs-fans && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/cn.andrewlee0213.taller-xhs-fans.plist -->
+      <div class="g-card wbcard" id="card-xhs" style="--c:#ff2442" hidden>
+        <div class="chead"><span class="cbar"></span><b>小红书 · 粉丝监控</b>
+          <span class="upd" id="xhsUpd"></span>
+          <button class="rfbtn" data-sec="xhs" title="重新拉取（数据由 Mac 收集任务推送，↻ 只刷新展示）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody" id="xhsBody"><span class="dim">等待首轮抓取…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-github" style="--c:#58a6ff">
+        <div class="chead"><span class="cbar"></span><b>GitHub · 趋势榜</b>
+          <span class="ghtab" id="ghTabs"><button type="button" data-ght="d" class="on">日榜</button><button type="button" data-ght="w">周榜</button></span>
+          <span class="upd" id="githubUpd"></span>
+          <button class="rfbtn" data-sec="github" title="立即刷新（日榜+周榜一起）"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button></div>
+        <div class="cbody ilist" id="githubBody"><span class="dim">等待首抓…</span></div>
+      </div>
+
+      <div class="g-card wbcard" id="card-kbin" style="--c:#8b7cf6">
+        <div class="chead"><span class="cbar"></span><b>Biblioteca 待处理</b>
+          <span class="upd" id="kbinUpd"></span></div>
+        <div class="cbody ilist" id="kbinBody"><span class="dim">…</span></div>
+      </div>
+    </div>
+
+    <!-- ============ Calendario 日历 ============ -->
+    <div class="section-head"><span class="eyebrow">Calendario</span><h2>日历</h2>
+      <span class="hint">工作记录与备忘记事按日期落点，点日期看当天</span></div>
+    <div class="g-glass calpanel">
+      <div class="callayout">
+        <div class="calleft">
+          <div class="calnav">
+            <button class="calbtn" id="calPrev" title="上个月">‹</button>
+            <b id="calTitle">…</b>
+            <button class="calbtn" id="calNext" title="下个月">›</button>
+            <button class="calbtn" id="calToday">今天</button>
+            <div class="calchips" id="calChips">
+              <button class="calchip" data-calf="all">全部</button>
+              <button class="calchip" data-calf="work">工作</button>
+              <button class="calchip" data-calf="life">生活</button>
+              <button class="calchip" data-calf="dt" id="dtChip" style="display:none">Agenda</button>
+            </div>
+            <div class="callegend"><span><i class="cdot log"></i>已完成的工作</span><span><i class="cdot memo"></i>备忘 / 计划</span><span><i class="cdot f1"></i>F1</span><span id="dtLegend" style="display:none"><i class="cdot dt"></i>Agenda 日程</span><span id="zwLegend"><i class="cdot zw zw3"></i>流日运势</span></div>
+            <div class="dtbar" style="display:none" id="dtBar">
+              <span class="dtstate" id="dtState"></span>
+              <button class="calbtn" id="dtSync" title="立即拉取 Agenda 日程">⟳ 同步</button>
+              <button class="calbtn" id="dtBind" style="display:none">绑定 Agenda</button>
+            </div>
+          </div>
+          <div id="zwMount"></div>
+          <div class="calgrid" id="calGrid"></div>
+          <div id="zwWeekMount"></div>
+        </div>
+        <div class="caldetail" id="calDetail"></div>
+      </div>
+    </div>
+
+    <!-- ============ Registro + Resumen ============ -->
+    <div class="section-head"><span class="eyebrow">Registro · Resumen</span><h2>工作记录与周计划</h2></div>
+    <div class="duo">
+      <div class="duocol">
+        <div class="g-glass panel">
+          <h3><small>Registro</small>工作记录</h3>
+          <textarea class="big" id="logText" placeholder="刚做完 / 正在做的一件事，一行一条也行…"></textarea>
+          <div class="crow">
+            <input class="date" type="date" id="logDate">
+            <input class="proj" id="logProject" list="projList" placeholder="项目（可选）" title="周总结按项目分组，历史项目会自动补全">
+            <datalist id="projList"></datalist>
+            <button class="btn btn-hot" id="logSave">记录</button>
+          </div>
+          <div class="loglist" id="logList"></div>
+        </div>
+
+        <div class="g-glass panel">
+          <h3><small>Notas</small>备忘记事</h3>
+          <div class="crow" style="align-items:stretch">
+            <input class="date" type="date" id="memoDate" style="flex:none">
+          </div>
+          <textarea class="big" id="memoText" style="min-height:52px" placeholder="要记住的事 / 待办 —— 选未来的日期就是计划，会落在日历上"></textarea>
+          <div class="crow"><button class="btn btn-hot" id="memoSave" style="padding:8px 18px;font-size:12.5px">记下</button><button class="bmini" id="memoCat" title="点击切换：这条备忘记到工作还是生活">分类：生活</button></div>
+          <div class="memolist" id="memoList"></div>
+        </div>
+      </div>
+
+      <div class="g-glass panel">
+        <div class="wkhead">
+          <input class="date" type="date" id="wkStart">
+          <span class="dim">→</span>
+          <input class="date" type="date" id="wkEnd">
+          <span class="wkstate" id="wkState">未生成</span>
+          <button class="btn btn-ghost" id="genBtn">生成总结</button>
+        </div>
+        <div class="setnote" style="padding:0">默认当前一周；想按任意时间段总结就改日期。总结按项目分组（来自记录里的项目标签）；计划会按下周日历（法定休/调休补班 + 已排备忘）逐日排程推演，对照 = 最近一次已确认的计划。</div>
+        <div class="generr" id="genErr"></div>
+        <div class="wkareas">
+          <label>工作总结<textarea class="big" id="sumBox" placeholder="点「生成总结」：总述 + 按项目分节要点 + 投入占比，可手改"></textarea></label>
+          <label>下阶段计划<textarea class="big" id="planBox" placeholder="点「生成总结」：下阶段盘面估算 + 逐日排程 + 顺延 + 风险兜底；确认后作为对照基准"></textarea></label>
+        </div>
+        <div class="confirmrow">
+          <button class="btn btn-hot" id="confirmBtn">确认计划</button>
+          <span class="confirminfo" id="confirmInfo"></span>
+        </div>
+        <details class="wkhist" id="wkHist">
+          <summary>历史周归档</summary>
+          <div id="wkHistList"><div class="dim" style="padding:12px 0">还没有归档</div></div>
+        </details>
+      </div>
+    </div>
+
+    <!-- ============ Ajustes ============ -->
+    <details class="settings" id="settings">
+      <summary><b>Ajustes · 设置</b> —— GLM Key / B站 Cookie / UP 清单 / arXiv 画像 / DingTalk 日历</summary>
+      <div class="setgrid">
+        <label>GLM API Key（留空 = 不修改）<input type="password" id="cfgKey" placeholder="粘贴 open.bigmodel.cn 的 API Key"></label>
+        <label>B站 Cookie（留空 = 不修改）<input type="text" id="cfgCookie" placeholder="SESSDATA=xxx; buvid3=xxx（浏览器 F12 复制整串）"></label>
+        <label>DingTalk 应用 clientId（留空 = 不修改）<input type="text" id="cfgDtId" placeholder="开放平台「凭证与基础信息」页"></label>
+        <label>DingTalk 应用 clientSecret（留空 = 不修改）<input type="password" id="cfgDtSecret" placeholder="同一页点眼睛图标显示后复制"></label>
+        <label class="full">B站 UP 清单（JSON）<textarea id="cfgUps" placeholder='[{"uid":"520155988","name":"示例UP主"}]'></textarea></label>
+        <label class="full">arXiv 兴趣画像（选文漏斗的打分依据，你的评论也会自动并入）<textarea id="cfgProfile" placeholder="一行一个方向…"></textarea></label>
+        <div class="setnote">Key 与 Cookie 只存服务器 data/ 目录（有访问封锁、永不对外、部署不覆盖）。保存后各板块按各自节奏自动刷新，也可点卡片右上角 ↻ 立即刷新。DingTalk 日历：填好密钥并保存后，到日历卡片点「绑定 Agenda」扫码授权一次，之后日程每小时自动同步。</div>
+        <div class="crow full"><button class="btn btn-hot" id="cfgSave">保存设置</button><span class="csaved" id="cfgSaved"></span></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- Biblioteca 待处理 · 评论全屏弹层 -->
+<div class="kbin-mask" id="kbinMask" style="display:none">
+  <div class="kbin-dialog g-glass">
+    <div class="kbin-dhead"><b>📝 写评论</b><small id="kbinDTitle"></small>
+      <button class="icmt" id="kbinDClose" title="关闭（Esc）">✕</button></div>
+    <textarea id="kbinDText" maxlength="500" placeholder="这份材料怎么看？写得越具体，以后翻出来越有用 —— 提交后算看过，评论会显示在这份材料的书内页顶部（站主笔记）。"></textarea>
+    <div class="kbin-dfoot"><span class="dim" id="kbinDCount">0 / 500 · ⌘/Ctrl+Enter 提交 · Esc 关闭</span>
+      <button class="bmini" id="kbinDCancel">取消</button>
+      <button class="btn btn-hot" id="kbinDGo" style="padding:8px 20px;font-size:12.5px">提交评论</button></div>
+  </div>
+</div>
+
+<!-- 智能硬件图鉴 · 全屏弹层（每日情报自动沉淀的累积目录） -->
+<div class="atl-mask" id="atlMask">
+  <div class="atl-dialog g-glass">
+    <div class="atl-head"><b>📔 智能硬件图鉴</b><span class="atl-stats" id="atlStats"></span>
+      <span class="atl-views">
+        <button class="atl-chip on" id="atlViewBody" title="按人体佩戴/测量部位浏览">🧍 身体图</button>
+        <button class="atl-chip" id="atlViewTable" title="全量表格">表格</button>
+      </span>
+      <button class="icmt" id="atlClose" title="关闭（Esc）" style="font-size:14px">✕</button></div>
+    <div class="atl-filters">
+      <button class="atl-chip on" data-lf="all">全部</button>
+      <button class="atl-chip" data-lf="1">透镜① 数据可见</button>
+      <button class="atl-chip" data-lf="2">透镜② 持续采集</button>
+      <select class="atl-sel" id="atlCat"><option value="">全部品类</option></select>
+      <input type="text" class="atl-q" id="atlQ" placeholder="搜索名称 / 品牌 / 采集什么…">
+    </div>
+    <div class="atl-body" id="atlBody"><div class="atl-empty">加载中…</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+
+</body></html>

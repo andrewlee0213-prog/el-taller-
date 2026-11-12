@@ -15,7 +15,8 @@ SCAN="$(mktemp /tmp/taller-scan.XXXXXX)"
 node -e 'const w=JSON.parse(require("fs").readFileSync("tools/sanitize.local.json","utf8"));process.stdout.write(w.scan.join("\n"))' > "$SCAN" \
   || { echo "⚠ 生成扫描词表失败（需要 node + 本机 tools/sanitize.local.json）"; exit 1; }
 if grep -rlnE -f "$SCAN" \
-  index.html login.html kb.html kb-data.js works.js notes.js server.js workbench.html ziwei.js \
+  index.html login.html kb.html kb-data.js works.js notes.js server.js workbench.html ziwei.js constelacion-data.js \
+  learning.html learning.js learning-cases.js learning-ui.js learning.css learning-entry.js learning-entry.css rag-visual.js rag-visual.css research-visual.js research-visual.css \
   poster-six.html about-site.html kindle-dashboard.html video-scripts.html posts/ data/kb-content.json 2>/dev/null; then
   echo "⚠ 扫描命中上方文件，先脱敏再发布（构建产物请改 tools/sanitize.local.json 后重建）"; rm -f "$SCAN"; exit 1
 fi
@@ -34,7 +35,8 @@ HTMLS=$(ls *.html | grep -v '^\._')
 ASSETS=$(find assets -type f ! -path 'assets/models/*' ! -name '._*')
 POSTS=$(find posts -type f ! -name '._*')
 tar --no-xattrs --no-mac-metadata -czf /tmp/taller.tar.gz \
-  $HTMLS kb-data.js works.js notes.js server.js ziwei.js \
+  $HTMLS kb-data.js works.js notes.js server.js ziwei.js constelacion-data.js \
+  learning.js learning-cases.js learning-ui.js learning.css learning-entry.js learning-entry.css rag-visual.js rag-visual.css research-visual.js research-visual.css \
   $ASSETS $POSTS \
   data/kb-content.json \
   deploy/taller.service deploy/nginx-taller.conf deploy/nginx-yoyo.conf

@@ -491,6 +491,8 @@ details.settings[open] summary{border-bottom:1px solid color-mix(in srgb,var(--i
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
   outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
+<link rel="stylesheet" href="/learning-entry.css">
+<script src="/learning-entry.js"></script>
 </head>
 <body>
 <a class="skiplink" href="#aMeta">Saltar al contenido · 跳到正文</a>
@@ -504,6 +506,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
         <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
         <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="ai-workbench.html"><b>AI Studio</b><small>AI 工作台</small></a>
         <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
         <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
         <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
@@ -525,6 +528,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <article class="g-glass rcard">
     <h1 id="aTitle">对照阅读</h1>
     <div class="rmeta" id="aMeta">读取中…</div>
+    <div id="articleLearning" class="learning-entry" hidden></div>
     <div class="rbody" id="aBody"><p class="rload" id="aLoading">正在取正文（后台通常已预取，正常一两秒即开）…</p></div>
   </article>
 </div>
@@ -553,6 +557,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       clearInterval(timer);
       if (!r.ok) { fail(esc(r.error || "读取失败") + "<br>境外源偶发抖动，稍后刷新重试通常就好；<a class=\"backlink\" href=\"workbench.html\">← 回工作台</a>"); return; }
       var a = r.article;
+      if (window.TallerLearningEntry) {
+        window.TallerLearningEntry.mount(document.getElementById('articleLearning'), { url: url });
+      }
       document.title = a.title.slice(0, 40) + " · Lectura · El Taller";
       document.getElementById("aTitle").textContent = a.title;
       var hoursLeft = Math.max(0, Math.ceil((a.deadline - Date.now()) / 3600e3));

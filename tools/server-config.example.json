@@ -7,5 +7,10 @@
     { "uid": "520155988", "name": "示例UP主一" },
     { "uid": "90183256", "name": "示例UP主二" }
   ],
-  "arxivProfile": "- 方向一：关键词描述\n- 方向二：关键词描述\n(供 arXiv 五段选文的画像打分用, 工作台 Ajustes 里也可改)"
+  "arxivProfile": "- 方向一：关键词描述\n- 方向二：关键词描述\n(供 arXiv 五段选文的画像打分用, 工作台 Ajustes 里也可改)",
+  "dingtalk": {
+    "clientId": "DingTalk 开放平台「凭证与基础信息」页的 clientId（第三方个人应用，申请日历读权限；工作台 Ajustes 里也可填）",
+    "clientSecret": "同一页的 clientSecret",
+    "callbackBase": "https://tallerdeandres.cn  (OAuth 回调基址，默认即线上域名，一般不用改)"
+  }
 }

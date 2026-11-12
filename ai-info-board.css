@@ -1,0 +1,75 @@
+/* A single information board keeps source actions intact and spends space on content. */
+.ai-feed{padding:0;overflow:hidden}
+.ai-info-board{display:flex;flex-direction:column;width:100%;min-width:0;min-height:0;height:100%;border-radius:11px;overflow:hidden;background:rgba(7,20,30,.8)}
+.ai-info-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;padding:15px 15px 11px}
+.ai-info-head h2{font-size:16px;font-weight:550;letter-spacing:.5px;line-height:1.2;margin:5px 0 0}
+.ai-info-head .ai-eyebrow{font-size:7px;letter-spacing:1.6px;color:var(--ai-gold)}
+.ai-info-count{color:var(--ai-muted);font-size:9px;line-height:1.7;white-space:nowrap;text-align:right}
+.ai-info-tools{padding:0 13px 11px;flex:none;border-bottom:1px solid var(--ai-line)}
+.ai-info-filters{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+.ai-info-filters button{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;min-height:27px;font-size:9px;line-height:1.2;color:var(--ai-muted);background:transparent;border:1px solid #8ddcff19;border-radius:5px;white-space:nowrap}
+.ai-info-filters button[aria-pressed="true"]{background:#8ddcff13;border-color:#8ddcff61;color:var(--ai-cyan)}
+.ai-info-filters button:hover{border-color:var(--ai-cyan)}
+.ai-info-filters button span{font-size:8px;font-variant-numeric:tabular-nums;color:var(--ai-gold)}
+.ai-info-search{display:flex;align-items:center;gap:7px;padding:6px 9px;min-height:31px;border:1px solid #8ddcff20;border-radius:5px;background:#020a1266}
+.ai-info-search:focus-within{border-color:var(--ai-cyan)}
+.ai-info-search svg{width:13px;height:13px;fill:none;stroke:var(--ai-muted);stroke-width:1.5;stroke-linecap:round;flex:none}
+.ai-info-search input{width:100%;min-width:0;background:none;border:0;padding:0;font-size:10px;line-height:1.5;color:var(--ai-text)}
+.ai-info-search input:focus{outline:0}.ai-info-search input::placeholder{color:var(--ai-muted)}
+.ai-info-search button{display:grid;place-items:center;flex:none;width:23px;height:23px;border:0;border-radius:4px;padding:0;background:#8ddcff0c;color:var(--ai-soft);font-size:18px;line-height:1}
+.ai-info-search button:hover{background:#8ddcff24;color:var(--ai-cyan)}
+.ai-info-sources{min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#365365 transparent;scrollbar-gutter:stable;padding:0 13px 10px;cursor:auto}
+.ai-info-board .wbcard{display:block!important;min-width:0;max-height:none;margin:0;padding:11px 0 10px;border:0;border-bottom:1px solid #8ddcff1b;border-radius:0;box-shadow:none;background:transparent;backdrop-filter:none;opacity:1;cursor:auto}
+.ai-info-board .wbcard[hidden]{display:none!important}
+.ai-info-board .wbcard:last-child{border-bottom:0}
+.ai-info-board .g-card::before{display:none}
+.ai-info-board .wbcard>.chead{padding:0;margin:0 0 6px;gap:6px;display:flex;flex-wrap:wrap}
+.ai-info-board .chead .cbar{width:3px;height:15px;border-radius:1px}
+.ai-info-board .chead b{font-size:11px;line-height:1.5;white-space:normal}
+.ai-info-board .chead .upd{font-size:8px;display:block;margin-left:auto}
+.ai-info-board .chead .rfbtn{width:23px;height:23px;flex:none}
+.ai-info-board .rfbtn svg{width:11px;height:11px}
+.ai-info-board .cbody,.ai-info-board .ilist{max-height:none;height:auto;overflow:visible;gap:3px;padding:0;min-width:0;font-size:11px}
+.ai-info-board .xgrid{display:block}
+.ai-info-board .item{padding:7px 0;gap:3px;break-inside:avoid}
+.ai-info-board .item .l1{gap:5px;flex-wrap:wrap}
+.ai-info-board .item a.it{font-size:11.5px;line-height:1.7;display:block;overflow:visible;white-space:normal;text-overflow:clip;-webkit-line-clamp:unset;line-clamp:unset;flex:1 1 150px;overflow-wrap:anywhere}
+.ai-info-board .item .imeta{font-size:10px;line-height:1.65;display:block;overflow-wrap:anywhere}
+.ai-info-board .item .icmt{width:23px;height:23px;min-height:23px;font-size:11px;padding:3px;flex:none}
+.ai-info-board .new{font-size:8px}
+.ai-info-board .hw-sum{font-size:11px;line-height:1.8;padding:9px 10px;margin-bottom:7px;border-radius:5px;background:#8ddcff05}
+.ai-info-board .hw-cat{font-size:9px;margin:9px 0 5px}
+.ai-info-board .hw-link{padding:4px 0;gap:5px;flex-wrap:wrap;align-items:baseline}
+.ai-info-board .hw-t{display:block;overflow:visible;white-space:normal;text-overflow:clip;-webkit-line-clamp:unset;line-clamp:unset;font-size:11px;line-height:1.7;flex:1 1 150px;overflow-wrap:anywhere}
+.ai-info-board .hw-src,.ai-info-board .hw-n{max-width:none;white-space:normal;overflow:visible;text-overflow:clip;font-size:9px}
+.ai-info-board .hw-health{font-size:8px;line-height:1.7}
+.ai-info-board .hw-atlasbtn{padding:3px 6px;font-size:8px}
+.ai-info-board .ghtab{margin-left:2px}.ai-info-board .ghtab button{font-size:9px;padding:3px 6px}
+.ai-info-empty{padding:15px;margin:0;color:var(--ai-muted);font-size:11px;line-height:1.8}
+.ai-module-dialog .ai-info-board{height:auto!important;max-height:none;overflow:visible}
+.ai-module-dialog .ai-info-head{display:none}
+.ai-module-dialog .ai-info-tools{padding:0 0 17px;margin:0 0 4px;position:sticky;top:-26px;z-index:5;background:#08131df5;backdrop-filter:blur(10px)}
+.ai-module-dialog .ai-info-filters button{font-size:12px;min-height:34px;padding:7px 11px}
+.ai-module-dialog .ai-info-filters button span{font-size:10px}
+.ai-module-dialog .ai-info-search{max-width:580px;padding:9px 12px;min-height:40px}
+.ai-module-dialog .ai-info-search input{font-size:13px}
+.ai-module-dialog .ai-info-sources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 30px;overflow:visible;padding:0;scrollbar-gutter:auto}
+.ai-module-dialog .ai-info-sources[data-filter]:not([data-filter="all"]){grid-template-columns:1fr}
+.ai-module-dialog .ai-info-board .wbcard{padding:20px 0 18px;border-bottom:1px solid var(--ai-line);align-self:start}
+.ai-module-dialog .ai-info-board .chead{margin-bottom:12px}
+.ai-module-dialog .ai-info-board .chead b{font-size:16px}
+.ai-module-dialog .ai-info-board .chead .upd{font-size:10px}
+.ai-module-dialog .ai-info-board .item{padding:12px 0}
+.ai-module-dialog .ai-info-board .item a.it,.ai-module-dialog .ai-info-board .hw-t{font-size:14px;line-height:1.8;flex-basis:220px}
+.ai-module-dialog .ai-info-board .item .imeta{font-size:12px;line-height:1.8}
+.ai-module-dialog .ai-info-board .hw-sum{font-size:13px;line-height:1.9;padding:13px 15px}
+.ai-module-dialog .ai-info-board .hw-cat{font-size:12px;margin-top:14px}
+.ai-module-dialog .ai-info-board .hw-src,.ai-module-dialog .ai-info-board .hw-n{font-size:10px}
+.ai-module-dialog .ai-info-board .hw-health{font-size:10px}
+.ai-module-dialog .ai-info-board .rfbtn{width:28px;height:28px}
+.ai-module-dialog .ai-info-board .item .icmt{width:27px;height:27px;font-size:12px}
+@media(min-width:1850px){.ai-info-head{padding:17px 18px 13px}.ai-info-tools{padding:0 16px 12px}.ai-info-sources{padding:0 16px 14px}.ai-info-board .chead b{font-size:12px}.ai-info-board .item a.it{font-size:12px}.ai-info-board .item .imeta{font-size:10.5px}.ai-info-board .hw-t{font-size:12px}}
+@media(max-width:980px){.ai-feed{overflow:visible}.ai-info-board{height:auto;min-height:0}.ai-info-sources{overflow:visible;scrollbar-gutter:auto}.ai-info-board .chead b{font-size:13px}.ai-info-board .item a.it,.ai-info-board .hw-t{font-size:13px}.ai-info-board .item .imeta{font-size:11px}.ai-info-board .item .icmt{width:29px;height:29px;font-size:12px}.ai-info-board .chead .upd{font-size:9px}.ai-info-tools{padding-bottom:13px}.ai-info-filters button{min-height:31px;font-size:10px;padding:6px 8px}.ai-info-search input{font-size:12px}}
+@media(max-width:680px){.ai-info-head{padding:16px 14px 12px}.ai-info-count{font-size:8px}.ai-module-dialog .ai-info-sources{grid-template-columns:1fr;gap:0}.ai-module-dialog .ai-info-tools{top:-19px;padding-bottom:12px}.ai-module-dialog .ai-info-filters button{font-size:10px;padding:6px 8px;min-height:31px}.ai-module-dialog .ai-info-search input{font-size:12px}.ai-module-dialog .ai-info-board .chead b{font-size:14px}.ai-module-dialog .ai-info-board .item a.it,.ai-module-dialog .ai-info-board .hw-t{font-size:13px}}
+/* 2026-11-12 站主：信息看板卡片背景与边框全透明 */
+.ai-info-board{background:transparent}

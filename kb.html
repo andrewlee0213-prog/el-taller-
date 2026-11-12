@@ -372,6 +372,44 @@ mark.kb-hl.flash{animation:kbflash 1.7s ease}
   font:inherit;font-size:13px;color:var(--g-text);text-align:left;transition:.2s}
 .kb-cont:hover{background:color-mix(in srgb,var(--g-accent) 16%,transparent)}
 .kb-cont small{color:var(--g-dim);font-size:11.5px;margin-left:auto;flex:none}
+/* 管理员待处理：书架中央通栏，默认展开；沿用十主题变量与原生折叠/对话框 */
+.kb-inbox{width:100%;margin:12px 0 16px;border-radius:20px;scroll-margin-top:20px}
+.kb-inbox[hidden],.kb-inbox-access[hidden],.kb-inbox [hidden],.kb-inbox-note [hidden]{display:none}
+.kb-inbox summary{cursor:pointer;padding:15px 18px;font-size:14px;font-weight:600;color:var(--g-text)}
+.kb-inbox summary:focus-visible{outline:2px solid var(--g-accent);outline-offset:2px;border-radius:18px}
+.kb-inbox summary small{margin-left:10px;font-size:11.5px;font-weight:400;color:var(--g-dim)}
+.kb-inbox-body{padding:0 18px 16px}
+.kb-inbox-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.kb-inbox-tools p,.kb-inbox-status,.kb-inbox-empty,.kb-inbox-access{font-size:12px;line-height:1.7;color:var(--g-dim)}
+.kb-inbox-status{margin:8px 0;overflow-wrap:anywhere}
+.kb-inbox-status.error,.kb-inbox-note .error{color:var(--warn)}
+.kb-inbox-list{list-style:none;padding:0;margin:8px 0 0}
+.kb-inbox-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--g-brd)}
+.kb-inbox-item>div:first-child{min-width:0}
+.kb-inbox-item a{font-size:13px;line-height:1.65;color:var(--g-text);text-decoration:none;overflow-wrap:anywhere}
+.kb-inbox-item a:hover{color:var(--g-accent-soft)}
+.kb-inbox-item small{display:block;font-size:11px;line-height:1.7;color:var(--g-dim)}
+.kb-inbox-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.kb-inbox button,.kb-inbox-note button,.kb-inbox-access button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--g-brd);
+  border-radius:999px;padding:6px 13px;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--g-text)}
+.kb-inbox button:hover,.kb-inbox-note button:hover{border-color:var(--g-accent)}
+.kb-inbox button:disabled,.kb-inbox-note button:disabled{opacity:.5;cursor:default}
+.kb-inbox [data-inbox-act="discard"]{color:var(--warn)}
+.kb-inbox-access{margin:12px 0;padding:12px 16px;border:1px solid var(--g-brd);border-radius:16px}
+.kb-inbox-access a,.kb-inbox-note a{color:var(--g-accent-soft)}
+.kb-inbox-note{width:min(600px,calc(100vw - 32px));max-height:90vh;margin:auto;padding:22px;border-radius:22px;
+  background:var(--g-bg-base);color:var(--g-text);border:1px solid var(--g-brd);box-shadow:0 24px 70px var(--g-drop)}
+.kb-inbox-note::backdrop{background:color-mix(in srgb,var(--g-bg-base) 65%,transparent);backdrop-filter:blur(10px)}
+.kb-inbox-note form{display:flex;flex-direction:column;gap:12px}
+.kb-inbox-note h2{font-size:17px;margin:0}
+.kb-inbox-note p{font-size:12px;line-height:1.7;margin:0;overflow-wrap:anywhere}
+.kb-inbox-note label,.kb-inbox-note small{font-size:12px;color:var(--g-dim)}
+.kb-inbox-note textarea{width:100%;min-height:180px;max-height:45vh;resize:vertical;padding:12px;border-radius:12px;
+  font:inherit;font-size:14px;line-height:1.8;color:var(--g-text);background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid var(--g-brd)}
+.kb-inbox-note footer{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.kb-inbox-note footer small{margin-right:auto}
+.kb-inbox-note button[type="submit"]{background:var(--g-accent);color:var(--g-on-accent)}
+@media(max-width:680px){.kb-inbox-item{align-items:flex-start;flex-direction:column;gap:8px}.kb-inbox-actions{width:100%}}
 /* 回顾闪卡浮层 */
 .kb-rev-mask{position:fixed;inset:0;z-index:80;background:color-mix(in srgb,var(--g-bg-base) 55%,transparent);
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:20px}
@@ -420,6 +458,8 @@ mark.kb-hl.flash{animation:kbflash 1.7s ease}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
   outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
+<link rel="stylesheet" href="/learning-entry.css">
+<script src="/learning-entry.js"></script>
 </head>
 <body>
 <a class="skiplink" href="#main">Saltar al contenido · 跳到正文</a>
@@ -435,6 +475,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
         <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
         <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+        <a href="ai-workbench.html"><b>AI</b><small>AI 工作台</small></a>
         <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
         <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
         <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
@@ -465,6 +506,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <span id="shelfUp" style="display:none"><button class="book-tab upbtn" id="kbUploadBtn" title="上传 PDF / MD 文档，可一次多选，每份 ≤25MB；PDF 上传后自动转中英对照（约几分钟，完成前先以原文内嵌显示）">＋ 上传 PDF / MD</button><button class="book-tab upbtn" id="kbCollectBtn" style="margin-left:8px" title="提交 B 站视频链接，家中 openclaw + getnote 自动转录，收录进「个人收集 · 视频集」">＋ 收视频</button></span>
       </div>
       <button class="kb-cont" id="kbContinue"></button>
+      <details class="kb-inbox g-glass" id="kbInbox" hidden open>
+        <summary id="kbInboxTitle">待处理 <small id="kbInboxCount"></small></summary>
+        <div class="kb-inbox-body">
+          <div class="kb-inbox-tools"><p>新收录的材料先在这里看一遍。保留或评论后出队，删除会移除原文件。</p><button type="button" id="kbInboxRefresh">刷新</button></div>
+          <p class="kb-inbox-status" id="kbInboxStatus" role="status" aria-live="polite"></p>
+          <p class="kb-inbox-empty" id="kbInboxEmpty" hidden>暂无待处理材料，可以收起此面板。</p>
+          <ul class="kb-inbox-list" id="kbInboxList" aria-label="待处理材料"></ul>
+        </div>
+      </details>
+      <p class="kb-inbox-access" id="kbInboxAccess" hidden><span id="kbInboxAccessText"></span> <a id="kbInboxLogin" href="login.html?next=%2Fkb.html%23inbox" target="_blank" rel="noopener" hidden>管理员登录（新窗口）</a> <button type="button" id="kbInboxRetry" hidden>重新验证</button></p>
       <div class="kbchips" id="kbChips"></div>
       <div class="shelf" id="shelfGrid"></div>
     </div>
@@ -481,11 +532,24 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div class="crumb" id="crumb"></div>
         <div id="bookNote" class="owner-note" style="display:none"></div>
         <h1 id="chapterTitle"></h1>
+        <div id="chapterLearning" class="learning-entry" hidden></div>
         <div class="body" id="chapterBody"></div>
       </main>
     </div>
   </div>
 </div>
+<dialog class="kb-inbox-note" id="kbInboxNote" aria-labelledby="kbInboxNoteHeading" aria-describedby="kbInboxNoteTitle kbInboxNoteHint">
+  <form id="kbInboxNoteForm">
+    <h2 id="kbInboxNoteHeading">评论材料</h2>
+    <p id="kbInboxNoteTitle"></p>
+    <label for="kbInboxNoteText">站主笔记 · 最多 500 字，提交后此材料出队</label>
+    <textarea id="kbInboxNoteText" maxlength="500" required autofocus></textarea>
+    <p id="kbInboxNoteHint">⌘ / Ctrl + Enter 提交 · Esc 取消。失败时保留输入，请重试。</p>
+    <p class="error" id="kbInboxNoteError" role="alert" hidden></p>
+    <p id="kbInboxNoteAuth" hidden><a href="login.html?next=%2Fkb.html%23inbox" target="_blank" rel="noopener">管理员登录（新窗口，不丢失输入）</a> <button type="button" id="kbInboxNoteRetry">重新验证</button></p>
+    <footer><small id="kbInboxNoteCount">0 / 500</small><button type="button" id="kbInboxNoteCancel">取消</button><button type="submit" id="kbInboxNoteSubmit">提交评论</button></footer>
+  </form>
+</dialog>
 <script src="kb-data.js"></script>
 <script>
 const $ = s => document.querySelector(s);
@@ -495,6 +559,243 @@ const esc = x => String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 let view = 'shelf', bookId = '', chapterIdx = 0;
 let IS_ADMIN = false;
 const chapterCache = new Map();
+/* 待处理只保留本页瞬时状态；目录与正文仍使用原 window.KB / chapterCache。 */
+const kbInbox = { items: [], loaded: false, loading: false, error: '', notice: '', authKnown: false, authMessage: '', epoch: 0, busy: '', noteId: '' };
+let inboxAuthRequest = null, inboxRefreshRequest = null, inboxRefreshAt = 0;
+const hasInboxHash = () => new URLSearchParams(location.hash.slice(1)).has('inbox');
+function renderInbox(){
+  const panel = $('#kbInbox');
+  panel.hidden = !IS_ADMIN;
+  $('#kbInboxAccess').hidden = IS_ADMIN || !(kbInbox.authMessage || (kbInbox.authKnown && hasInboxHash()));
+  $('#kbInboxAccessText').textContent = kbInbox.authMessage || '待处理仅管理员可用，请使用管理员账号登录。';
+  $('#kbInboxLogin').hidden = $('#kbInboxRetry').hidden = $('#kbInboxAccess').hidden;
+  $('#kbInboxNoteSubmit').disabled = !IS_ADMIN || !!kbInbox.busy;
+  if (!IS_ADMIN) { $('#kbInboxList').replaceChildren(); $('#kbInboxCount').textContent = ''; return; }
+  $('#kbInboxCount').textContent = kbInbox.loaded ? (kbInbox.items.length ? kbInbox.items.length + ' 份待看' : '暂无待处理') : '读取中…';
+  const status = $('#kbInboxStatus');
+  status.textContent = kbInbox.error || kbInbox.notice || (kbInbox.loading ? '正在刷新…' : '');
+  status.classList.toggle('error', !!kbInbox.error);
+  $('#kbInboxRefresh').disabled = kbInbox.loading || !!kbInbox.busy;
+  $('#kbInboxEmpty').hidden = !kbInbox.loaded || !!kbInbox.items.length;
+  $('#kbInboxList').innerHTML = kbInbox.items.map(item => {
+    const at = new Date(item.at || 0), date = Number.isFinite(at.getTime()) && item.at ? at.toLocaleString('zh-CN') : '时间未知';
+    const count = Array.isArray(item.chapters) ? item.chapters.length : Math.max(0, Number(item.chapters) || 0);
+    const disabled = kbInbox.busy ? ' disabled' : '';
+    return '<li class="kb-inbox-item"><div><a data-inbox-read="' + esc(item.id) + '" href="#b=up-' + encodeURIComponent(item.id) + '&amp;c=0">' + esc(item.title || '未命名材料') + '</a>' +
+      '<small>' + (item.type === 'pdf' ? 'PDF' : 'MD') + ' · ' + esc(count) + ' 章 · ' + esc(date) + '</small></div><div class="kb-inbox-actions">' +
+      [['keep','保留'],['discard','删除'],['note','评论']].map(([act, label]) => '<button type="button" data-inbox-id="' + esc(item.id) + '" data-inbox-act="' + act + '"' + disabled + '>' + label + '</button>').join('') + '</div></li>';
+  }).join('');
+}
+function setInboxAdmin(allowed, message = ''){
+  const changed = IS_ADMIN !== allowed, wasAdmin = IS_ADMIN;
+  IS_ADMIN = allowed; kbInbox.authKnown = true;
+  if (!allowed) {
+    kbInbox.epoch++;
+    kbInbox.items = []; kbInbox.loaded = false; kbInbox.error = ''; kbInbox.notice = '';
+    kbInbox.authMessage = wasAdmin || kbInbox.noteId || hasInboxHash() || message.startsWith('无法验证') ? message : '';
+    if ($('#kbInboxNote').open) {
+      $('#kbInboxNoteTitle').textContent = '材料评论（输入仍保留）';
+      $('#kbInboxNoteError').textContent = message;
+      $('#kbInboxNoteError').hidden = false; $('#kbInboxNoteAuth').hidden = false;
+    }
+  } else {
+    kbInbox.authMessage = '';
+    if (!$('#kbInboxNoteAuth').hidden) { $('#kbInboxNoteAuth').hidden = true; $('#kbInboxNoteError').hidden = true; }
+  }
+  if (changed && window.KB && Array.isArray(window.KB.books)) render();
+  renderInbox();
+}
+async function verifyInboxAdmin(){
+  if (inboxAuthRequest) return inboxAuthRequest;
+  const epoch = kbInbox.epoch;
+  inboxAuthRequest = (async () => {
+    try {
+      const r = await fetch('/api/me', { cache: 'no-store', credentials: 'same-origin' });
+      if (!r.ok && r.status !== 401 && r.status !== 403) throw new Error('auth');
+      const me = await r.json();
+      if (epoch !== kbInbox.epoch) return IS_ADMIN;
+      const allowed = r.ok && !!(me && me.authenticated && me.role === 'admin');
+      setInboxAdmin(allowed, me && me.authenticated ? '当前账号没有管理员权限，待处理内容已隐藏。' : '登录已失效或已退出，待处理内容已隐藏。请重新登录。');
+      return allowed;
+    } catch (_) {
+      setInboxAdmin(false, '无法验证管理员身份，待处理内容已隐藏。请检查网络后重新验证。');
+      return false;
+    }
+  })();
+  try { return await inboxAuthRequest; } finally { inboxAuthRequest = null; }
+}
+function inboxResponseError(r, label){
+  if (r.status === 401 || r.status === 403) {
+    const message = r.status === 401 ? '登录已失效或已退出，请重新登录。输入仍保留。' : '当前账号没有管理员权限。输入仍保留。';
+    setInboxAdmin(false, message);
+    return new Error(message);
+  }
+  return new Error(label + '失败（HTTP ' + r.status + '），请稍后重试。');
+}
+function clearBookChapters(id){
+  for (const key of chapterCache.keys()) if (key.startsWith(id + '|')) chapterCache.delete(key);
+}
+function removeInboxBook(id){
+  const bid = 'up-' + id;
+  window.KB.books = window.KB.books.filter(b => b.id !== bid);
+  clearBookChapters(bid);
+  const p = window.KB_PROG.last;
+  if (p && p.b === bid) $('#kbContinue').style.display = 'none';
+  if (bookId === bid) { cancelLearningEntry(); bookId = ''; view = 'shelf'; $('#chapterBody').replaceChildren(); }
+}
+/* kb-data.js 的服务端响应为 window.KB = JSON;，只解析 JSON，不执行返回的脚本。 */
+async function refreshCatalog(){
+  if (!IS_ADMIN) return false;
+  const epoch = kbInbox.epoch;
+  const r = await fetch('/kb-data.js', { cache: 'no-store', credentials: 'same-origin' });
+  if (!r.ok) throw inboxResponseError(r, '书架刷新');
+  const match = /^\s*window\.KB\s*=\s*([\s\S]*?)\s*;?\s*$/.exec(await r.text());
+  let next; try { next = match && JSON.parse(match[1]); } catch (_) {}
+  if (!next || !Array.isArray(next.books) || next.books.some(b => !b || typeof b.id !== 'string' || !Array.isArray(b.chapters))) throw new Error('书架目录响应无效，请稍后刷新。');
+  if (!IS_ADMIN || epoch !== kbInbox.epoch) return false;
+  const ids = new Set(next.books.map(b => b.id));
+  for (const key of chapterCache.keys()) if (!ids.has(key.slice(0, key.lastIndexOf('|')))) chapterCache.delete(key);
+  window.KB = next;
+  const p = window.KB_PROG.last;
+  if (p && !ids.has(p.b)) $('#kbContinue').style.display = 'none';
+  if (bookId && !ids.has(bookId)) { cancelLearningEntry(); bookId = ''; view = 'shelf'; $('#chapterBody').replaceChildren(); }
+  render();
+  return true;
+}
+async function refreshInbox({ force = false, verify = true } = {}){
+  if (!IS_ADMIN) return false;   /* 非管理员连 GET inbox 都不发。 */
+  if (kbInbox.busy && !force) return false;
+  if (inboxRefreshRequest) {
+    if (!force) return inboxRefreshRequest;
+    await inboxRefreshRequest;   /* 上传/处理后的强制刷新必须晚于旧请求。 */
+    return refreshInbox({ force, verify });
+  }
+  if (!force && Date.now() - inboxRefreshAt < 12000) return false;
+  inboxRefreshAt = Date.now();
+  inboxRefreshRequest = (async () => {
+    if (verify && !await verifyInboxAdmin()) return false;
+    const epoch = kbInbox.epoch;
+    let ok = true;
+    kbInbox.loading = true; kbInbox.error = ''; renderInbox();
+    try {
+      const r = await fetch('/api/kb/inbox', { cache: 'no-store', credentials: 'same-origin' });
+      if (!r.ok) throw inboxResponseError(r, '待处理读取');
+      const j = await r.json();
+      if (!j || j.ok !== true || !Array.isArray(j.items) || j.items.some(item => !item || typeof item.id !== 'string' || !item.id)) throw new Error('待处理响应无效，请稍后刷新。');
+      if (IS_ADMIN && epoch === kbInbox.epoch) {
+        const fresh = !kbInbox.loaded || j.items.some(item => !kbInbox.items.some(old => old.id === item.id));
+        kbInbox.items = j.items; kbInbox.loaded = true;
+        if (fresh) $('#kbInbox').open = true;
+      } else ok = false;
+    } catch (err) {
+      ok = false;
+      if (IS_ADMIN && epoch === kbInbox.epoch) kbInbox.error = /^(书架|待处理)/.test(err.message || '') ? err.message : '网络错误，待处理刷新失败，请重试。';
+    }
+    try {
+      if (IS_ADMIN && epoch === kbInbox.epoch) await refreshCatalog();   /* 即使 inbox 暂不可用，也更新上传后的书架。 */
+    } catch (err) {
+      ok = false;
+      if (IS_ADMIN && epoch === kbInbox.epoch) kbInbox.error += (kbInbox.error ? ' ' : '') + (/^书架/.test(err.message || '') ? err.message : '书架刷新失败，请重试。');
+    } finally {
+      if (kbInbox.error && kbInbox.notice) kbInbox.error = kbInbox.notice + ' ' + kbInbox.error;
+      kbInbox.loading = false; renderInbox();
+    }
+    return ok;
+  })();
+  try { return await inboxRefreshRequest; } finally { inboxRefreshRequest = null; }
+}
+function focusInbox(){
+  if (!IS_ADMIN || !hasInboxHash()) return;
+  $('#kbInbox').open = true;
+  $('#kbInbox').scrollIntoView({ block: 'start' });
+  $('#kbInboxTitle').focus({ preventScroll: true });
+}
+function closeInboxNote(){
+  $('#kbInboxNote').close(); kbInbox.noteId = '';
+  $('#kbInboxNoteText').value = ''; $('#kbInboxNoteError').hidden = true; $('#kbInboxNoteAuth').hidden = true;
+  if (!$('#kbInbox').hidden) $('#kbInboxTitle').focus({ preventScroll: true });
+}
+function openInboxNote(id){
+  if (!IS_ADMIN || kbInbox.busy) return;
+  const item = kbInbox.items.find(item => item.id === id);
+  if (!item) return;
+  kbInbox.noteId = id;
+  $('#kbInboxNoteTitle').textContent = item.title || '未命名材料';
+  $('#kbInboxNoteText').value = ''; $('#kbInboxNoteCount').textContent = '0 / 500';
+  $('#kbInboxNoteError').hidden = true; $('#kbInboxNoteAuth').hidden = true;
+  $('#kbInboxNote').showModal(); $('#kbInboxNoteText').focus();
+}
+async function triageInbox(id, act, note){
+  if (!IS_ADMIN || kbInbox.busy || !kbInbox.items.some(item => item.id === id)) return false;
+  if (act === 'discard' && !confirm('删除这份材料？将从 Biblioteca 移除本书及原文件，不可恢复。')) return false;
+  kbInbox.busy = id; kbInbox.error = ''; kbInbox.notice = ''; renderInbox();
+  try {
+    if (!await verifyInboxAdmin()) return false;
+    if (inboxRefreshRequest) await inboxRefreshRequest;   /* 等旧读请求结束，避免出队后被旧结果放回。 */
+    if (!IS_ADMIN) return false;
+    const epoch = kbInbox.epoch;
+    const r = await fetch('/api/kb/triage', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, act, ...(act === 'note' ? { note } : {}) }) });
+    if (!r.ok) throw inboxResponseError(r, '处理');
+    const j = await r.json();
+    if (!j || j.ok !== true) throw new Error('处理未成功，请稍后重试。');
+    if (!IS_ADMIN || epoch !== kbInbox.epoch) return false;
+    kbInbox.epoch++;   /* 已处理后，任何更早的目录响应都不得回填旧书。 */
+    kbInbox.items = kbInbox.items.filter(item => item.id !== id);
+    if (act === 'discard') removeInboxBook(id);
+    if (act === 'note') { const b = bookById('up-' + id); if (b) b.note = note; }
+    kbInbox.notice = act === 'discard' ? '已删除材料。' : act === 'note' ? '评论已保存，材料已出队。' : '已保留，材料已出队。';
+    if (act === 'note' && kbInbox.noteId === id) closeInboxNote();
+    render();
+    await refreshInbox({ force: true, verify: false });
+    return true;
+  } catch (err) {
+    const message = /^(处理|登录|当前账号)/.test(err.message || '') ? err.message : '网络错误，操作未确认成功，请重试。';
+    if (IS_ADMIN) kbInbox.error = message;
+    if (act === 'note' && kbInbox.noteId === id) { $('#kbInboxNoteError').textContent = message; $('#kbInboxNoteError').hidden = false; }
+    return false;
+  } finally { kbInbox.busy = ''; renderInbox(); }
+}
+$('#kbInboxList').addEventListener('click', async e => {
+  const link = e.target.closest('[data-inbox-read]');
+  if (link) {
+    e.preventDefault();
+    if (!IS_ADMIN || kbInbox.busy || !await verifyInboxAdmin()) return;
+    const bid = 'up-' + link.dataset.inboxRead;
+    try {
+      if (!bookById(bid)) await refreshCatalog();
+      if (!IS_ADMIN) return;
+      if (!bookById(bid) || !bookById(bid).chapters.length) { kbInbox.error = '材料目录尚未就绪，请稍后刷新。'; renderInbox(); return; }
+      history.replaceState(null, '', '#b=' + encodeURIComponent(bid) + '&c=0');
+      window.KB_PENDING_MID = ''; view = 'book'; bookId = bid; chapterIdx = 0; render();
+    } catch (_) { kbInbox.error = '读取目录失败，请稍后刷新。'; renderInbox(); }
+    return;
+  }
+  const btn = e.target.closest('[data-inbox-act]');
+  if (!btn || btn.disabled) return;
+  if (btn.dataset.inboxAct === 'note') openInboxNote(btn.dataset.inboxId);
+  else await triageInbox(btn.dataset.inboxId, btn.dataset.inboxAct);
+});
+$('#kbInboxRefresh').addEventListener('click', () => refreshInbox({ force: true }));
+async function retryInboxAuth(){
+  if (await verifyInboxAdmin()) { await refreshInbox({ force: true, verify: false }); if (!$('#kbInboxNote').open) focusInbox(); }
+}
+$('#kbInboxRetry').addEventListener('click', retryInboxAuth);
+$('#kbInboxNoteRetry').addEventListener('click', retryInboxAuth);
+$('#kbInboxNoteText').addEventListener('input', () => { $('#kbInboxNoteCount').textContent = $('#kbInboxNoteText').value.length + ' / 500'; });
+$('#kbInboxNoteCancel').addEventListener('click', closeInboxNote);
+$('#kbInboxNote').addEventListener('cancel', e => { e.preventDefault(); closeInboxNote(); });
+$('#kbInboxNoteForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('#kbInboxNoteText').value, note = text.trim();
+  if (!note || text.length > 500) { $('#kbInboxNoteError').textContent = !note ? '请输入评论内容。' : '评论最多 500 字，请缩短后提交。'; $('#kbInboxNoteError').hidden = false; return; }
+  await triageInbox(kbInbox.noteId, 'note', note);
+});
+$('#kbInboxNote').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('#kbInboxNoteForm').requestSubmit(); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && IS_ADMIN && !kbInbox.busy) refreshInbox();
+});
 const ICONS = { 'agent-handbook': '📘', 'interview-bank': '📙', 'video-scripts': '🎬', 'dala-design': '🎨', 'lectura': '📖' };
 const bookIcon = b => b.atlas ? '📔' : (b.collected ? '📼' : (b.uploaded ? '📄' : (ICONS[b.id] || '📚')));
 const bookById = id => window.KB.books.find(b => b.id === id);
@@ -561,6 +862,7 @@ function render(){
     view = 'shelf'; bl.style.display = 'none'; sv.style.display = '';
     renderShelf();
   }
+  renderInbox();
 }
 
 function renderShelf(){
@@ -626,7 +928,9 @@ function renderBook(){
   loadChapter();
 }
 
+let cancelLearningEntry = () => {};
 async function loadChapter(){
+  cancelLearningEntry();
   const b = bookById(bookId);
   if (!b || !b.chapters[chapterIdx]) return;
   const key = bookId + '|' + chapterIdx;
@@ -638,16 +942,21 @@ async function loadChapter(){
     try {
       const r = await fetch('/api/kb/chapter?b=' + encodeURIComponent(bookId) + '&c=' + chapterIdx);
       const j = await r.json();
+      if (!bookById(b.id)) return;   // 待处理删除期间在途的章节响应不再回填缓存
       if (!j.ok) { document.getElementById('chapterBody').innerHTML = '<p style="opacity:.6">章节读取失败</p>'; return; }
       if (chapterCache.size > 300) chapterCache.delete(chapterCache.keys().next().value);
       chapterCache.set(key, j);
       data = j;
     } catch { document.getElementById('chapterBody').innerHTML = '<p style="opacity:.6">网络错误，稍后重试</p>'; return; }
   }
-  if (bookId + '|' + chapterIdx !== key) return;   // 等待期间已切章
+  if (view !== 'book' || bookId + '|' + chapterIdx !== key) return;   // 等待期间已切章或回书架，不打断 #inbox 定位
   document.getElementById('crumb').textContent = (data.es || b.es || '') + ' · ' + (chapterIdx+1) + ' / ' + data.total;
   document.getElementById('chapterTitle').textContent = data.title;
   document.getElementById('chapterBody').innerHTML = data.html;
+  if (window.TallerLearningEntry) {
+    cancelLearningEntry = window.TallerLearningEntry.mount(document.getElementById('chapterLearning'),
+      { b: b.id, c: b.chapters[chapterIdx].id });
+  }
   window.scrollTo(0, 0);
 }
 
@@ -759,8 +1068,9 @@ document.getElementById('backShelf').addEventListener('click', () => { view = 's
       } catch (err) { fails.push(f.name + '：' + err); }
     }
     if (fails.length === files.length) { alert('全部上传失败：\n' + fails.join('\n')); reset(); return; }
-    if (fails.length) alert('部分文件未收录：\n\n' + fails.join('\n'));   /* alert 阻塞，确认后再刷新 */
-    location.reload();
+    if (fails.length) alert('部分文件未收录：\n\n' + fails.join('\n'));
+    reset();
+    await refreshInbox({ force: true });   /* 同页更新待处理与书架，不丢现有读位/learning 挂载。 */
   });
   document.getElementById('kbDel').addEventListener('click', async () => {
     if (await deleteBook(bookById(bookId))) location.reload();
@@ -813,6 +1123,7 @@ document.getElementById('shelfView').addEventListener('click', async e => {
   }
 })();
 function hashState(){
+  if (hasInboxHash()) { window.KB_PENDING_MID = ''; return { inbox: true }; }
   const m = /^#b=([\w-]+)&c=(\d+)(?:&m=(\w+))?$/.exec(location.hash);
   if (!m) return null;
   const bi = window.KB.books.findIndex(b => b.id === m[1]);
@@ -825,23 +1136,29 @@ function hashState(){
 /* 同页面改 hash（如从文章链接返回已打开的 kb 页）是同文档导航，boot 不重跑 → 监听定位 */
 window.addEventListener('hashchange', () => {
   const h = hashState();
-  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; render(); }
+  if (h && h.inbox) { view = 'shelf'; render(); focusInbox(); if (IS_ADMIN) refreshInbox(); }
+  else if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; render(); }
 });
 
 (function boot(){
-  if (!window.KB || !Array.isArray(window.KB.books) || !window.KB.books.length){
+  if (!window.KB || !Array.isArray(window.KB.books)){
     location.href = 'login.html?next=' + encodeURIComponent('/kb.html' + location.hash); return;
   }
   const h = hashState();
-  if (h) { view = 'book'; bookId = h.b; chapterIdx = h.c; }
+  if (h && !h.inbox) { view = 'book'; bookId = h.b; chapterIdx = h.c; }
   render();
 })();
-fetch('/api/me').then(r=>r.json()).then(m=>{ IS_ADMIN = !!(m && m.authenticated && m.role==='admin'); render(); if (IS_ADMIN) loadCollect(); }).catch(()=>{});
+verifyInboxAdmin().then(async allowed => {
+  if (!allowed) return;
+  loadCollect();
+  await refreshInbox({ force: true, verify: false });
+  focusInbox();
+});
 </script>
 <script>
 /* ================= gloss 式页边问读：划线 / 问 AI / 笔记 / 每日回顾 / 阅读进度 =================
    登录用户可用、按账户隔离（服务端 s.u）；kb-margin 预留页边（≥1240px），窄屏卡片转行内 */
-window.KB_PENDING_MID = '';
+window.KB_PENDING_MID = window.KB_PENDING_MID || '';
 (function(){
   const body = document.getElementById('chapterBody');
   const article = document.querySelector('.article');

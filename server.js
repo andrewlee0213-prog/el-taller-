@@ -12,6 +12,15 @@ const crypto = require("crypto");
 const os = require("os");
 const { DatabaseSync } = require("node:sqlite");
 const { spawnSync } = require("child_process");
+/* 视觉学习层为本地实验：模块文件不随站点部署，缺失时相关入口返回未上线提示 */
+let createLearning, resolveLearningSource, createReviewedCaseRegistry, LEARNING_CASE_URL;
+let learningAvailable = false;
+try {
+  ({ createLearning, resolveSource: resolveLearningSource } = require("./learning.js"));
+  ({ createReviewedCaseRegistry, CASE_URL: LEARNING_CASE_URL } = require("./learning-cases.js"));
+  learningAvailable = true;
+} catch { console.log("[learning] learning.js 未部署，视觉学习入口关闭"); }
+const { createAiWorkbenchService, AiWorkbenchError } = require("./ai-workbench-service.js");
 
 /* ---------------- 配置（按需修改） ---------------- */
 const CFG = {
@@ -27,6 +36,10 @@ const CFG = {
 };
 
 const ROOT = __dirname;
+const OFFLINE = process.env.TALLER_OFFLINE === "1";
+if (OFFLINE) {
+  globalThis.fetch = async () => { throw new Error("offline: 本地隔离实例禁止外部请求"); };
+}
 /* TALLER_DATA_DIR 供测试隔离数据目录；运行时数据（users.db / server-config.json / workbench-*）都在这里 */
 const DATA = process.env.TALLER_DATA_DIR ? path.resolve(process.env.TALLER_DATA_DIR) : path.join(ROOT, "data");
 if (!fs.existsSync(DATA)) fs.mkdirSync(DATA, { recursive: true });
@@ -175,7 +188,7 @@ const MIME = {
 };
 const BLOCKED_DIRS = ["data", "tools", "node_modules", ".git", "deploy"]; // 永不对外
 function serveStatic(req, res, urlPath) {
-  let rel = decodeURIComponent(urlPath).replace(/^\/+/, "");
+  let rel = urlPath.replace(/^\/+/, "");
   const hx = rel.indexOf("#");
   if (hx >= 0) rel = rel.slice(0, hx);   // # 被编码成 %23 混进路径（转发链接常见）→ 截断还原，按真实页面走
   if (rel === "") rel = "index.html";
@@ -183,7 +196,7 @@ function serveStatic(req, res, urlPath) {
   /* 必须带路径分隔符：不带则 /opt/taller-xxx 等同前缀兄弟目录也能通过检查 */
   if (abs !== ROOT && !abs.startsWith(ROOT + path.sep)) return json(res, 403, { error: "forbidden" });
   const relCheck = path.relative(ROOT, abs);
-  if (BLOCKED_DIRS.includes(relCheck.split(path.sep)[0])) return json(res, 404, { error: "not found" });
+  if (["server.js", "learning.js", "learning-cases.js", "ai-workbench-service.js", "safe-public-fetch.js"].includes(relCheck) || BLOCKED_DIRS.includes(relCheck.split(path.sep)[0])) return json(res, 404, { error: "not found" });
   if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) return json(res, 404, { error: "not found" });
   const ext = path.extname(abs).toLowerCase();
   if (!MIME[ext]) return json(res, 404, { error: "not found" });
@@ -694,6 +707,14 @@ function kbCatalog() {
   }));
 }
 /* 原始二进制 body 读取（上传用；readBody 只吃 16KB JSON） */
+function kbInbox() {
+  const books = kbUploadBooks();
+  return Object.values(kbUploads).filter(u => u.state === "new").sort((a, b) => a.at - b.at).map(u => {
+    const book = books.find(b => b.id === "up-" + u.id);
+    return { id: u.id, title: u.title, type: u.type, at: u.at, chapters: book ? book.chapters.length : 0 };
+  });
+}
+
 function readRawBody(req, maxBytes) {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
@@ -756,6 +777,8 @@ const WB_FILE = {
   xhs:      path.join(DATA, "xhs-fans.json"),           // 小红书粉丝监控（服务器侧抓取，日点留 120 天）
   ziwei:    path.join(DATA, "ziwei.json"),              // 紫微生辰（仅站主本人，敏感数据不入库）
   ziweiMonth: path.join(DATA, "ziwei-month.json"),      // 紫微月总述 GLM 缓存（键=生辰指纹:农历月，改生辰自动失效）
+  dtToken:  path.join(DATA, "dingtalk-token.json"),     // DingTalk OAuth token（userAccessToken+refreshToken，敏感仅 data/）
+  dtEvents: path.join(DATA, "workbench-dingtalk.json"), // DingTalk 日程缓存（服务器每小时拉取，工作台日历展示）
 };
 function loadJson(f, def) { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return def; } }
 function saveJson(f, obj) { try { fs.writeFileSync(f, JSON.stringify(obj, null, 1), "utf8"); } catch {} }
@@ -780,6 +803,136 @@ const WB_DEFAULTS = {
 };
 const wbCfg = Object.assign({}, WB_DEFAULTS, loadJson(WB_FILE.cfg, {}));
 if (!Array.isArray(wbCfg.biliUps)) wbCfg.biliUps = [];
+
+/* ---------------- DingTalk 日历同步（Agenda：DingTalk 日程 → 工作台日历，单向只读）
+   应用类型：第三方个人应用（个人开发者可建，无需公司管理员），权限点「日历应用中日程读权限」。
+   鉴权：站主扫码授权一次 → userAccessToken(2h) + refreshToken(30 天滑动续期)，服务器每小时静默拉取。
+   配置: data/server-config.json 的 dingtalk {clientId, clientSecret}（工作台设置区可填）
+   数据: data/dingtalk-token.json / data/workbench-dingtalk.json ---------------- */
+const DT_API = "https://api.dingtalk.com";
+const DT = {
+  token:   loadJson(WB_FILE.dtToken, null),   // {clientId,unionId,nick,accessToken,refreshToken,expireAt,calendarId,needRebind}
+  events:  loadJson(WB_FILE.dtEvents, null) || { at: 0, ok: false, error: "", events: [] },
+  states:  new Map(),                          // OAuth state → 过期时刻（CSRF 校验，10 分钟）
+};
+const dtCfgOk = () => !!(wbCfg.dingtalk && wbCfg.dingtalk.clientId && wbCfg.dingtalk.clientSecret);
+
+async function dtFetch(method, url, body, headers, timeoutMs) {
+  const r = await fetch(url, {
+    method,
+    headers: Object.assign(body ? { "Content-Type": "application/json" } : {}, headers || {}),
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(timeoutMs || 15000),
+  });
+  let data = null;
+  try { data = await r.json(); } catch {}
+  return { status: r.status, data };
+}
+/* 北京时间 ISO（显式 +8，不依赖服务器时区，与 F1 板块同风格） */
+function dtBJISO(ms) {
+  return new Date(ms + 8 * 3600e3).toISOString().replace("Z", "+08:00");
+}
+async function dtAccessToken() {
+  const t = DT.token;
+  if (t.accessToken && t.expireAt && Date.now() < t.expireAt - 5 * 60e3) return t.accessToken;
+  const r = await dtFetch("POST", DT_API + "/v1.0/oauth2/userAccessToken", {   /* 刷新与获取同端点同 POST（2026-10 实测 PUT 返回 api not found） */
+    clientId: wbCfg.dingtalk.clientId, clientSecret: wbCfg.dingtalk.clientSecret,
+    refreshToken: t.refreshToken, grantType: "refresh_token",
+  });
+  if (r.status !== 200 || !r.data || !r.data.accessToken) {
+    /* refreshToken 过期 / 密钥换过 → 只能重新扫码；不短重试 */
+    t.needRebind = true; saveJson(WB_FILE.dtToken, t);
+    throw new Error("Agenda 授权已失效，请重新绑定" + (r.data && r.data.message ? "（" + r.data.message + "）" : ""));
+  }
+  t.accessToken = r.data.accessToken;
+  if (r.data.refreshToken) t.refreshToken = r.data.refreshToken;
+  t.expireAt = Date.now() + (r.data.expireIn || 7200) * 1000;
+  if (r.data.unionId && !t.unionId) t.unionId = r.data.unionId;
+  saveJson(WB_FILE.dtToken, t);
+  return t.accessToken;
+}
+/* 日程对象归一化 + 跨天展开（DingTalk 字段按防御式兼容解析；首次同步会留原始样本到
+   data/dingtalk-sample.json，联调字段差异时以样本为准修正） */
+function dtExpand(ev, out) {
+  const sm = ev && ev.summary && typeof ev.summary === "object" ? ev.summary : {};
+  const st = sm.start || (ev && ev.start) || {};
+  const en = sm.end || (ev && ev.end) || {};
+  const sISO = st.dateTime || st.date || (typeof ev.startTime === "string" ? ev.startTime : "");
+  const eISO = en.dateTime || en.date || (typeof ev.endTime === "string" ? ev.endTime : "");
+  if (!sISO) return;
+  const title = typeof ev.summary === "string" && ev.summary ? ev.summary : ((ev && (ev.title || ev.subject)) || "(无标题)");
+  const loc = typeof ev.location === "string" ? ev.location : ((ev.location && (ev.location.locationName || ev.location.name)) || "");
+  const org = typeof ev.organizer === "string" ? ev.organizer : ((ev.organizer && (ev.organizer.nick || ev.organizer.name)) || "");
+  const base = { id: String(ev.id || ev.uuid || (sISO + "|" + title)), title: String(title).slice(0, 120),
+                 location: String(loc || "").slice(0, 80), organizer: String(org || "").slice(0, 40),
+                 allDay: !st.dateTime && !!st.date, start: sISO, end: eISO || sISO };
+  if (base.allDay) {
+    /* 全天事件 end 视为排他（次日）惯例：>start 先减一天；end==start 保持单天 */
+    let d0 = sISO.slice(0, 10), d1 = (eISO || sISO).slice(0, 10);
+    if (d1 > d0) {
+      const dt = new Date(d1 + "T00:00:00Z"); dt.setUTCDate(dt.getUTCDate() - 1); d1 = dt.toISOString().slice(0, 10);
+    }
+    for (let n = 0; n <= 60 && d0 <= d1; n++) {
+      out.push(Object.assign({}, base, { ds: d0 }));
+      const dt = new Date(d0 + "T00:00:00Z"); dt.setUTCDate(dt.getUTCDate() + 1); d0 = dt.toISOString().slice(0, 10);
+    }
+  } else {
+    out.push(Object.assign({}, base, { ds: sISO.slice(0, 10) }));   // 带时刻的落开始日，详情里看完整起止
+  }
+}
+async function dtSync() {
+  if (!dtCfgOk()) return { ok: false, skip: "未配置 Agenda 应用密钥" };
+  const t = DT.token;
+  if (!t || !t.refreshToken) return { ok: false, skip: "未绑定 Agenda 账号" };
+  try {
+    const at = await dtAccessToken();
+    if (!t.unionId) {   /* 兜底：换 token 响应没带 unionId 时再查一次个人信息 */
+      const me = await dtFetch("GET", DT_API + "/v1.0/contact/users/me", null, { Authorization: "Bearer " + at });
+      if (me.status !== 200 || !me.data || !me.data.unionId) throw new Error("获取 Agenda 用户信息失败(" + me.status + ")");
+      t.unionId = me.data.unionId; if (me.data.nick) t.nick = me.data.nick;
+      saveJson(WB_FILE.dtToken, t);
+    }
+    let calId = t.calendarId;
+    if (!calId) {
+      const pr = await dtFetch("GET", DT_API + "/v1.0/calendar/users/" + t.unionId + "/calendars/primary", null,
+        { "x-acs-dingtalk-access-token": at });
+      const cid = pr.data && (pr.data.calendarId || pr.data.id);
+      if (pr.status !== 200 || !cid) throw new Error("查询 Agenda 主日历失败(" + pr.status + ")");
+      t.calendarId = calId = cid; saveJson(WB_FILE.dtToken, t);
+    }
+    const timeMin = dtBJISO(Date.now() - 7 * 86400e3), timeMax = dtBJISO(Date.now() + 60 * 86400e3);
+    const raw = []; let pageToken = "";
+    for (let i = 0; i < 10; i++) {
+      const q = new URLSearchParams({ timeMin, timeMax, maxResults: "100" });
+      if (pageToken) q.set("pageToken", pageToken);
+      const er = await dtFetch("GET", DT_API + "/v1.0/calendar/users/" + t.unionId +
+        "/calendars/" + encodeURIComponent(calId) + "/events?" + q.toString(), null,
+        { "x-acs-dingtalk-access-token": at });
+      if (er.status !== 200) throw new Error("拉取 Agenda 日程失败(" + er.status + ")");
+      raw.push(...((er.data && er.data.events) || []));
+      pageToken = (er.data && er.data.nextPageToken) || "";
+      if (!pageToken) break;
+    }
+    const events = [];
+    raw.forEach(ev => dtExpand(ev, events));
+    events.sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+    DT.events = { at: Date.now(), ok: true, error: "", events };
+    saveJson(WB_FILE.dtEvents, DT.events);
+    try {   /* 首次同步留一份原始样本（≤20 条），联调字段用 */
+      const sample = path.join(DATA, "dingtalk-sample.json");
+      if (!fs.existsSync(sample)) saveJson(sample, { at: Date.now(), note: "首次同步原始响应样本（字段联调用，可删）", raw: raw.slice(0, 20) });
+    } catch {}
+    console.log("[workbench] dingtalk 日程 " + events.length + " 条");
+    return { ok: true };
+  } catch (e) {
+    const msg = (e.name === "TimeoutError" || e.name === "AbortError") ? "Agenda 接口超时" : (e.message || "同步失败");
+    DT.events.ok = false;
+    DT.events.error = t.needRebind ? "Agenda 授权已失效，请在日历卡片重新绑定" : msg;
+    if (!Array.isArray(DT.events.events)) DT.events.events = [];
+    saveJson(WB_FILE.dtEvents, DT.events);
+    return { ok: false, error: msg, rebind: !!t.needRebind };
+  }
+}
 
 /* ---------------- 小红书粉丝监控（Mac 推送；2026-10-14 实测小红书只认真浏览器上下文，
    服务器/裸客户端带有效 Cookie 也一律 302→登录页，curl-impersonate 同样无效 → 与 hw 情报同架构） ----------------
@@ -972,6 +1125,46 @@ function keepEnglishTerms(s) {
     .replace(/令牌/g, "token")
     .replace(/(LLM|AI|MLLM|RAG|MCP)agent/g, "$1 agent");
 }
+/* ---- Constelación 助手：星图数据缓存（与前端共用 constelacion-data.js）+ 每用户冷却 ---- */
+const assistantCooldown = {};
+let _constelCache = null;
+function constelData() {
+  if (_constelCache) return _constelCache;
+  try {
+    const txt = fs.readFileSync(path.join(__dirname, "constelacion-data.js"), "utf8");
+    /* 不能全局找第一个 "="：文件头注释里全是等号；锚定行首赋值再找等号 */
+    const anchor = txt.indexOf("\nwindow.CONSTEL_DATA");
+    const eq = txt.indexOf("=", anchor < 0 ? 0 : anchor);
+    _constelCache = JSON.parse(txt.slice(eq + 1).trim().replace(/;\s*$/, ""));
+  } catch { _constelCache = { nodes: [], edges: [] }; }
+  return _constelCache;
+}
+
+const aiWorkbench = createAiWorkbenchService({
+  getConfig: () => {
+    const explicit = wbCfg.ai && typeof wbCfg.ai === "object" ? wbCfg.ai : {};
+    const independent = process.env.TALLER_AI_BASE_URL || process.env.TALLER_AI_KEY || process.env.TALLER_AI_MODEL || explicit.baseUrl || explicit.key || explicit.model;
+    return independent
+      ? { baseUrl: process.env.TALLER_AI_BASE_URL || explicit.baseUrl, key: process.env.TALLER_AI_KEY || explicit.key, model: process.env.TALLER_AI_MODEL || explicit.model }
+      : { baseUrl: "https://open.bigmodel.cn/api/paas/v4", key: wbCfg.glmKey, model: "glm-4-flash" };
+  },
+  getContext: flags => {
+    const short = (value, limit = 300) => String(value || "").slice(0, limit);
+    const items = data => (data && Array.isArray(data.items) ? data.items : []).slice(0, 8).map(item => ({ title: short(item.title), description: short(item.zh || item.desc), url: short(item.url, 1000) }));
+    const context = {};
+    if (flags.dashboard) {
+      const oil = oilSnapshot(wbCache.oil) || {};
+      context.dashboard = { capturedAt: Date.now(), glm: { at: wbCache.glm && wbCache.glm.at, level: wbCache.glm && wbCache.glm.level, limits: wbCache.glm && wbCache.glm.limits },
+        oil: { at: oil.at, price: oil.price, next: oil.next, adj: oil.adj }, bili: items(wbCache.bili), anthropic: items(wbCache.anth), arxiv: items(wbCache.arxiv), github: items(wbCache.github), hardwareSummary: short(hwLatest() && hwLatest().summary, 1200) };
+    }
+    if (flags.work) context.work = { records: wbLog.slice(-30).map(item => ({ date: item.date, project: short(item.project, 40), text: short(item.text, 500) })),
+      memos: wbMemos.slice(-20).map(item => ({ date: item.date, done: !!item.done, text: short(item.text, 300) })),
+      plans: Object.values(wbWeekly).sort((a, b) => (b.confirmedAt || b.generatedAt || 0) - (a.confirmedAt || a.generatedAt || 0)).slice(0, 2).map(item => ({ start: item.start, end: item.end, plan: short(item.plan, 2000) })) };
+    return context;
+  },
+  ...(OFFLINE ? { fetchImpl: async () => { throw new Error("offline"); }, lookup: async () => { throw new Error("offline"); } } : {}),
+});
+
 async function glmChat(prompt, opts = {}) {
   if (!wbCfg.glmKey) throw new Error("未配置 GLM Key");
   const body = JSON.stringify({
@@ -1086,23 +1279,30 @@ async function wbFetchGLM() {
   return d;
 }
 
-/* ---------------- 抓取器 · 上海油价（金投网，窗口过期 2h 重查） ---------------- */
-function oilUpcoming(month, day) {
-  if (!(month >= 1 && month <= 12 && day >= 1 && day <= 31)) return false;
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let d = new Date(now.getFullYear(), month - 1, day);
-  if (d >= today) return true;
-  d = new Date(now.getFullYear() + 1, month - 1, day);
-  return d >= today;
+/* ---------------- 抓取器 · 上海油价（金投网，预测按调价周期校验） ---------------- */
+const OIL_FORECAST_VERSION = 2;
+const OIL_WINDOW_MS = 32 * 86400e3;
+function oilDateISO(year, month, day) {
+  if (![year, month, day].every(Number.isInteger) || year < 2000 || year > 2100) return "";
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) return "";
+  return year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
 }
-/* 调价窗口 [月,日] → "YYYY-MM-DD"（北京墙钟推断年份：今年已过即明年；调价窗口 ~10 个工作日一开，跨年仅 Dec→Jan 一种） */
-function oilAdjISO(month, day) {
-  const w = bjWall(Date.now());
-  let y = w.y;
-  if (month < w.m || (month === w.m && day < w.d)) y += 1;
-  return y + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+function oilWindow(adj, now = Date.now()) {
+  const m = String(adj || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m || oilDateISO(+m[1], +m[2], +m[3]) !== adj) return null;
+  const adjustAt = bjDayStart(adj) + 86400e3;   // 当日 24 时 = 次日北京零点
+  return adjustAt > now && adjustAt - now <= OIL_WINDOW_MS ? { adj, adjustAt } : null;
 }
+function oilAdjISO(month, day, year, reference = Date.now()) {
+  const w = bjWall(reference);
+  const y = year || w.y + (w.m === 12 && month === 1 ? 1 : 0);
+  return oilDateISO(y, month, day);   // 仅年末→年初可推年；过期月日绝不挪到明年
+}
+function oilSourceUrl(url) {
+  return /^https:\/\/energy\.cngold\.org\/c\/\d{4}-\d{2}-\d{2}\/c\d+\.html$/.test(String(url || ""));
+}
+function oilText(html) { return cleanText(String(html).replace(/<[^>]*>/g, " ")); }
 function oilForecast(dirn, amt, range) {
   if (!dirn) return "";
   let f = "预计" + (dirn === "上调" ? "涨" : dirn === "下调" ? "跌" : "搁浅");
@@ -1110,9 +1310,113 @@ function oilForecast(dirn, amt, range) {
     f += range[1] + "~" + range[2] + "元/升";
   } else {
     const a = parseFloat(amt);
-    if (a > 0) f += String(Math.round(a / 1350 * 100) / 100) + "元/升";
+    if (a > 0) f += "约" + String(Math.round(a / 1350 * 100) / 100) + "元/升";
+    else if (dirn !== "搁浅") return "";
   }
   return f;
+}
+function oilForecastText(text) {
+  if (!/预计|预估|预测/.test(text)) return "";
+  const range = reFirst(text, /(上涨|下跌|上调|下调)([\d.]+)元(?:\/升)?\s*[-~～至]\s*([\d.]+)元\/升/);
+  if (range) {
+    if (!(+range[1] > 0 && +range[1] <= +range[2] && +range[2] <= 2)) return "";
+    const up = range[0] === "上涨" || range[0] === "上调";
+    return oilForecast(up ? "上调" : "下调", "", [up ? "上涨" : "下跌", range[1], range[2]]);
+  }
+  const tonne = reFirst(text, /(?:预计|预估|预测)(?:汽油|油价|汽柴油)?(上调|下调)(\d+(?:\.\d+)?)元\/吨/);
+  if (tonne && +tonne[1] > 0 && +tonne[1] <= 2000) return oilForecast(tonne[0], tonne[1], null);
+  return /(?:预计|预估|预测)(?:油价)?搁浅/.test(text) ? "预计搁浅" : "";
+}
+function oilCalendar(html, sourceUrl, now = Date.now()) {
+  const dates = [];
+  for (const table of reAll(html, /(<table\b[^>]*>[\s\S]*?<\/table>)/i)) {
+    const title = reFirst(oilText(table[0]).replace(/\s+/g, ""), /((?:20)\d{2})年国内油价调整时间表/);
+    if (!title) continue;
+    for (const row of reAll(table[0], /<tr\b[^>]*>([\s\S]*?)<\/tr>/i)) {
+      const cells = reAll(row[0], /<td\b[^>]*>([\s\S]*?)<\/td>/i).map(c => oilText(c[0]));
+      const label = cells[0] && reFirst(cells[0], /^(20\d{2})年(\d{1,2})月油价调价日期$/);
+      if (!label || label[0] !== title[0] || cells.length !== 2) continue;
+      for (const date of reAll(cells[1], /(\d{1,2})月(\d{1,2})日/)) {
+        if (+date[0] !== +label[1]) continue;
+        const adj = oilDateISO(+label[0], +date[0], +date[1]);
+        if (oilWindow(adj, now)) dates.push({ adj, sourceUrl });
+      }
+    }
+  }
+  return dates;
+}
+function oilArticleUrls(html) {
+  const urls = new Set();
+  for (const a of reAll(html, /(<a\b[^>]*>[\s\S]*?<\/a>)/i)) {
+    if (!/油价调整最新消息|油价预计|油价预测|(?:成品油|汽柴油).*调价/.test(oilText(a[0]) + a[0].slice(0, a[0].indexOf(">")))) continue;
+    const href = reFirst(a[0], /\bhref\s*=\s*["']([^"']+)["']/i);
+    if (href && oilSourceUrl(href[0])) urls.add(href[0]);
+  }
+  return [...urls].sort((a, b) => b.localeCompare(a)).slice(0, 4);
+}
+function oilParseArticle(html, sourceUrl, now = Date.now()) {
+  const out = { calendar: [], forecast: null, cycle: null };
+  if (!oilSourceUrl(sourceUrl)) return out;
+  const date = reFirst(sourceUrl, /\/c\/(\d{4})-(\d{2})-(\d{2})\//);
+  const pubDay = oilDateISO(+date[0], +date[1], +date[2]);
+  if (!pubDay) return out;
+  let publishedAt = bjDayStart(pubDay);
+  const pubInfo = reFirst(html, /class=["']article-info["'][^>]*>([\s\S]{0,2000}?)(?:<\/div>)/i);
+  const time = pubInfo && reFirst(oilText(pubInfo[0]), /(\d{4}-\d{2}-\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (time && time[0] === pubDay && +time[1] < 24 && +time[2] < 60 && +time[3] < 60)
+    publishedAt += (+time[1] * 3600 + +time[2] * 60 + +time[3]) * 1000;
+  if (publishedAt > now || now - publishedAt > OIL_WINDOW_MS) return out;
+  out.calendar = oilCalendar(html, sourceUrl, now);
+  /* 只读正文开头的预测，年表/历史表/相关推荐里的日期和涨幅不能拼进当前预测 */
+  const descTag = reAll(html, /(<meta\b[^>]*>)/i).find(m => /\bname\s*=\s*["']description["']/i.test(m[0]));
+  const desc = descTag && reFirst(descTag[0], /\bcontent\s*=\s*["']([^"']*)["']/i);
+  const start = html.search(/<div\b[^>]*class=["']article_con["'][^>]*>/i);
+  const intro = start >= 0 ? html.slice(start).split(/<table\b|class=["'](?:article_bottom|related)/i)[0].slice(0, 10000) : "";
+  const texts = [...new Set([desc ? htmlDecode(desc[0]) : "", ...reAll(intro, /<p\b[^>]*>([\s\S]*?)<\/p>/i).slice(0, 8).map(p => oilText(p[0]))].filter(Boolean))];
+  for (const text of texts) {
+    if (!/(?:新一轮|本轮|下次|下一轮).*?(?:调价|调整)|调价窗口/.test(text)) continue;
+    const target = reFirst(text, /(?:将于|定于|调价时间为|调整时间为)\s*(?:北京时间)?\s*(?:(20\d{2})年)?(\d{1,2})月(\d{1,2})日\s*24时/);
+    const tonight = !target && text.match(/(?:将于|定于)\s*(今晚|今日|今天|明晚|明日|明天)\s*24时/);
+    let adj = target ? oilAdjISO(+target[1], +target[2], +target[0] || 0, publishedAt) : "";
+    if (tonight) adj = bjDayKey(publishedAt + (/^明/.test(tonight[1]) ? 86400e3 : 0));
+    const cycle = oilWindow(adj, now);
+    if (!cycle) continue;
+    if (!out.cycle) out.cycle = { ...cycle, sourceUrl };
+    const otherCycle = reAll(text, /(?:(20\d{2})年)?(\d{1,2})月(\d{1,2})日/).some(d => {
+      const date = oilAdjISO(+d[1], +d[2], +d[0] || 0, publishedAt);
+      return date !== adj && date !== pubDay;
+    });
+    if (otherCycle || /上轮|上次|上期|上一轮|上一周期/.test(text)) continue;
+    const prediction = oilForecastText(text);
+    if (prediction) {
+      out.cycle = { ...cycle, sourceUrl };
+      out.forecast = { adj, text: prediction, sourceUrl, publishedAt };
+      break;
+    }
+  }
+  return out;
+}
+function oilSnapshot(data, now = Date.now()) {
+  if (!data || typeof data !== "object") return null;
+  const current = data.forecastVersion === OIL_FORECAST_VERSION;
+  const calendar = current && Array.isArray(data.calendar) ? data.calendar.filter(c => c && oilSourceUrl(c.sourceUrl) && oilWindow(c.adj, now)) : [];
+  const own = current && oilSourceUrl(data.cycleSource) && oilWindow(data.adj, now);
+  const candidates = calendar.slice();
+  if (own && own.adjustAt === data.adjustAt) candidates.push({ adj: own.adj, sourceUrl: data.cycleSource });
+  candidates.sort((a, b) => a.adj.localeCompare(b.adj));
+  const next = candidates[0];
+  const cycle = next && oilWindow(next.adj, now);
+  const f = current && data.forecast;
+  const forecast = cycle && f && f.adj === cycle.adj && oilSourceUrl(f.sourceUrl) &&
+    Number.isFinite(f.publishedAt) && f.publishedAt > 0 && f.publishedAt <= now && cycle.adjustAt - f.publishedAt <= OIL_WINDOW_MS &&
+    /^预计(?:[涨跌](?:约)?\d+(?:\.\d+)?(?:~\d+(?:\.\d+)?)?元\/升|搁浅)$/.test(f.text) ? f : null;
+  const label = cycle ? "下次调价 " + +cycle.adj.slice(5, 7) + "月" + +cycle.adj.slice(8) + "日24时" : "";
+  return Object.assign({}, data, {
+    forecastVersion: OIL_FORECAST_VERSION, calendar,
+    adj: cycle ? cycle.adj : "", adjustAt: cycle ? cycle.adjustAt : 0, cycleSource: next ? next.sourceUrl : "",
+    forecast, expired: !forecast,
+    next: label ? label + " · " + (forecast ? forecast.text : "本轮预测待更新") : "下一轮调价预测待更新",
+  });
 }
 /* 主表按表头对齐取四标号：免疫单元格渲染差异导致的列错位（89# 格偶发非纯数字会让连续正则从 92# 列吃起） */
 function parseOilTable(html) {
@@ -1158,48 +1462,46 @@ async function wbFetchOil() {
       if (hnums.length >= 3) info.hist.push({ date: rows[i][0], price: hnums[2][0] });
     }
   }
-  /* 下次调价窗口 + 预估：独立降级，失败只影响这一行 */
+  /* 下一周期和预测必须来自可验证文章；旧文的涨幅不能挪给年表里的下一窗口 */
+  const now = Date.now(), prev = oilSnapshot(wbCache.oil, now);
+  const parsed = [], seen = new Set();
   try {
-    const h2 = await httpGetText("https://energy.cngold.org/", 12000);
-    let dirn = "", amt = "", win2 = "", range = null;
-    const mm = reFirst(h2, /今日\(?\d{1,2}月\d{1,2}日\)?油价预计(上调|下调|搁浅)(\d+)?(?:元\/吨)?/);   // 页面文案日期带不带括号都吃；搁浅可能不带单位
-    if (mm) { dirn = mm[0]; amt = mm[1] || ""; }
-    const ma = reFirst(h2, /<a href="([^"]+)"[^>]*title="油价调整最新消息/);
-    if (ma && /^https?:\/\//.test(ma[0])) {
+    const home = await httpGetText("https://energy.cngold.org/", 12000);
+    let urls = oilArticleUrls(home);
+    const oldSource = prev && prev.forecast && prev.forecast.sourceUrl;
+    if (oldSource && !urls.includes(oldSource)) urls = urls.slice(0, 3).concat(oldSource);
+    for (const url of urls) {
       try {
-        const art = await httpGetText(ma[0], 12000);
-        const md = reFirst(art, /<meta name="description" content="([^"]+)"/);
-        if (md) {
-          const rg = reFirst(md[0], /(上涨|下跌)([\d.]+)元(?:\/升)?-([\d.]+)元\/升/);
-          if (rg) range = rg;
-          const mw = reFirst(md[0], /将于(\d{1,2}月\d{1,2}日24时)/);
-          if (mw) win2 = mw[0];
-        }
-        if (!win2) {
-          for (const w of reAll(art, /(\d{1,2})月(\d{1,2})日24时/)) {
-            if (oilUpcoming(parseInt(w[0], 10), parseInt(w[1], 10))) { win2 = w[0] + "月" + w[1] + "日24时"; break; }
-          }
-        }
+        const article = await httpGetText(url, 12000);
+        seen.add(url);
+        parsed.push(oilParseArticle(article, url, now));
       } catch {}
     }
-    let win = null;
-    if (win2) {
-      const wm = reFirst(win2, /(\d{1,2})月(\d{1,2}日)/);
-      if (wm) win = [parseInt(wm[0], 10), parseInt(wm[1], 10)];
-      if (win && oilUpcoming(win[0], win[1])) {
-        info.next = "下次调价 " + win2;
-        info.adj = oilAdjISO(win[0], win[1]);   // 结构化调价日落盘：调度按 [adj-1, adj+1] 三天窗口走
-      } else info.expired = true;   // 网站数据滞后，窗口已过
+    if (!parsed.some(p => p.forecast)) {
+      const listing = await httpGetText("https://energy.cngold.org/yjcx/", 12000);
+      for (const url of oilArticleUrls(listing).filter(u => !seen.has(u)).slice(0, 3)) {
+        try {
+          const article = await httpGetText(url, 12000);
+          seen.add(url);
+          parsed.push(oilParseArticle(article, url, now));
+        } catch {}
+      }
     }
-    const ftxt = oilForecast(dirn, amt, range);
-    if (ftxt) info.next += (info.next ? " · " : "") + ftxt;
   } catch {}
-  const prevOil = wbCache.oil;
-  if (!info.next && !info.expired) {
-    if (prevOil && prevOil.next && !prevOil.expired) info.next = prevOil.next;   // 旧窗口未过期则保留
+  const dates = parsed.flatMap(p => p.calendar.concat(p.cycle ? [{ adj: p.cycle.adj, sourceUrl: p.cycle.sourceUrl }] : []));
+  const calendar = [...new Map(dates.map(d => [d.adj, d])).values()].sort((a, b) => a.adj.localeCompare(b.adj));
+  info.forecastVersion = OIL_FORECAST_VERSION;
+  info.calendar = calendar.length ? calendar : (prev && prev.calendar) || [];
+  const cycle = info.calendar[0] || (prev && prev.adj ? { adj: prev.adj, sourceUrl: prev.cycleSource } : null);
+  if (cycle) {
+    const window = oilWindow(cycle.adj, now);
+    info.adj = cycle.adj; info.adjustAt = window.adjustAt; info.cycleSource = cycle.sourceUrl;
+    info.forecast = parsed.map(p => p.forecast).filter(f => f && f.adj === cycle.adj)
+      .sort((a, b) => b.publishedAt - a.publishedAt)[0] || null;
+    if (!info.forecast && prev && prev.adj === cycle.adj && prev.forecast && !seen.has(prev.forecast.sourceUrl))
+      info.forecast = prev.forecast;   // 仅抓取失败且同周期仍有效时保留，不保留已重读并失效的预测
   }
-  if (!info.adj && prevOil && prevOil.adj) info.adj = prevOil.adj;   // 本次没解析出新窗口 → 沿用旧 adj（调价节奏不变）
-  return info;
+  return oilSnapshot(info, now);
 }
 
 /* ---------------- 抓取器 · B站关注（wbi 签名 + Cookie，逐 UP 保留旧值） ---------------- */
@@ -1578,7 +1880,7 @@ async function wbFetchF1() {
 
 /* ---------------- 调度（定点每日 + 条件触发，失败分级重试，缓存落盘回放） ----------------
    2026-10-14 起部分板块从「固定间隔」改为「北京墙钟定点/条件窗口」：
-   bili 每天 11:00；anth/arxiv 每天 05:00；oil 只在调价日 ±1 天窗口内每天 05:00（窗口外睡到前夜）；
+   bili 每天 11:00；anth/arxiv/oil 每天 05:00（油价预测缺失/周期过期待更新时 2h 重查）；
    f1 只在未来 session 的前一天 05:00 抓（休赛期每周兜底一次）。全部显式 +8 计算，不依赖服务器时区。 */
 const bjWall = ms => {   // 北京墙钟分量（getUTC* 读 now+8h）
   const d = new Date(ms + 8 * 3600e3);
@@ -1600,20 +1902,19 @@ const WB_INTERVALS = {
   arxiv: { dailyAt: "05:00", fail: 20 * 60e3 },
   f1:    { dailyAt: "05:00", fail: 6 * 3600e3 },
   github:{ dailyAt: "05:00", fail: 20 * 60e3 },
+  dingtalk: { ok: 3600e3, fail: 10 * 60e3 },   // DingTalk 日程：成功每小时；实际节奏在 wbRun 里按绑定状态调节
 };
 /* 成功后的下一次运行时刻（lastAt = 该板块缓存 at；失败仍走 WB_INTERVALS.fail 短重试） */
 function wbNextRun(section, lastAt) {
   const now = Date.now();
   const iv = WB_INTERVALS[section];
   if (section === "glm") return Math.max(now, lastAt + iv.ok);
+  if (section === "dingtalk") return Math.max(now, ((DT.events && DT.events.at) || 0) + iv.ok);
   const [hh, mm] = (iv.dailyAt || "05:00").split(":").map(Number);
   if (section === "oil") {
-    const adj = (wbCache.oil && wbCache.oil.adj) || "";        // 下次调价日 "YYYY-MM-DD"（fetch 落盘）
-    if (!adj) return bjNextDailyAt(hh, mm, lastAt);            // 窗口未知 → 每天兜底，抓到就进窗口节奏
-    const winStart = bjDayStart(adj) - 86400e3;                // adj-1 天 00:00
-    if (now >= winStart && now < winStart + 3 * 86400e3) return bjNextDailyAt(hh, mm, lastAt);   // 窗口内：每天一次
-    if (now < winStart) return bjNextDailyAt(hh, mm, winStart - 1);   // 窗口未到：直接睡到 adj-1 的 05:00
-    return bjNextDailyAt(hh, mm, lastAt);                      // 窗口已过（网站滞后）→ 每天等新 adj
+    const oil = oilSnapshot(wbCache.oil, now);
+    const daily = bjNextDailyAt(hh, mm, lastAt);
+    return oil && !oil.expired ? Math.min(daily, oil.adjustAt) : Math.min(daily, Math.max(now, lastAt + iv.stale));
   }
   if (section === "f1") {
     const today0 = bjDayStart(bjDayKey(now));
@@ -1633,24 +1934,30 @@ function wbNextRun(section, lastAt) {
 let wbCache = loadJson(WB_FILE.cache, { glm: null, oil: null, bili: null, anth: null, arxiv: null, f1: null, github: null });
 let wbSched = {};
 function wbInitSchedule() {
+  const now = Date.now();
+  const oldOil = wbCache.oil;
+  const oilRefresh = !!oldOil && (oldOil.forecastVersion !== OIL_FORECAST_VERSION ||
+    (oldOil.adjustAt && oldOil.adjustAt <= now));
+  if (oldOil) wbCache.oil = oilSnapshot(oldOil, now);   // 只迁移预测，保留现价和历史
   /* 旧格式 F1 缓存（无北京时间/无全节次 sessions）→ 丢弃，让调度立即重抓 */
   if (wbCache.f1 && Array.isArray(wbCache.f1.races) &&
       (wbCache.f1.races.some(r => r.time === undefined) || !wbCache.f1.races.some(r => r.sessions))) {
     wbCache.f1 = null;
   }
-  const now = Date.now();
   for (const k of Object.keys(WB_INTERVALS)) {
     const last = (wbCache[k] && wbCache[k].at) || 0;
     wbSched[k] = { busy: false, nextAt: wbNextRun(k, last) };
     if (!wbCache[k]) wbSched[k].nextAt = now;   // 冷启动立即抓
   }
   /* 错峰：glm 立即，oil/bili/anth/arxiv/f1/github 依次让路 */
-  if (!wbCache.oil) wbSched.oil.nextAt = now + 8e3;
+  if (!wbCache.oil || oilRefresh) wbSched.oil.nextAt = now + 8e3;
   if (!wbCache.bili) wbSched.bili.nextAt = now + 16e3;
   if (!wbCache.anth) wbSched.anth.nextAt = now + 30e3;
   if (!wbCache.arxiv) wbSched.arxiv.nextAt = now + 45e3;
   if (!wbCache.f1) wbSched.f1.nextAt = now + 60e3;
   if (!wbCache.github) wbSched.github.nextAt = now + 70e3;
+  /* DingTalk：缓存不在 wbCache（独立文件），未配置/未绑定时别在启动时跑，睡 6h 等设置变化 */
+  wbSched.dingtalk.nextAt = (dtCfgOk() && DT.token && DT.token.refreshToken) ? now + 90e3 : now + 6 * 3600e3;
 }
 function wbFail(section, msg) {
   console.log("[workbench] " + section + " 失败: " + msg);
@@ -1693,6 +2000,15 @@ async function wbRun(section) {
       const d = await wbFetchGithub();
       if (d.ok) { wbCache.github = d; console.log("[workbench] github 日榜 " + d.items.length + " 仓（新上榜 " + d.items.filter(x => x.fresh).length + "）"); okNext(); }
       else { wbFail("github", d.error); done(iv.fail); }
+    } else if (section === "dingtalk") {
+      if (!dtCfgOk() || !DT.token || !DT.token.refreshToken) { done(6 * 3600e3); }   // 未配置/未绑定：静默，等绑定后立即触发
+      else {
+        const d = await dtSync();
+        if (d.ok) okNext();
+        else if (d.skip) done(6 * 3600e3);
+        else if (d.rebind) { wbFail("dingtalk", d.error); done(24 * 3600e3); }        // 授权失效：不短重试，等重新扫码
+        else { wbFail("dingtalk", d.error); done(iv.fail); }
+      }
     }
   } catch (e) {
     wbFail(section, e.name === "TimeoutError" || e.name === "AbortError" ? "网络超时" : (e.message || "抓取失败"));
@@ -2154,6 +2470,45 @@ function readerPrefetch(section) {
   })().catch(() => {}).finally(() => { readerPrefetching[section] = false; });
 }
 
+/* ---------------- 视觉学习：仅手动触发，来源读取不抓取/翻译 ---------------- */
+const learningSources = learningAvailable ? {
+  getBooks: () => kbAllBooks(),
+  getReader: () => wbReader,
+  getDevices: () => hwDevices.devices,
+} : null;
+let learningReviewedCases;
+const learningPreviewDir = path.resolve(ROOT, "data", "learning-preview");
+if (OFFLINE && process.env.TALLER_HOST === "127.0.0.1" && process.env.TALLER_LEARNING_CASES === "1" && DATA === learningPreviewDir) {
+  try {
+    const realRoot = fs.realpathSync(ROOT);
+    const realPreview = fs.realpathSync(learningPreviewDir);
+    if (realPreview !== path.join(realRoot, "data", "learning-preview") || !realPreview.startsWith(realRoot + path.sep)) throw new Error("preview directory mismatch");
+    const markerPath = path.join(realPreview, ".learning-preview.json");
+    const markerStat = fs.lstatSync(markerPath);
+    if (!markerStat.isFile() || markerStat.isSymbolicLink() || markerStat.size > 1024) throw new Error("invalid preview marker");
+    const marker = JSON.parse(fs.readFileSync(markerPath, "utf8"));
+    if (marker.type !== "taller-learning-preview") throw new Error("invalid preview marker");
+    const { source } = resolveLearningSource({ kind: "article", url: LEARNING_CASE_URL }, learningSources, { r: "admin", mc: false });
+    learningReviewedCases = createReviewedCaseRegistry({ sources: [source] });
+  } catch { console.log("[learning] 本地研究案例目录或原文证据未通过核对，未启用人工案例入口"); }
+}
+const learning = learningAvailable ? createLearning({
+  dataDir: DATA,
+  ...learningSources,
+  reviewedCases: learningReviewedCases,
+  chat: glmChat,
+  modelId: "glm-4-flash",
+  json,
+  readJson,
+}) : null;
+function learningSession(req) {
+  const s = readSession(req);
+  if (!s) return null;
+  const row = db.prepare("SELECT username, role, must_change FROM users WHERE username=?").get(s.u);
+  if (!row) return null;
+  return { ...s, r: row.role, mc: !!row.must_change };
+}
+
 /* ---------------- 管理台：账号管理页（建号 / 改角色 / 重置密码 / 删除，仅 admin） ---------------- */
 const ADMIN_PAGE = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>账号与权限 · El Taller</title>
@@ -2443,8 +2798,13 @@ body{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,
 
 /* ---------------- 路由 ---------------- */
 const server = http.createServer(async (req, res) => {
-  const u = new URL(req.url, "http://x");
-  const p = u.pathname;
+  let u, p;
+  try {
+    u = new URL(req.url.replace(/^\/+/, "/"), "http://x");
+    const decoded = decodeURIComponent(u.pathname);
+    if (/[\\\u0000-\u001f\u007f]/.test(decoded) || decoded.split("/").includes("..")) throw new Error("invalid path");
+    p = path.posix.normalize(decoded.split("#")[0]).replace(/^\/+/, "/");
+  } catch { json(res, 400, { error: "invalid path" }); return; }
   /* 限速认的真实客户端 IP：经 Nginx 反代（来源是本机回环）时用 X-Real-IP，
      否则用 socket 地址——防止直连者伪造 X-Real-IP 绕过限速 */
   const ra = req.socket.remoteAddress || "?";
@@ -2525,6 +2885,32 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    /* ---- 视觉学习：会话按当前账号权限复核，所有 GET 均只读（模块未部署时入口关闭） ---- */
+    if (p.startsWith("/api/learning/")) {
+      if (!learning) { json(res, 404, { ok: false, error: "视觉学习功能尚未上线" }); return log(404); }
+      if (await learning.handle(req, res, u, learningSession(req))) return log(res.statusCode);
+      json(res, 404, { ok: false, error: "not found" });
+      return log(404);
+    }
+    if (p === "/learning.html") {
+      if (!learning) {
+        send(res, 404, '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>404 · El Taller</title></head>' +
+          '<body style="font-family:system-ui;background:#241006;color:#fff6ec;display:grid;place-items:center;min-height:100vh;margin:0">' +
+          '<p style="opacity:.7">比较学习功能尚未上线，敬请期待</p></body></html>', { "Content-Type": "text/html; charset=utf-8" });
+        return log(404);
+      }
+      const s = learningSession(req);
+      if (!s || s.mc) {
+        res.writeHead(302, { Location: "/login.html?next=" + encodeURIComponent(req.url) });
+        res.end();
+        return log(302);
+      }
+    }
+    if (p === "/learning.js") {
+      json(res, 404, { error: "not found" });
+      return log(404);
+    }
+
     /* ---- 业务 API ---- */
     if (p === "/api/works" && req.method === "GET") {
       const s = readSession(req);
@@ -2582,6 +2968,81 @@ const server = http.createServer(async (req, res) => {
         });
       json(res, 200, { ok: true, total: out.length, results: out.slice(0, 80), marks: smarks });
       return log(200);
+    }
+
+    /* ---- Constelación 助手（仅 admin；RAG = 星图策展数据 + kb 全文检索 → GLM 带出处作答） ---- */
+    if (p === "/api/assistant/ask" && req.method === "POST") {
+      const s = readSession(req);
+      if (!s || s.mc || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      let raw = "";
+      let over = false;
+      req.on("data", c => { raw += c; if (raw.length > 8192) { over = true; try { req.destroy(); } catch {} } });
+      req.on("end", async () => {
+        if (over) return;
+        let q = "";
+        try { q = String(JSON.parse(raw).q || "").trim(); } catch {}
+        if (q.length < 2 || q.length > 500) { json(res, 400, { ok: false, error: "问题长度需在 2~500 字之间" }); return log(400); }
+        const nowTs = Date.now();
+        if (nowTs - (assistantCooldown[s.u] || 0) < 3000) { json(res, 429, { ok: false, error: "问得太快了，歇 3 秒再问" }); return log(429); }
+        assistantCooldown[s.u] = nowTs;
+        try {
+          const kindZh = { hub: "本站", work: "作品", note: "日志", book: "书库", estudio: "工作台", aula: "学习层" };
+          /* 中文无分词器：2~6 字滑窗取词，长词高分；停用词滤掉问句虚词 */
+          const ASSIST_STOP = new Set(["怎么", "什么", "如何", "为什么", "做的", "出来", "出的", "这个", "那个", "哪些", "一下", "可以", "请问", "有关", "介绍"]);
+          const grams = (() => {
+            const runs = q.toLowerCase().split(/[^\u4e00-\u9fa5a-z0-9]+/).map(t => t.trim()).filter(Boolean);
+            const out = new Set();
+            for (const run of runs) {
+              if (/^[a-z0-9]+$/.test(run)) { if (run.length >= 2) out.add(run); continue; }
+              for (let L = 2; L <= Math.min(6, run.length); L++)
+                for (let i = 0; i + L <= run.length; i++) {
+                  const g = run.substr(i, L);
+                  if (!ASSIST_STOP.has(g)) out.add(g);
+                }
+            }
+            return [...out].sort((a, b) => b.length - a.length).slice(0, 40);
+          })();
+          const qlow = q.toLowerCase();
+          const hits = [];
+          for (const nd of (constelData().nodes || [])) {
+            const hay = (nd.title + " " + (nd.es || "") + " " + (nd.blurb || "") + " " + (nd.detail || "")).toLowerCase();
+            let sc = 0;
+            for (const g of grams) if (hay.includes(g)) sc += g.length;
+            if (qlow.includes(nd.title.toLowerCase())) sc += 3;
+            if (sc >= 4) hits.push({ node: nd, sc, src: kindZh[nd.kind] || "节点", title: nd.title, link: nd.link || null, text: (nd.detail || nd.blurb || "") });
+          }
+          try {
+            let kbHits = [];
+            const kbGrams = grams.slice(0, 12);
+            if (kbGrams.length) {
+              for (const b of kbAllBooks()) {
+                b.chapters.forEach((c, ci) => {
+                  const text = String(c.text || c.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+                  const low = text.toLowerCase();
+                  let sc = 0, at = -1;
+                  for (const g of kbGrams) { const ix = low.indexOf(g); if (ix >= 0) { sc += g.length; if (at < 0) at = ix; } }
+                  if (sc >= 4) kbHits.push({ sc, b, c, ci, text, at });
+                });
+              }
+            }
+            kbHits.sort((a, b2) => b2.sc - a.sc);
+            kbHits.slice(0, 3).forEach(k => {
+              hits.push({ sc: k.sc, src: "书库·" + k.b.title, title: k.c.title, link: "kb.html#b=" + encodeURIComponent(k.b.id) + "&c=" + k.ci, text: k.text.substr(Math.max(0, k.at - 100), 520).trim() });
+            });
+          } catch {}
+          hits.sort((a, b2) => b2.sc - a.sc);
+          const top = hits.slice(0, 6);
+          const ctx = top.map((h, i) => "[" + (i + 1) + "] " + h.src + "｜" + h.title + "\n" + String(h.text).slice(0, 600)).join("\n\n");
+          const prompt = "你是「Chispa」，El Taller de Andres（一个个人工坊网站）的专属助手。只依据下面的资料回答用户问题，中文作答，不超过 250 字；引用资料时在句尾标注编号如 [1]。资料不足以回答的部分，直接说明工坊资料里没有，不要编造。与工坊无关的问题，礼貌说明你只懂这间工坊。\n\n资料：\n" + (ctx || "（无命中资料）") + "\n\n用户问题：" + q;
+          const answer = await glmChat(prompt, { temperature: 0.3, timeoutMs: 60000, maxTokens: 900 });
+          json(res, 200, { ok: true, answer: String(answer).trim(), sources: top.map(h => ({ title: h.src + " · " + h.title, link: h.link })), nodes: top.filter(h => h.node).map(h => h.node.id) });
+          return log(200);
+        } catch (e) {
+          json(res, 200, { ok: false, error: "助手开小差了：" + ((e && e.message) || "未知错误") });
+          return log(200);
+        }
+      });
+      return;
     }
 
     /* ---- Biblioteca 上传收录（admin 上传；文件服务登录可见） ---- */
@@ -2706,6 +3167,13 @@ const server = http.createServer(async (req, res) => {
       return log(200);
     }
 
+    if (p === "/api/kb/inbox" && req.method === "GET") {
+      const s = readSession(req);
+      if (!s || s.mc || s.r !== "admin") { json(res, s ? 403 : 401, { ok: false, error: s ? "forbidden" : "unauthorized" }); return log(s ? 403 : 401); }
+      json(res, 200, { ok: true, items: kbInbox() });
+      return log(200);
+    }
+
     /* 待处理队列：keep=要（留库）/ discard=不要（删书删文件）/ note=写了评论（算看过，附站主笔记） */
     if (p === "/api/kb/triage" && req.method === "POST") {
       const s = readSession(req);
@@ -2719,6 +3187,8 @@ const server = http.createServer(async (req, res) => {
         if (e.pdfFile) { try { fs.unlinkSync(path.join(KB_UPLOAD_DIR, e.pdfFile)); } catch {} }
         delete kbUploadParsed[e.id];
         delete kbUploads[e.id];
+        delete kbCats["up-" + e.id];
+        saveJson(KB_CAT_FILE, kbCats);
         saveJson(KB_UPLOAD_FILE, kbUploads);
         json(res, 200, { ok: true, discarded: true });
         return log(200);
@@ -3127,6 +3597,35 @@ const server = http.createServer(async (req, res) => {
       return log(r.ok ? 200 : 400);
     }
 
+    /* ---- DingTalk OAuth 回调（免登录：DingTalk 浏览器 302 带授权码过来；state 防 CSRF） ---- */
+    if (p === "/api/dingtalk/callback") {
+      const q = new URL(req.url, "http://x").searchParams;
+      const state = q.get("state") || "", authCode = q.get("authCode") || q.get("code") || "";
+      const back = msg => { res.writeHead(302, { Location: "/workbench.html?dt=" + encodeURIComponent(msg) }); res.end(); return log(302); };
+      const st = DT.states.get(state); DT.states.delete(state);
+      if (!authCode || !st || st < Date.now()) return back("绑定失败：授权状态校验未通过，请重试");
+      if (!dtCfgOk()) return back("绑定失败：请先在工作台「设置」里填 Agenda clientId / clientSecret");
+      try {
+        const r = await dtFetch("POST", DT_API + "/v1.0/oauth2/userAccessToken", {
+          clientId: wbCfg.dingtalk.clientId, clientSecret: wbCfg.dingtalk.clientSecret,
+          code: authCode, grantType: "authorization_code",
+        });
+        if (r.status !== 200 || !r.data || !r.data.accessToken)
+          return back("绑定失败：" + ((r.data && (r.data.message || r.data.errmsg)) || ("HTTP " + r.status)));
+        DT.token = {
+          clientId: wbCfg.dingtalk.clientId, unionId: r.data.unionId || "", nick: r.data.nick || "",
+          accessToken: r.data.accessToken, refreshToken: r.data.refreshToken,
+          expireAt: Date.now() + (r.data.expireIn || 7200) * 1000,
+          calendarId: "", needRebind: false,
+        };
+        saveJson(WB_FILE.dtToken, DT.token);
+        setTimeout(() => wbRun("dingtalk").catch(() => {}), 2500).unref();   // 绑定成功 2.5s 后首同步
+        return back("ok");
+      } catch (e) {
+        return back("绑定失败：" + ((e.name === "TimeoutError" || e.name === "AbortError") ? "Agenda 接口超时" : (e.message || "网络异常")));
+      }
+    }
+
     /* ---- 工作台 API（仅 admin） ---- */
     if (p.startsWith("/api/workbench/")) {
       const ws = readSession(req);
@@ -3134,19 +3633,38 @@ const server = http.createServer(async (req, res) => {
       if (ws.mc) { json(res, 403, { error: "请先修改初始密码" }); return log(403); }
       if (ws.r !== "admin") { json(res, 403, { error: "forbidden" }); return log(403); }
 
+      if (p === "/api/workbench/ai/status" && req.method === "GET") {
+        json(res, 200, { ...aiWorkbench.status(), preview: OFFLINE });
+        return log(200);
+      }
+      if (p === "/api/workbench/ai/chat" && req.method === "POST") {
+        const abort = new AbortController();
+        const disconnected = () => { if (!res.writableEnded) abort.abort(); };
+        req.once("aborted", disconnected); res.once("close", disconnected);
+        try {
+          const raw = await readRawBody(req, 120 * 1024);
+          let body;
+          try { body = JSON.parse(raw.toString("utf8")); } catch { throw new AiWorkbenchError(400, "请求 JSON 无效。"); }
+          const answer = await aiWorkbench.chat(ws.u, body, { signal: abort.signal });
+          if (!res.destroyed) json(res, 200, answer);
+          return log(200);
+        } catch (error) {
+          const code = error instanceof AiWorkbenchError ? error.status : 400;
+          if (!res.destroyed) json(res, code, { ok: false, error: error instanceof AiWorkbenchError ? error.message : "请求过大或格式无效。" });
+          return log(code);
+        } finally { req.removeListener("aborted", disconnected); res.removeListener("close", disconnected); }
+      }
+
       if (p === "/api/workbench/data" && req.method === "GET") {
         const upBooks = kbUploadBooks();
         json(res, 200, {
           cfg: { hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps, profile: wbCfg.arxivProfile },
-          data: wbCache,
+          data: { ...wbCache, oil: oilSnapshot(wbCache.oil) },
           hw: hwLatest(),
           xhs: xhsSnapshot(),
           hwDevices: hwDevices.devices.length,
           dislikes: wbDislikes,
-          kbInbox: Object.values(kbUploads).filter(u => u.state === "new").sort((a, b) => a.at - b.at).map(u => {
-            const b = upBooks.find(x => x.id === "up-" + u.id);
-            return { id: u.id, title: u.title, type: u.type, at: u.at, chapters: b ? b.chapters.length : 0 };
-          }),
+          kbInbox: kbInbox(),
           sched: Object.fromEntries(Object.entries(wbSched).map(([k, s]) => [k, { busy: s.busy, nextAt: s.nextAt }])),
           now: Date.now(),
         });
@@ -3178,8 +3696,51 @@ const server = http.createServer(async (req, res) => {
             .filter(u => u.uid);
         }
         if (typeof body.arxivProfile === "string" && body.arxivProfile.trim()) wbCfg.arxivProfile = body.arxivProfile.trim();
+        if (body.dingtalk && typeof body.dingtalk === "object") {   // DingTalk 日历应用密钥（留空 = 不修改）
+          if (!wbCfg.dingtalk || typeof wbCfg.dingtalk !== "object") wbCfg.dingtalk = {};
+          if (typeof body.dingtalk.clientId === "string" && body.dingtalk.clientId.trim()) wbCfg.dingtalk.clientId = body.dingtalk.clientId.trim();
+          if (typeof body.dingtalk.clientSecret === "string" && body.dingtalk.clientSecret.trim()) wbCfg.dingtalk.clientSecret = body.dingtalk.clientSecret.trim();
+          if (dtCfgOk() && DT.token && DT.token.refreshToken) wbSched.dingtalk.nextAt = Date.now() + 3e3;   // 补填密钥后立即试同步
+        }
         saveJson(WB_FILE.cfg, wbCfg);
         json(res, 200, { ok: true, hasKey: !!wbCfg.glmKey, hasCookie: !!wbCfg.biliCookie, ups: wbCfg.biliUps.length });
+        return log(200);
+      }
+
+      /* ---- DingTalk 日历（工作台日历展示用；日程缓存只读下发） ---- */
+      if (p === "/api/workbench/dingtalk/events" && req.method === "GET") {
+        const t = DT.token;
+        json(res, 200, {
+          status: {
+            configured: dtCfgOk(), bound: !!(t && t.refreshToken), nick: (t && t.nick) || "",
+            needRebind: !!(t && t.needRebind), lastAt: DT.events.at || 0, lastOk: !!DT.events.ok, error: DT.events.error || "",
+          },
+          events: DT.events.events || [],
+        });
+        return log(200);
+      }
+      if (p === "/api/workbench/dingtalk/bind" && req.method === "GET") {
+        if (!dtCfgOk()) { json(res, 400, { ok: false, error: "请先在页面底部「设置」里填 Agenda clientId / clientSecret" }); return log(400); }
+        const state = crypto.randomBytes(16).toString("hex");
+        DT.states.set(state, Date.now() + 10 * 60e3);
+        for (const [k, v] of DT.states) if (v < Date.now()) DT.states.delete(k);
+        /* 回调基址固定公网域名（不依赖反代头是否传 X-Forwarded-Proto）；本地联调用环境变量 TALLER_DT_CB 覆盖 */
+        const base = (process.env.TALLER_DT_CB || wbCfg.dingtalk.callbackBase || "https://tallerdeandres.cn").replace(/\/+$/, "");
+        const authUrl = "https://login.dingtalk.com/oauth2/auth?redirect_uri=" +
+          encodeURIComponent(base + "/api/dingtalk/callback") +
+          "&response_type=code&client_id=" + encodeURIComponent(wbCfg.dingtalk.clientId) +
+          "&scope=openid&state=" + state + "&prompt=consent";
+        res.writeHead(302, { Location: authUrl });
+        res.end();
+        return log(302);
+      }
+      if (p === "/api/workbench/dingtalk/unbind" && req.method === "POST") {
+        DT.token = null;
+        try { fs.unlinkSync(WB_FILE.dtToken); } catch {}
+        DT.events = { at: 0, ok: false, error: "", events: [] };
+        saveJson(WB_FILE.dtEvents, DT.events);
+        wbSched.dingtalk.nextAt = Date.now() + 6 * 3600e3;
+        json(res, 200, { ok: true });
         return log(200);
       }
 
@@ -3561,11 +4122,11 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    /* ---- 工作台（仅 admin：未登录去登录页，非 admin 明示 403；reader.html 对照阅读页同守卫） ---- */
-    if (p === "/workbench.html" || p === "/reader.html") {
+    /* ---- 工作台/对照阅读/知识星图（仅 admin：未登录去登录页，非 admin 明示 403） ---- */
+    if (p === "/workbench.html" || p === "/ai-workbench.html" || p === "/workbench-template.html" || p === "/reader.html" || p === "/constelacion.html" || p === "/constelacion-data.js") {
       const s = readSession(req);
       if (!s || s.mc) {
-        res.writeHead(302, { Location: "/login.html?next=%2Fworkbench.html" });
+        res.writeHead(302, { Location: "/login.html?next=" + encodeURIComponent(p) });
         res.end();
         return log(302);
       }
@@ -3721,27 +4282,27 @@ if (!wbCfg.xhsToken) {
   wbCfg.xhsToken = crypto.randomBytes(16).toString("hex");
   saveJson(WB_FILE.cfg, wbCfg);
 }
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, s] of Object.entries(wbSched)) {
-    if (!s.busy && now >= s.nextAt) wbRun(k).catch(e => console.error("[workbench]", k, e.message));
-  }
-}, 15000).unref();
+if (!OFFLINE) {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, s] of Object.entries(wbSched)) {
+      if (!s.busy && now >= s.nextAt) wbRun(k).catch(e => console.error("[workbench]", k, e.message));
+    }
+  }, 15000).unref();
 
-/* 对照阅读缓存：3 天无评论且未晋升 → 清除（启动即清一次 + 每小时巡检） */
-readerPurge();
-setInterval(readerPurge, 3600e3).unref();
-/* 重启补拉：卡片缓存里的在列文章若正文未备好，90 秒后后台预取（错过首轮抓取钩子的兜底） */
-setTimeout(() => { readerPrefetch("anth"); readerPrefetch("arxiv"); }, 90e3).unref();
-/* 书本自动分类：boot 5s 后背景扫未分类的书（无 GLM Key 自动跳过，配好 Key 重启即补全） */
-setTimeout(kbClassifyQueue, 5e3).unref();
-/* 启动补跑：重启/部署打断的 PDF 转中英对照（state 仍 new/translating 的） */
-setTimeout(() => {
-  Object.values(kbUploads).filter(u => u.type === "pdf" && (u.state === "new" || u.state === "translating"))
-    .forEach(u => kbPdfTranslateEnqueue(u.id));
-}, 20e3).unref();
+  /* 对照阅读缓存：3 天无评论且未晋升 → 清除（启动即清一次 + 每小时巡检） */
+  readerPurge();
+  setInterval(readerPurge, 3600e3).unref();
+  /* 重启补拉：卡片缓存里的在列文章若正文未备好，90 秒后后台预取 */
+  setTimeout(() => { readerPrefetch("anth"); readerPrefetch("arxiv"); }, 90e3).unref();
+  setTimeout(kbClassifyQueue, 5e3).unref();
+  setTimeout(() => {
+    Object.values(kbUploads).filter(u => u.type === "pdf" && (u.state === "new" || u.state === "translating"))
+      .forEach(u => kbPdfTranslateEnqueue(u.id));
+  }, 20e3).unref();
+}
 
-server.listen(CFG.PORT, "0.0.0.0", () => {
+server.listen(CFG.PORT, process.env.TALLER_HOST || "0.0.0.0", () => {
   const lans = [];
   for (const list of Object.values(os.networkInterfaces())) {
     for (const ni of list || []) {
@@ -3750,8 +4311,11 @@ server.listen(CFG.PORT, "0.0.0.0", () => {
   }
   console.log("==========================================================");
   console.log("  El Taller de Andres · 服务已启动");
-  console.log(`  本机:   http://localhost:${CFG.PORT}`);
-  for (const ip of lans) console.log(`  局域网: http://${ip}:${CFG.PORT}`);
+  console.log(`  本机:   http://127.0.0.1:${CFG.PORT}`);
+  if (process.env.TALLER_HOST !== "127.0.0.1") {
+    for (const ip of lans) console.log(`  局域网: http://${ip}:${CFG.PORT}`);
+  }
+  if (OFFLINE) console.log("  隔离预览：外部请求及后台采集已禁用");
   console.log("  管理台: /admin/（需 admin 登录）");
   console.log("==========================================================");
 });
