@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="color-scheme" content="dark light">
+  <script>
+  /* 与 kb / reader 共用 taller-theme 与上海日出日落判定；不创建另一套主题。 */
+  try { (function () {
+    var L=31.23,LG=121.47,r=Math.PI/180;
+    function sun(){var d=new Date(),N=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),
+      dec=r*23.44*Math.sin(r*(360/365)*(N-81)),
+      c=(Math.sin(-.833*r)-Math.sin(L*r)*Math.sin(dec))/(Math.cos(L*r)*Math.cos(dec)),
+      now=d.getHours()*60+d.getMinutes();
+      if(c>1)return{night:true};if(c<-1)return{night:false};
+      var H=Math.acos(c)/r,B=r*(360/365)*(N-81),E=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B),
+      n=720-4*(LG+d.getTimezoneOffset()/4)-E;
+      return{night:now<n-H*4||now>n+H*4};}
+    window.__tallerSunFn=sun;window.__tallerSun=sun();
+    var t=localStorage.getItem('taller-theme')||(window.__tallerSun.night?'negro':'bermellon');
+    if(!['naranja','oceano','bosque','crepusculo','bermellon','castana','jaspe','perla','blanco','negro'].includes(t))t='bermellon';
+    if(t!=='naranja')document.documentElement.dataset.theme=t;
+  })(); } catch (_) { document.documentElement.dataset.theme='bermellon'; }
+  </script>
+  <title>El Aula · 图解学习 · El Taller</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23230d07'/%3E%3Cpath d='M14 18h15v12H14zm21 16h15v12H35z' fill='%23d9a44e'/%3E%3Cpath d='M29 24h13v10M22 30v10h13' fill='none' stroke='%2389c8c0' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="learning.css">
+  <link rel="stylesheet" href="rag-visual.css">
+  <link rel="stylesheet" href="research-visual.css">
+  <script src="rag-visual.js" defer></script>
+  <script src="research-visual.js" defer></script>
+  <script src="learning-ui.js" defer></script>
+</head>
+<body>
+  <a class="skiplink" href="#main">Saltar al contenido · 跳到正文</a>
+  <div class="stage">
+    <div class="noise" aria-hidden="true"></div>
+    <div class="wrap">
+      <header class="top">
+        <a class="back" href="kb.html">← Biblioteca</a>
+        <a class="brand" href="learning.html"><b>El Aula</b><small>Aprender · 图解学习</small></a>
+        <nav class="g-pill" aria-label="站点导航 · Navegación">
+          <a href="index.html#top"><b>Inicio</b><small>首页</small></a>
+          <a href="index.html#proyectos"><b>Proyectos</b><small>作品</small></a>
+          <a href="workbench.html"><b>Estudio</b><small>工作台</small></a>
+          <a href="index.html#cuaderno"><b>Cuaderno</b><small>日志</small></a>
+          <a href="kb.html"><b>Biblioteca</b><small>书库</small></a>
+          <a href="index.html#enlaces"><b>Enlaces</b><small>链接</small></a>
+        </nav>
+        <details class="mobile-menu">
+          <summary>导航 · Menú</summary>
+          <nav aria-label="移动端站点导航">
+            <a href="index.html">首页 · Inicio</a>
+            <a href="workbench.html">工作台 · Estudio</a>
+            <a href="kb.html">书库 · Biblioteca</a>
+            <a href="index.html#proyectos">作品 · Proyectos</a>
+          </nav>
+        </details>
+        <details class="theme-picker">
+          <summary><span class="theme-indicator" aria-hidden="true"></span><span>Tema</span></summary>
+          <div class="themedots" role="group" aria-label="配色 · Tema">
+            <button class="tdot" type="button" data-theme-dot="naranja" style="--dot:#ff9d2e" title="日落橙 · Naranja" aria-label="日落橙主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="oceano" style="--dot:#4fb3ff" title="海洋蓝 · Océano" aria-label="海洋蓝主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="bosque" style="--dot:#4ed08a" title="森林绿 · Bosque" aria-label="森林绿主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="crepusculo" style="--dot:#b18cff" title="暮光紫 · Crepúsculo" aria-label="暮光紫主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="bermellon" style="--dot:#c05a46" title="朱漆红 · Bermellón" aria-label="朱漆红主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="castana" style="--dot:#c98a4b" title="栗漆棕 · Castaña" aria-label="栗漆棕主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="jaspe" style="--dot:#b56580" title="犀皮彩 · Jaspé" aria-label="犀皮彩主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="perla" style="--dot:#74c7b8" title="螺钿青 · Perla" aria-label="螺钿青主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="blanco" style="--dot:#ffffff" title="纸白 · Blanco" aria-label="纸白主题" aria-pressed="false"></button>
+            <button class="tdot" type="button" data-theme-dot="negro" style="--dot:#181818" title="玄黑 · Negro" aria-label="玄黑主题" aria-pressed="false"></button>
+          </div>
+        </details>
+      </header>
+
+      <main id="main" tabindex="-1">
+        <div class="page-hero">
+          <div class="eyebrow">El Taller / Aprender con evidencia</div>
+          <div class="hero-heading"><h1 id="lessonTitle">把知识，展开来看。</h1><span id="roleBadge" class="badge" hidden>管理员</span></div>
+          <p id="lessonGoal" class="hero-goal">从原文出发，看清关系、逐步推演，再用一道小题检查理解。</p>
+          <div class="hero-meta"><span>有图解，也有出处</span><span>手动探索 · 不自动播放</span></div>
+        </div>
+
+        <section id="sourcePicker" class="source-picker g-glass" aria-labelledby="pickerTitle">
+          <div class="section-heading"><div><span class="eyebrow">Origen</span><h2 id="pickerTitle">从一份材料开始</h2></div><button id="closePicker" class="btn btn-ghost" type="button" hidden>回到当前学习页</button></div>
+          <p class="section-intro">选择只会读取状态。整理和模型生成，都需要管理员另行点击。</p>
+          <p id="catalogMessage" class="small-note" role="status">正在读取可用材料…</p>
+          <div id="sourceChoices" class="source-choices"></div>
+          <button id="reloadCatalog" class="btn btn-ghost" type="button" hidden>重新读取材料</button>
+          <section id="hardwarePicker" class="hardware-picker" aria-labelledby="hardwareTitle" hidden>
+            <div class="section-heading"><div><span class="eyebrow">Equipo · Comparar</span><h3 id="hardwareTitle">把设备放在一起比较</h3></div><output id="deviceCount" class="badge">0 / 3</output></div>
+            <p class="small-note">最多选择 3 台设备。只比较原始档案已有字段，不猜测性能或生成跑分。</p>
+            <fieldset class="device-fieldset"><legend class="sr-only">选择一至三台设备</legend><div id="deviceList" class="device-list"></div></fieldset>
+            <p id="deviceHint" class="small-note" role="status">选择设备后查看学习页。</p>
+            <button id="applyDevices" class="btn btn-hot" type="button" disabled>查看所选设备</button>
+          </section>
+        </section>
+
+        <div id="lessonShell" class="lesson-shell" hidden>
+          <aside class="context-panel" aria-label="本页来源与章节导航">
+            <section class="context-card g-glass">
+              <div class="eyebrow">La fuente · 来源</div>
+              <h2 id="sourceTitle">正在读取来源</h2>
+              <p id="sourceCoverage" class="small-note"></p>
+              <div class="source-links"><a id="returnSource" class="text-link" href="kb.html">阅读原文 ↗</a><button id="openEvidence" class="text-button" type="button">打开证据原文</button></div>
+              <details class="source-facts"><summary>来源与版本</summary><dl id="sourceFacts"></dl></details>
+              <button id="changeSource" class="btn btn-ghost full-width" type="button">切换材料</button>
+            </section>
+            <nav id="lessonContents" class="contents-card" aria-label="学习页目录" hidden><span class="eyebrow">Recorrido · 本页</span><ol id="contentsList"></ol></nav>
+            <div class="reading-key"><span class="eyebrow">Cómo leer</span><p><span class="origin origin-source">原文摘录</span> 保留来源表述</p><p><span class="origin origin-explanation">来源释义</span> 为理解而重组</p><p><span class="origin origin-example">教学示例</span> 不当作原文事实</p><small>点“证据”可回看对应片段。图解是学习辅助，不替代原文。</small></div>
+          </aside>
+
+          <div class="lesson-area">
+            <section id="statusPanel" class="status-panel g-glass" aria-labelledby="statusTitle" aria-busy="true">
+              <div class="status-heading"><span id="stateBadge" class="badge">读取中</span><span id="statusSourceKind" class="small-note"></span></div>
+              <h2 id="statusTitle">正在打开学习材料</h2>
+              <p id="statusText">核对原文和学习稿状态，不会自动生成。</p>
+              <p id="jobMessage" class="small-note" hidden></p>
+              <details id="managementControls" class="management-controls" hidden>
+                <summary>管理学习稿 · 生成 / 确认发布</summary>
+                <div id="generationActions" class="action-row" hidden>
+                  <button id="generateCurated" class="btn btn-hot" type="button" hidden>查看整理样板</button>
+                  <button id="generateCase" class="btn btn-hot" type="button" hidden>创建真实研究案例草稿</button>
+                  <button id="generateDeterministic" class="btn btn-hot" type="button" hidden>整理成学习页</button>
+                  <button id="generateModel" class="btn btn-ghost" type="button" hidden>AI生成学习稿</button>
+                  <button id="retryJob" class="btn btn-ghost" type="button" hidden>重试此任务</button>
+                </div>
+                <p id="generationNote" class="small-note" hidden></p>
+                <div id="approvalBox" class="approval-box" hidden>
+                  <label class="review-label"><input id="reviewConfirm" type="checkbox"><span>我已对照原文核查学习稿，确认释义、示例和引用标注无误。</span></label>
+                  <div class="action-row"><button id="approveDocument" class="btn btn-hot" type="button" disabled>确认并发布</button><span id="approvalHint" class="small-note">确认前，普通读者不可见。</span></div>
+                </div>
+              </details>
+              <div class="status-tools"><button id="refreshStatus" class="text-button" type="button">刷新状态</button><button id="togglePolling" class="text-button" type="button" hidden>暂停刷新</button><a id="loginLink" class="text-link" href="login.html" hidden>登录后继续</a></div>
+            </section>
+            <div id="pageMessage" class="page-message" role="status" hidden></div>
+            <article id="lessonDocument" aria-label="图解学习内容" hidden>
+              <header class="document-intro"><div id="documentMeta" class="document-meta"></div><p id="documentSummary"></p></header>
+              <section id="ragVisual" hidden></section>
+              <details id="referenceDetails" class="rv-reference-details" open>
+                <summary id="referenceSummary" hidden>展开原稿：流程、解释与练习</summary>
+                <div id="components" class="components"></div>
+              </details>
+              <section id="limitationsSection" class="limitations" aria-labelledby="limitationsTitle" hidden><span class="eyebrow">Límites</span><h2 id="limitationsTitle">这份学习页的边界</h2><ul id="limitationsList"></ul></section>
+            </article>
+          </div>
+        </div>
+      </main>
+      <footer class="page-footer"><span>El Taller · El Aula</span><span>Aprender, no adivinar. 理解，不猜测。</span></footer>
+    </div>
+  </div>
+
+  <dialog id="evidenceDialog" class="evidence-drawer" aria-labelledby="evidenceTitle" aria-describedby="evidenceContext">
+    <div class="drawer-head"><div><span class="eyebrow">Evidencia · Volver a la fuente</span><h2 id="evidenceTitle">回到原文证据</h2></div><button id="closeEvidence" class="btn btn-ghost" type="button" autofocus>关闭 ×</button></div>
+    <div class="drawer-body"><p id="evidenceContext" class="small-note"></p><div id="evidenceBlocks"></div><button id="showAllEvidence" class="btn btn-ghost" type="button">查看本页全部原文片段</button></div>
+  </dialog>
+  <dialog id="modelDialog" class="confirm-dialog" aria-labelledby="modelTitle" aria-describedby="modelWarning">
+    <span class="eyebrow">Generar · A petición</span><h2 id="modelTitle">按需调用一次模型</h2>
+    <p id="modelSource" class="confirm-source"></p><p id="modelWarning">将调用本站现有 GLM 服务，可能消耗现有配额。结果只是待核查的学习草稿，不会自动确认为已审核内容。</p>
+    <div class="action-row"><button id="cancelModel" class="btn btn-ghost" type="button" autofocus>取消</button><button id="confirmModel" class="btn btn-hot" type="button">调用 GLM，生成草稿</button></div>
+  </dialog>
+  <noscript><p class="noscript-note">此学习页需要启用 JavaScript 才能读取材料。你仍可<a href="kb.html">回到书库</a>阅读原文。</p></noscript>
+</body>
+</html>

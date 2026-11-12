@@ -1,0 +1,43 @@
+[
+  {
+    "name": "Rokid 下一代全彩AI眼镜",
+    "brand": "Rokid",
+    "cat": "AI眼镜",
+    "lens": 1,
+    "collects": "",
+    "shows": "全彩 AR 画面叠加（观影/提词/导航）",
+    "status": "官宣10-27发布会亮相",
+    "wear": "眼部",
+    "lastSeen": "2026-10-13",
+    "prices": []
+  },
+  {
+    "name": "Fitbit Charge 7(泄漏)",
+    "brand": "Fitbit",
+    "cat": "手表手环",
+    "lens": 2,
+    "collects": "连续心率/海拔/活动追踪",
+    "shows": "穹顶屏显示",
+    "status": "泄漏指向已官宣为 Fit",
+    "wear": "手腕",
+    "lastSeen": "2026-10-13",
+    "prices": []
+  },
+  {
+    "name": "小米智能门锁5C猫眼版",
+    "brand": "小米",
+    "cat": "监护",
+    "lens": 1,
+    "collects": "",
+    "shows": "3.5 英寸大屏+160° 广角猫眼，门口访客可视",
+    "status": "已发售",
+    "wear": "环境家居",
+    "lastSeen": "2026-10-13",
+    "prices": [
+      {
+        "d": "2026-10-13",
+        "p": "939.6元"
+      }
+    ]
+  }
+]
