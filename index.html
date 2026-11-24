@@ -64,7 +64,7 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 @keyframes blob-drift{
   0%{transform:translate3d(0,0,0) scale(1)}
   50%{transform:translate3d(44px,-30px,0) scale(1.07)}
-  100%{transform:translate3d(-20px,24px,0) scale(.97)}
+  100%{transform:translate3d(0,0,0) scale(1)}
 }
 .g-noise{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -90,11 +90,13 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .brand b{font-size:16.5px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
 .brand small{display:block;font-size:11px;color:var(--g-dim);letter-spacing:1.6px;text-transform:uppercase}
 .g-pill{display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px}
-.g-pill a{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 17px;border-radius:999px;text-decoration:none;transition:.25s}
-.g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:.25s}
-.g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:.25s}
+.g-pill a{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 17px;border-radius:999px;text-decoration:none;
+  transition:background-color var(--motion-fast,120ms) ease,color var(--motion-fast,120ms) ease}
+.g-pill a b{font-size:13px;font-weight:500;color:var(--g-dim);line-height:1.25;transition:color var(--motion-fast,120ms) ease}
+.g-pill a small{font-size:9.5px;color:var(--g-dim);opacity:.85;letter-spacing:1.5px;line-height:1.25;transition:color var(--motion-fast,120ms) ease}
 .g-pill a:hover b,.g-pill a:hover small{color:var(--g-text)}
-.btn{border:0;cursor:pointer;font-family:inherit;border-radius:999px;transition:.25s;text-decoration:none;
+.btn{border:0;cursor:pointer;font-family:inherit;border-radius:999px;text-decoration:none;
+  transition:background-color var(--motion-fast,120ms) ease,border-color var(--motion-fast,120ms) ease,color var(--motion-fast,120ms) ease,translate var(--motion-fast,120ms) ease,filter var(--motion-fast,120ms) ease;
   padding:10px 20px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
 .btn-ghost{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--g-text);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent)}
 .btn-ghost:hover{background:color-mix(in srgb,var(--ink) 18%,transparent)}
@@ -131,7 +133,7 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .hero-cta .btn{padding:12px 26px;font-size:14px}
 .scroll-cue{display:flex;justify-content:center;margin-top:26px}
 .scroll-cue a{display:inline-flex;flex-direction:column;align-items:center;gap:5px;
-  color:var(--g-dim);text-decoration:none;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;transition:color .25s}
+  color:var(--g-dim);text-decoration:none;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;transition:color var(--motion-fast,120ms) ease}
 .scroll-cue a:hover{color:var(--g-accent-soft)}
 .scroll-cue svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;
   animation:cue-drift 2.6s ease-in-out infinite}
@@ -173,12 +175,14 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .workstage{--mq-lap:16px;overflow:hidden;padding:86px 0 30px;margin:0 0 -22px;
   touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
 .workstage:active{cursor:grabbing}
+.workstage[data-motion-static="true"]{touch-action:auto}
 .worktrack{display:flex;width:max-content}
 .worktrack .workcard{flex:0 0 min(350px,78vw);margin-right:var(--mq-lap)}
 .workstage .workcard{transition:none;box-shadow:0 18px 44px var(--g-drop)}
 .workcard img,.workcard a{-webkit-user-drag:none;user-select:none;-webkit-user-select:none}
 .mq-copy{display:contents}
-.workcard{border-radius:26px;overflow:hidden;position:relative;transition:.3s;display:flex;flex-direction:column;
+.workcard{border-radius:26px;overflow:hidden;position:relative;display:flex;flex-direction:column;
+  transition:transform var(--motion-state,200ms) var(--motion-arrive,cubic-bezier(.25,.8,.25,1)),border-color var(--motion-fast,120ms) ease,box-shadow var(--motion-state,200ms) ease;
   background:linear-gradient(155deg,var(--g-card-hi),var(--g-card-lo));
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--ink) 15%,transparent)}
 .workcard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--g-accent-soft) 35%,transparent);
@@ -211,7 +215,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 
 /* ---- Cuaderno 工坊日志 ---- */
 .notegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;min-width:0}
-.notecard{border-radius:26px;padding:22px 24px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--g-text);position:relative;transition:.3s;
+.notecard{border-radius:26px;padding:22px 24px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--g-text);position:relative;
+  transition:transform var(--motion-state,200ms) var(--motion-arrive,cubic-bezier(.25,.8,.25,1)),border-color var(--motion-fast,120ms) ease,box-shadow var(--motion-state,200ms) ease;
   background:linear-gradient(155deg,var(--g-card-hi),var(--g-card-lo));
   -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--ink) 15%,transparent)}
 .notecard:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--g-accent-soft) 35%,transparent);
@@ -252,7 +257,8 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
 .enlaces{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
 .enlace{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:999px;text-decoration:none;
   color:var(--g-text);font-size:13.5px;background:linear-gradient(155deg,var(--g-card-hi),var(--g-card-lo));
-  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);transition:.25s}
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+  transition:transform var(--motion-state,200ms) var(--motion-arrive,cubic-bezier(.25,.8,.25,1)),border-color var(--motion-fast,120ms) ease}
 .enlace:hover{border-color:color-mix(in srgb,var(--g-accent-soft) 40%,transparent);transform:translateY(-2px)}
 .enlace svg{width:17px;height:17px;stroke:var(--g-accent-soft);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .enlace small{color:var(--g-dim);font-size:11px}
@@ -285,6 +291,7 @@ body{font-family:var(--g-font);color:var(--g-text);background:var(--g-bg-base);m
   html{scroll-behavior:auto}
   .g-blob,.hero-main .halo,.empty-note .fire,.badge.en-obra i,.scroll-cue svg{animation:none}
   .workstage{overflow-x:auto}
+  .workcard:hover,.notecard:hover,.enlace:hover,.tdot:hover{transform:none}
 }
 
 /* ================= 主题系统：访客可选配色（圆点切换，localStorage 记忆） ================= */
@@ -360,7 +367,7 @@ html[data-theme="perla"]{
 }
 
 
-body{transition:background-color .35s}
+body{transition:background-color var(--motion-state,200ms) ease}
 html[data-theme="blanco"] .article pre,html[data-theme="blanco"] .article .body pre.kb-pre{background:#2e1f10;border-color:rgba(255,255,255,.08)}
 
 /* ---- blanco / negro：亮暗两极（结构同前四主题，光影同步换底） ---- */
@@ -411,27 +418,29 @@ html[data-theme="negro"]{
   background:color-mix(in srgb,var(--ink) 8%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent)}
 .tdot{width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;padding:0;
   background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.8),var(--dot) 60%);
-  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:.25s}
+  box-shadow:0 2px 8px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.5);transition:transform var(--motion-fast,120ms) ease,box-shadow var(--motion-fast,120ms) ease}
 .tdot:hover{transform:scale(1.18)}
 .tdot.on{box-shadow:0 0 0 2px var(--g-bg-base),0 0 0 3.5px var(--dot),0 2px 8px rgba(0,0,0,.35)}
 
 /* ---- 配色折叠：平时只露当前色一颗 + ▾，悬浮/聚焦展开整排（间距由 gap 改为两侧 margin 以便收拢） ---- */
 .themedots{gap:0}
-.themedots .tdot{margin:0 3.5px;transition:width .28s,opacity .28s,margin .28s,transform .25s}
+.themedots .tdot{margin:0 3.5px;transition:width var(--motion-state,200ms) var(--motion-travel,cubic-bezier(.45,0,.1,1)),opacity var(--motion-state,200ms) ease,margin var(--motion-state,200ms) var(--motion-travel,cubic-bezier(.45,0,.1,1)),transform var(--motion-fast,120ms) ease,box-shadow var(--motion-fast,120ms) ease}
 .themedots:not(:hover):not(:focus-within):has(.tdot.on) .tdot:not(.on){width:0;opacity:0;margin:0;pointer-events:none}
 .themedots:hover .tdot,.themedots:focus-within .tdot{width:17px;opacity:1;margin:0 3.5px;pointer-events:auto}
-.themedots::after{content:"▾";font-size:10px;line-height:1;color:var(--g-dim);margin-left:4px;transition:transform .28s;pointer-events:none}
+.themedots::after{content:"▾";font-size:10px;line-height:1;color:var(--g-dim);margin-left:4px;transition:transform var(--motion-state,200ms) var(--motion-travel,cubic-bezier(.45,0,.1,1));pointer-events:none}
 .themedots:hover::after,.themedots:focus-within::after{transform:rotate(180deg)}
 @media (max-width:680px){ .themedots{display:none} }
 
 /* 键盘可达：Tab 第一站「跳到正文」+ 统一键盘焦点环（十主题用 --g-accent 自适应） */
 .skiplink{position:fixed;left:14px;top:14px;z-index:400;padding:9px 16px;border-radius:12px;
   background:var(--g-accent);color:var(--g-on-accent);font-weight:600;font-size:13.5px;text-decoration:none;
-  transform:translateY(-160%);transition:transform .18s ease}
+  transform:translateY(-160%);transition:transform var(--motion-fast,120ms) ease}
 .skiplink:focus{transform:translateY(0)}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
   outline:2px solid var(--g-accent);outline-offset:2px}
 </style>
+<link rel="stylesheet" href="site-motion.css">
+<script src="site-motion.js"></script>
 </head>
 <body>
 <a class="skiplink" href="#top">Saltar al contenido · 跳到正文</a>
@@ -630,7 +639,7 @@ const CONFIG = {
     { label: 'WeChat',  hint: '公众号 · 点开扫码', url: 'assets/wechat-qr.jpg', icon: 'wechat' },
   ],
   icp: '沪ICP备2026052139号-1',        // 工信部 ICP 备案号，页脚链接 beian.miit.gov.cn
-  gongan: '',                          // 公安备案号（审批通过后填，如 '沪公安网备2026xxxxxxxx号'），空则页脚不显示
+  gongan: '沪公网安备31011502407950号',   // 公安备案号（2026-11 批复），页脚链接 beian.mps.gov.cn
 };
 
 /* ================= 工具 ================= */
@@ -731,7 +740,7 @@ function renderWorks(works, me){
     return true;
   });
   $('#workCount').textContent = visible.length;
-  if (!visible.length){ $('#emptyState').style.display=''; return; }
+  if (!visible.length){ grid.replaceChildren(); $('#emptyState').style.display=''; mqRefresh(); return; }
   $('#emptyState').style.display='none';
   const html = visible.map(w=>{
     const [stLabel, stCls] = STATUS[w.status] || STATUS['en-obra'];
@@ -753,118 +762,274 @@ function renderWorks(works, me){
     </article>`;
   }).join('');
   grid.innerHTML = html;
-  /* 无缝 marquee：同一份卡片渲染两遍，动画平移 50% 后正好接上 */
-  grid.insertAdjacentHTML('beforeend', `<div class="mq-copy" aria-hidden="true">${html}</div>`);
-  grid.querySelectorAll('.mq-copy a').forEach(a=>a.tabIndex=-1);
-  /* 点击统一走舞台委托（见下方 mqStage click 监听）：
-     setPointerCapture 会把 click 重定向到 pointerdown/up 的共同祖先（舞台），
-     绑在卡片上永远收不到——委托在舞台才能稳定触发 */
+  mqRefresh();
 }
 
-/* ================= 作品轮播带控制器：单一位置变量驱动平移+贴弧（同帧同源），可拖拽 ================= */
+/* ================= 作品轮播带控制器：唯一 RAF，缓存几何，静态列表与手动操作共享原卡 ================= */
 const mqStage = document.querySelector('.workstage');
 const mqTrack = $('#workgrid');
 const mqReduce = matchMedia('(prefers-reduced-motion: reduce)');
-const mqMobile = matchMedia('(max-width: 680px)');       // 手机档：屏幕太小，贴弧显乱 → 只做直线平移
-const MQ = { scaleMin: 0.84, liftMax: 80, speed: 20 };   // speed=漂移速度 px/s，微调只改这里
-let mqRAF = null, mqPos = 0, mqLast = 0, mqPeriod = 0, mqCount = 0;
-let mqDrag = null, mqDragMoved = false;
+const mqMobile = matchMedia('(max-width: 680px)');
+const MQ = { scaleMin: 0.84, liftMax: 80, speed: 20 };
+let mqRAF = null, mqPos = 0, mqAppliedPos = 0, mqLast = null, mqPeriod = 0;
+let mqOriginals = [], mqCopies = [], mqGeometry = null, mqDirty = true;
+let mqInView = false, mqHidden = false, mqHover = false, mqFocus = false, mqPaused = false;
+let mqDrag = null, mqDragMoved = false, mqDownCard = null, mqIndex = 0;
+let mqStatic = mqReduce.matches;
 
-function mqApply(){
-  /* 平移与每卡弧线变换同源同步：卡片流过的是同一条固定轨迹 */
-  const cards = mqTrack.querySelectorAll('.workcard');
-  if (!cards.length) return;
-  /* 周期=一套宽度，动态取卡数（track 恒为两套），作品增减自动适应 */
-  const n = cards.length >> 1;
-  if (n >= 1 && (mqPeriod === 0 || mqCount !== cards.length)){
-    mqCount = cards.length;
-    mqPeriod = cards[n].offsetLeft - cards[0].offsetLeft;
-  }
-  if (mqPeriod > 0){
-    mqPos = ((mqPos % mqPeriod) + mqPeriod) % mqPeriod;   // 1-2-…-7-1-2… 无限循环，永不见底
-    mqTrack.style.transform = `translate3d(${-mqPos}px,0,0)`;
-  }
-  /* 手机档：直线轨迹。清掉残留的弧线内联样式，卡片一排平移即可 */
-  if (mqMobile.matches){
-    for (const card of cards){ card.style.transform = ''; card.style.zIndex = ''; }
-    return;
-  }
-  /* 注意：轨道带 transform 后它就是卡片的 offsetParent，offsetLeft 相对轨道——
-     位置=轨道实时可视左缘+offsetLeft，天然含当前位移，绝不可再减 mqPos（会双算） */
-  const trLeft = mqTrack.getBoundingClientRect().left;
-  const cx = innerWidth / 2, half = innerWidth / 2;
-  const yTop = t => -MQ.liftMax * t * t;                  // 山谷弧：两端高（t 钳制，轨道封顶）
-  const cl = v => v > 1 ? 1 : v < -1 ? -1 : v;
-  for (const card of cards){
-    const w = card.offsetWidth;
-    const xL = trLeft + card.offsetLeft;                  // 卡片当前真实屏幕位置
-    const tC = cl((xL + w/2 - cx)/half), tL = cl((xL - cx)/half), tR = cl((xL + w - cx)/half);
-    let s = MQ.scaleMin + (1 - MQ.scaleMin) * Math.abs(tC);
-    if (s > 1) s = 1;
-    const rot = Math.atan2(yTop(tR) - yTop(tL), w * s) * 180 / Math.PI;  // 上缘切线角
-    /* 只做横向缩放（中间窄），纵向恒定 → 下缘 = 上缘 + 卡高，与上缘平行平滑 */
-    card.style.transform = `translateY(${yTop(tC).toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)},1)`;
-    card.style.zIndex = 200 - Math.round(Math.abs(tC) * 200);
-  }
+const mqControls = document.createElement('div');
+mqControls.className = 'mq-controls';
+mqControls.setAttribute('role', 'group');
+mqControls.setAttribute('aria-label', '作品浏览控制');
+function mqButton(label, action){
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'btn btn-ghost'; button.textContent = label;
+  button.setAttribute('aria-controls', 'workgrid'); button.addEventListener('click', action);
+  mqControls.appendChild(button); return button;
 }
+const mqPrev = mqButton('← 上一件', () => mqStep(-1));
+const mqPause = mqButton('暂停自动浏览', () => { mqPaused = !mqPaused; mqSync(); });
+const mqNext = mqButton('下一件 →', () => mqStep(1));
+const mqStatus = document.createElement('span');
+mqStatus.className = 'mq-status'; mqStatus.setAttribute('role', 'status'); mqStatus.setAttribute('aria-live', 'polite');
+mqControls.appendChild(mqStatus); mqStage.before(mqControls);
+mqStage.tabIndex = 0;
+mqStage.setAttribute('role', 'region');
+mqStage.setAttribute('aria-label', '作品列表，可用左右方向键逐件浏览');
+mqStage.dataset.motionStatic = String(mqStatic);
 
+function mqAvailable(){ return !mqHidden && document.visibilityState !== 'hidden' && mqInView; }
+function mqRunning(){ return mqAvailable() && !mqStatic && !mqPaused && !mqHover && !mqFocus && !mqDrag && mqOriginals.length > 0; }
+function mqStop(){
+  if (mqRAF !== null) cancelAnimationFrame(mqRAF);
+  mqRAF = null; mqLast = null;
+}
+function mqSync(){
+  mqPrev.disabled = mqNext.disabled = mqOriginals.length < 2;
+  mqPause.disabled = mqStatic || !mqOriginals.length;
+  mqPause.textContent = mqStatic ? '静态浏览' : mqPaused ? '继续自动浏览' : '暂停自动浏览';
+  mqPause.setAttribute('aria-pressed', String(mqPaused || mqStatic));
+  if (!mqRunning()){ mqStop(); return; }
+  if (mqRAF === null) mqRAF = requestAnimationFrame(mqFrame);
+}
+function mqRemoveCopies(){
+  for (const group of mqCopies) group.remove();
+  mqCopies = [];
+}
+function mqCloneGroup(){
+  const group = document.createElement('div');
+  group.className = 'mq-copy'; group.setAttribute('aria-hidden', 'true'); group.setAttribute('inert', '');
+  group.inert = true;
+  for (const original of mqOriginals){
+    const copy = original.cloneNode(true);
+    copy.removeAttribute('id');
+    copy.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    copy.querySelectorAll('a,button,input,select,textarea,[tabindex]').forEach(el => el.tabIndex = -1);
+    group.appendChild(copy);
+  }
+  mqTrack.appendChild(group); return group;
+}
+function mqMeasure(){
+  if (!mqOriginals.length) return;
+  /* 本批次先读完；正常帧只使用缓存。卡宽、字体、容器或断点变化都会使缓存失效。 */
+  const stageRect = mqStage.getBoundingClientRect();
+  const trackRect = mqTrack.getBoundingClientRect();
+  const first = mqOriginals[0].offsetLeft;
+  const original = mqOriginals.map(card => ({ card, source:card, left:card.offsetLeft - first, width:card.offsetWidth }));
+  const tail = original[original.length - 1];
+  const gap = parseFloat(getComputedStyle(tail.card).marginRight) || 0;
+  const period = tail.left + tail.width + gap;
+  const baseLeft = trackRect.left + mqStage.scrollLeft + (mqStatic ? 0 : mqAppliedPos);
+  if (mqPeriod > 0 && period > 0) mqPos *= period / mqPeriod;
+  mqPeriod = period;
+  const count = mqStatic || !period ? 0 : Math.max(1, Math.ceil(stageRect.width / period));
+  /* 复制件只负责填满画面；inert + aria-hidden，原卡独占焦点及无障碍树。 */
+  while (mqCopies.length > count) mqCopies.pop().remove();
+  while (mqCopies.length < count) mqCopies.push(mqCloneGroup());
+  const cards = original.slice();
+  mqCopies.forEach((group, i) => Array.from(group.children).forEach((card, j) => {
+    cards.push({ card, source:original[j].card, left:original[j].left + period * (i + 1), width:original[j].width });
+  }));
+  mqGeometry = { cards, original, baseLeft, left:stageRect.left, width:stageRect.width };
+  mqDirty = false;
+}
+function mqApply(){
+  if (!mqOriginals.length || mqStatic) return;
+  if (mqDirty) mqMeasure();
+  if (!mqGeometry || !mqPeriod) return;
+  mqPos = ((mqPos % mqPeriod) + mqPeriod) % mqPeriod;
+  const cx = mqGeometry.left + mqGeometry.width / 2, half = Math.max(1, mqGeometry.width / 2);
+  const clamp = v => Math.max(-1, Math.min(1, v));
+  const yTop = t => -MQ.liftMax * t * t;
+  /* 缓存上的运算全部完成后再写 transform；同帧内不穿插 DOM 布局读取。 */
+  const styles = mqGeometry.cards.map(({ card, left, width }) => {
+    if (mqMobile.matches) return { card, transform:'', zIndex:'' };
+    const x = mqGeometry.baseLeft - mqPos + left;
+    const t = clamp((x + width / 2 - cx) / half);
+    const s = MQ.scaleMin + (1 - MQ.scaleMin) * Math.abs(t);
+    const rot = Math.atan2(yTop(clamp((x + width - cx) / half)) - yTop(clamp((x - cx) / half)), width * s) * 180 / Math.PI;
+    return { card, transform:`translateY(${yTop(t).toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)},1)`, zIndex:String(200 - Math.round(Math.abs(t) * 200)) };
+  });
+  mqTrack.style.transform = `translate3d(${-mqPos}px,0,0)`;
+  mqAppliedPos = mqPos;
+  for (const { card, transform, zIndex } of styles){ card.style.transform = transform; card.style.zIndex = zIndex; }
+}
 function mqFrame(now){
   mqRAF = null;
-  const dt = mqLast ? Math.min(400, now - mqLast) : 16;
+  if (!mqRunning()){ mqLast = null; return; }
+  const dt = mqLast === null ? 0 : Math.max(0, Math.min(64, now - mqLast));
   mqLast = now;
-  try {
-    if (!mqReduce.matches){
-      const rect = mqStage.getBoundingClientRect();
-      if (rect.top < innerHeight + 100 && rect.bottom > -100){
-        if (!mqDrag && !mqStage.matches(':hover')) mqPos += MQ.speed * dt / 1000;  // 悬停即停，方便点卡片
-        mqApply();
-      }
-    }
-  } catch(e){ /* 单帧失败不影响后续帧 */ }
-  mqTick();
+  mqPos += MQ.speed * dt / 1000;
+  mqApply();
+  mqSync();
 }
-function mqTick(){ if (mqRAF === null) mqRAF = requestAnimationFrame(mqFrame); }
-/* 心跳兜底：个别环境 rAF 被冻结时由 Worker 时钟继续推进（rAF 正常时无感） */
-try {
-  const mqClock = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),250)'], { type: 'text/javascript' })));
-  mqClock.onmessage = () => {
-    if (document.visibilityState === 'visible') mqFrame(performance.now());
-  };
-} catch(_){ /* Worker 不可用时退回纯 rAF */ }
-mqReduce.addEventListener('change', e => { if (!e.matches) mqTick(); });
-mqMobile.addEventListener('change', () => mqApply());    // 跨断点（旋转/拉窗口）立即重绘，避免残留弧线或漏画弧线
+function mqInvalidate(){
+  mqDirty = true;
+  if (mqAvailable() && !mqRunning()) mqApply();
+  mqSync();
+}
+const mqResize = typeof ResizeObserver === 'function' ? new ResizeObserver(mqInvalidate) : null;
+function mqRefresh(){
+  mqStop(); mqRemoveCopies();
+  mqOriginals = Array.from(mqTrack.children).filter(el => el.classList.contains('workcard'));
+  mqPos = 0; mqAppliedPos = 0; mqPeriod = 0; mqIndex = 0; mqGeometry = null; mqDirty = true;
+  mqTrack.style.transform = mqStatic ? '' : 'translate3d(0,0,0)';
+  mqControls.hidden = !mqOriginals.length; mqStage.hidden = !mqOriginals.length;
+  mqStatus.textContent = mqOriginals.length ? `共 ${mqOriginals.length} 件作品` : '';
+  if (mqResize){ mqResize.disconnect(); mqResize.observe(mqStage); mqOriginals.forEach(card => mqResize.observe(card)); }
+  mqInvalidate();
+}
+function mqSetMode(){
+  mqStop(); mqStatic = mqReduce.matches; mqDrag = null; mqDownCard = null; mqDragMoved = false;
+  mqStage.dataset.motionStatic = String(mqStatic);
+  mqRemoveCopies(); mqPos = 0; mqAppliedPos = 0; mqPeriod = 0; mqGeometry = null; mqStage.scrollLeft = 0;
+  mqTrack.style.transform = mqStatic ? '' : 'translate3d(0,0,0)';
+  for (const card of mqOriginals){ card.style.transform = ''; card.style.zIndex = ''; }
+  mqInvalidate();
+}
+function mqSelect(index){
+  if (!mqOriginals.length) return;
+  mqIndex = ((index % mqOriginals.length) + mqOriginals.length) % mqOriginals.length;
+  if (mqDirty) mqMeasure();
+  if (!mqGeometry) return;
+  const item = mqGeometry.original[mqIndex];
+  if (mqStatic) mqStage.scrollLeft = item.left;
+  else { mqPaused = true; mqPos = item.left; mqStage.scrollLeft = 0; mqApply(); }
+  mqStatus.textContent = `第 ${mqIndex + 1} 件，共 ${mqOriginals.length} 件作品`;
+  mqSync();
+}
+function mqStep(direction){ mqSelect(mqIndex + direction); }
+mqStage.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); mqStep(e.key === 'ArrowLeft' ? -1 : 1); }
+  if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); mqSelect(e.key === 'Home' ? 0 : mqOriginals.length - 1); }
+});
+function mqFocusIn(e){
+  mqFocus = true; mqSync();
+  if (mqStatic) return;
+  const card = e.target.closest && e.target.closest('.workcard');
+  const index = mqOriginals.indexOf(card);
+  if (index < 0) return;
+  if (mqDirty) mqMeasure();
+  const item = mqGeometry && mqGeometry.original[index];
+  if (item){ mqIndex = index; mqPos = item.left; mqStage.scrollLeft = 0; mqApply(); }
+}
+function mqFocusOut(e){
+  mqFocus = !!(e.relatedTarget && (mqStage.contains(e.relatedTarget) || mqControls.contains(e.relatedTarget)));
+  mqSync();
+}
+for (const region of [mqStage, mqControls]){
+  region.addEventListener('focusin', mqFocusIn); region.addEventListener('focusout', mqFocusOut);
+  region.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch'){ mqHover = true; mqSync(); } });
+  region.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch'){ mqHover = false; mqSync(); } });
+}
 
-/* ---- 指针拖拽：按住左键（或手指）左右拨动整条队列 ---- */
-let mqDownCard = null;                                    // pointerdown 时按住的那张卡（click 在 pointerup 之后才来，不能存 mqDrag 里）
+/* ---- 指针拖动只按输入补绘，暂停自动循环后仍可拨动；减少动态效果时保留原生横向列表 ---- */
+function mqHitCard(x, y){
+  if (!mqGeometry) return null;
+  /* 仅 pointerdown 读取真实画面：inert 复制件不能依赖事件 target，也不能用布局 x 代替命中。 */
+  const clip = mqStage.getBoundingClientRect();
+  if (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom) return null;
+  const candidates = mqGeometry.cards.map(({ card, source }, order) => {
+    const rect = card.getBoundingClientRect(), style = getComputedStyle(card);
+    return { source, rect, width:card.offsetWidth, height:card.offsetHeight,
+      transform:style.transform, zIndex:parseInt(style.zIndex, 10) || 0, order };
+  }).sort((a, b) => b.zIndex - a.zIndex || b.order - a.order);
+  for (const { source, rect, width, height, transform } of candidates){
+    if (!width || !height || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+    const m = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform) : { a:1, b:0, c:0, d:1 };
+    const determinant = m.a * m.d - m.b * m.c;
+    if (!determinant) continue;
+    /* 以变换后中心反解卡片边框盒，排除旋转包围盒四角的弧线空隙。 */
+    const dx = x - (rect.left + rect.right) / 2, dy = y - (rect.top + rect.bottom) / 2;
+    const localX = (m.d * dx - m.c * dy) / determinant;
+    const localY = (m.a * dy - m.b * dx) / determinant;
+    if (Math.abs(localX) <= width / 2 && Math.abs(localY) <= height / 2) return source;
+  }
+  return null;
+}
 mqStage.addEventListener('pointerdown', e => {
+  if (e.button !== 0 || e.isPrimary === false) return;
   mqDownCard = e.target.closest ? e.target.closest('.workcard[data-link]') : null;
-  if (mqReduce.matches) return;
-  mqDrag = { x: e.clientX };
   mqDragMoved = false;
-  try { mqStage.setPointerCapture(e.pointerId); } catch(_){}
+  if (mqStatic) return;
+  if (mqDirty) mqMeasure();
+  mqDownCard = mqDownCard || mqHitCard(e.clientX, e.clientY);
+  mqDrag = { id:e.pointerId, start:e.clientX, x:e.clientX }; mqSync();
 });
 mqStage.addEventListener('pointermove', e => {
-  if (!mqDrag) return;
-  const dx = e.clientX - mqDrag.x;
-  if (!dx) return;
-  mqDrag.x = e.clientX;
-  if (Math.abs(dx) > 1) mqDragMoved = true;
-  mqPos -= dx;
-  mqApply();                                              // 立即重绘，拖动零延迟
+  if (!mqDrag || mqDrag.id !== e.pointerId) return;
+  if (!mqDragMoved && Math.abs(e.clientX - mqDrag.start) < 5) return;
+  if (!mqDragMoved){ mqDragMoved = true; try { mqStage.setPointerCapture(e.pointerId); } catch(_){} }
+  const dx = e.clientX - mqDrag.x; mqDrag.x = e.clientX;
+  mqPos -= dx; mqApply();
 });
-const mqDragEnd = () => { mqDrag = null; };
+function mqDragEnd(e){
+  if (!mqDrag || mqDrag.id !== e.pointerId) return;
+  mqDrag = null;
+  try { if (mqStage.hasPointerCapture(e.pointerId)) mqStage.releasePointerCapture(e.pointerId); } catch(_){}
+  if (e.type === 'pointercancel'){ mqDownCard = null; mqDragMoved = false; }
+  mqSync();
+}
 mqStage.addEventListener('pointerup', mqDragEnd);
 mqStage.addEventListener('pointercancel', mqDragEnd);
-mqStage.addEventListener('click', e => {                  // 拖动过就吞掉本次点击，避免误开链接
-  if (mqDragMoved){ e.stopPropagation(); e.preventDefault(); mqDragMoved = false; mqDownCard = null; return; }
-  /* 卡片跳转：capture 把 click 重定向到舞台（target=stage），e.target.closest 拿不到卡片，
-     所以用 pointerdown 记录的 mqDownCard；记录要在 pointerup 清空 mqDrag 前后都活着，消费后即弃 */
-  const card = mqDownCard || (e.target.closest ? e.target.closest('.workcard[data-link]') : null);
-  mqDownCard = null;
-  if (card) window.open(card.dataset.link, '_blank', 'noopener');
+mqStage.addEventListener('lostpointercapture', mqDragEnd);
+addEventListener('pointerup', mqDragEnd);
+addEventListener('pointercancel', mqDragEnd);
+mqStage.addEventListener('click', e => {
+  const down = mqDownCard; mqDownCard = null;
+  if (mqDragMoved){ e.stopPropagation(); e.preventDefault(); mqDragMoved = false; return; }
+  /* 原卡链接保留浏览器原生激活；inert 复制卡通过舞台命中回到对应原卡。 */
+  if (e.target.closest && e.target.closest('a')) return;
+  const card = (e.target.closest && e.target.closest('.workcard[data-link]')) || (e.detail ? down : null);
+  if (card && card.dataset.link){ e.preventDefault(); window.open(card.dataset.link, '_blank', 'noopener'); }
 }, true);
 
-mqTick();
+function mqCheckView(){
+  const rect = mqStage.getBoundingClientRect();
+  mqInView = rect.width > 0 && rect.height > 0 && rect.top < innerHeight && rect.bottom > 0;
+  mqInvalidate();
+}
+if (typeof IntersectionObserver === 'function'){
+  const mqIntersection = new IntersectionObserver(entries => {
+    mqInView = entries[entries.length - 1].isIntersecting; mqInvalidate();
+  });
+  mqIntersection.observe(mqStage);
+} else { addEventListener('scroll', mqCheckView, { passive:true }); }
+addEventListener('resize', mqCheckView, { passive:true });
+mqTrack.addEventListener('load', mqInvalidate, true);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(mqInvalidate);
+mqReduce.addEventListener('change', mqSetMode);
+mqMobile.addEventListener('change', mqInvalidate);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') mqDrag = null; mqInvalidate(); });
+addEventListener('pagehide', () => { mqHidden = true; mqDrag = null; mqDownCard = null; mqStop(); });
+addEventListener('pageshow', () => {
+  mqHidden = false; mqLast = null;
+  mqHover = mqStage.matches(':hover') || mqControls.matches(':hover');
+  mqFocus = mqStage.contains(document.activeElement) || mqControls.contains(document.activeElement);
+  mqCheckView();
+});
+mqCheckView();
 
 /* ================= 工坊日志渲染与可见性 ================= */
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -881,7 +1046,7 @@ function renderNotes(notes, me){
   });
   $('#noteCount').textContent = visible.length;
   if (!visible.length){ grid.innerHTML = ''; return; }
-  grid.innerHTML = visible.map(n=>{
+  grid.innerHTML = visible.map((n, index)=>{
     const tags = (n.tags||[]).map(t=>`<span class="wtag">${escHtml(t)}</span>`).join('');
     if (n.extra){
       // 工作台「收进日志」的笔记：无独立静态页，点击原地展开
@@ -890,8 +1055,8 @@ function renderNotes(notes, me){
         <span class="ndate">${escHtml(n.date||'')}</span>
         <h3>${escHtml(n.title)}</h3>
         <p>${escHtml(n.summary||'')}</p>
-        <div class="xbody" hidden>${escHtml(n.body||'').replace(/\n/g,'<br>')}</div>
-        <div class="nfoot"><span class="ntags">${tags}</span><span class="read xtoggle">展开</span>${src}</div>
+        <div class="xbody" id="note-extra-${index}" hidden>${escHtml(n.body||'').replace(/\n/g,'<br>')}</div>
+        <div class="nfoot"><span class="ntags">${tags}</span><button class="read xtoggle" type="button" aria-expanded="false" aria-controls="note-extra-${index}">展开</button>${src}</div>
       </article>`;
     }
     const link = n.file || '';
@@ -903,15 +1068,20 @@ function renderNotes(notes, me){
       ${link?`<span class="read">阅读<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></span>`:''}</div>
     </a>`;
   }).join('');
-  // 展开工作台笔记（点整卡切换；原文链接照常跳转）
+  // 原卡与同一按钮保持身份；公共 collapse 处理高度/淡入及中断，无公共脚本时立即展开。
   grid.querySelectorAll('.notecard-x').forEach(card=>{
     card.addEventListener('click', e=>{
-      if (e.target.closest('a')) return;
-      const body = card.querySelector('.xbody');
-      const tog = card.querySelector('.xtoggle');
-      if (!body) return;
-      body.hidden = !body.hidden;
-      if (tog) tog.textContent = body.hidden ? '展开' : '收起';
+      if (e.target.closest('a') || e.target.closest('input,select,textarea')) return;
+      const body = card.querySelector('.xbody'), tog = card.querySelector('.xtoggle');
+      if (!body || !tog) return;
+      const open = tog.getAttribute('aria-expanded') !== 'true';
+      tog.setAttribute('aria-expanded', String(open)); tog.textContent = open ? '收起' : '展开';
+      if (!open && body.contains(document.activeElement)) tog.focus({ preventScroll:true });
+      if (window.SiteMotion && typeof window.SiteMotion.collapse === 'function'){
+        Promise.resolve(window.SiteMotion.collapse(body, open)).catch(() => {
+          body.hidden = tog.getAttribute('aria-expanded') !== 'true';
+        });
+      } else body.hidden = !open;
     });
   });
 }
@@ -970,7 +1140,19 @@ async function boot(){
   }
 }
 
-tickClock(); setInterval(tickClock, 1000);
+/* 可见页只有一个时钟 timeout；BFCache 返回时立即重读本地时间。 */
+let clockTimer = null, clockSuspended = false;
+function syncClock(){
+  if (clockTimer !== null) clearTimeout(clockTimer);
+  clockTimer = null;
+  if (clockSuspended || document.visibilityState === 'hidden') return;
+  tickClock();
+  clockTimer = setTimeout(syncClock, 1000 - Date.now() % 1000);
+}
+document.addEventListener('visibilitychange', syncClock);
+addEventListener('pagehide', () => { clockSuspended = true; syncClock(); });
+addEventListener('pageshow', () => { clockSuspended = false; syncClock(); });
+syncClock();
 boot();
 </script>
 <script>
@@ -980,7 +1162,7 @@ boot();
   function apply(t){
     if (t === 'naranja') delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = t;
-    dots.forEach(function(d){ d.classList.toggle('on', d.dataset.themeDot === t); });
+    dots.forEach(function(d){ var on = d.dataset.themeDot === t; d.classList.toggle('on', on); d.setAttribute('aria-pressed', String(on)); });
   }
   var cur = 'bermellon'; try{if(!localStorage.getItem('taller-theme')&&window.__tallerSun&&window.__tallerSun.night)cur='negro'}catch(_){}
   try { cur = localStorage.getItem('taller-theme') || (window.__tallerSun&&window.__tallerSun.night?'negro':'bermellon'); } catch(_){}
@@ -993,13 +1175,5 @@ boot();
 })();
 </script>
 
-<script>/* 日落自动玄黑 · 日出回朱漆红：仅未手动选过主题的访客；每分钟复查 */
-setInterval(function(){try{
-if(localStorage.getItem('taller-theme'))return;
-var S=window.__tallerSunFn&&window.__tallerSunFn();if(!S)return;window.__tallerSun=S;
-var t=S.night?'negro':'bermellon';
-if(document.documentElement.dataset.theme!==t){document.documentElement.dataset.theme=t;
-document.querySelectorAll('.tdot').forEach(function(d){d.classList.toggle('on',d.dataset.themeDot===t)})}
-}catch(_){}},60000);
-</script></body>
+</body>
 </html>
